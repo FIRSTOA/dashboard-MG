@@ -9,6 +9,7 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #5B4FE8; --bg-soft: #6E63ED; --bg-deeper: #4A3FD4;
@@ -912,6 +913,9 @@
   .admin-row .a-del { padding: 5px 8px; border-radius: 8px; border: none; background: transparent; color: var(--danger); cursor: pointer; font-size: 12px; }
   .admin-badge-pending { color: var(--warning); font-weight: 700; }
   .admin-badge-approved { color: var(--success); font-weight: 700; }
+  .admin-create { display: grid; grid-template-columns: 1.3fr 1.3fr 0.9fr 0.9fr auto; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .admin-create .input, .admin-create .select { padding: 8px 10px; font-size: 13px; }
+  @media (max-width: 640px) { .admin-create { grid-template-columns: 1fr 1fr; } }
 
   @media (max-width: 960px) {
     .apps-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1428,14 +1432,19 @@
   </div>
 </div>
 
-<!-- Auth Gate (로그인/승인 대기) -->
+<!-- Auth Gate (로그인) -->
 <div class="auth-gate" id="authGate">
   <div class="auth-card">
-    <div class="auth-emoji" id="authEmoji">⏳</div>
-    <h2 id="authTitle">승인 대기 중</h2>
-    <p id="authMsg">관리자 승인 후 이용할 수 있습니다.</p>
-    <div class="auth-meta" id="authMeta"></div>
-    <button class="btn btn-primary" id="authRefresh" style="margin-top:16px">새로고침</button>
+    <div class="auth-emoji">📋</div>
+    <h2 id="authTitle">로그인</h2>
+    <p id="authMsg">관리자에게 받은 아이디와 비밀번호로 로그인하세요.</p>
+    <div style="margin-top:18px; text-align:left;">
+      <input type="text" class="input" id="login-id" placeholder="아이디 (이름)" autocomplete="username" style="margin-bottom:10px">
+      <input type="password" class="input" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
+    </div>
+    <div id="login-err" style="color:var(--danger); font-size:12.5px; min-height:18px; margin-top:8px;"></div>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%; justify-content:center; margin-top:6px;">로그인</button>
+    <div id="auth-config-note" style="font-size:11.5px; color:var(--text-light); margin-top:14px; display:none;">⚠️ Supabase 설정이 필요합니다. supabase-schema.sql 안내를 참고하세요.</div>
   </div>
 </div>
 
@@ -1443,11 +1452,19 @@
 <div class="modal-backdrop" id="adminModalBackdrop">
   <div class="modal" style="max-width:760px">
     <div class="modal-head">
-      <h3>🛡️ 관리자 패널 — 계정 승인 / 팀 배정</h3>
+      <h3>🛡️ 관리자 패널 — 계정 관리</h3>
       <button class="modal-close" id="adminCloseBtn">✕</button>
     </div>
     <div class="modal-body">
-      <div class="help-note">신규 로그인한 직원을 <strong>승인</strong>하고 <strong>팀(A/B/C/D)</strong>을 지정하세요. 승인되면 그 사람은 개인 보드 + 소속 팀 보드를 사용합니다.</div>
+      <div class="help-note"><strong>새 계정 만들기</strong> — 아이디(이름)·초기 비밀번호·팀을 정해 직원에게 알려주세요. 비밀번호를 잊으면 아래 목록의 <strong>비번 초기화</strong>로 새로 발급할 수 있습니다.</div>
+      <div class="admin-create">
+        <input type="text" class="input" id="newAcc-id" placeholder="아이디 (예: 미현)">
+        <input type="text" class="input" id="newAcc-pw" placeholder="초기 비밀번호">
+        <select class="select" id="newAcc-team"></select>
+        <select class="select" id="newAcc-role"><option value="member">멤버</option><option value="admin">관리자</option></select>
+        <button class="btn btn-primary" id="newAcc-add">+ 생성</button>
+      </div>
+      <div id="newAcc-msg" style="font-size:12.5px; min-height:16px; margin:4px 2px 10px;"></div>
       <div id="adminUserList"><div class="notes-empty">불러오는 중…</div></div>
     </div>
     <div class="modal-foot">
@@ -1564,26 +1581,30 @@
   let pushTimer = null;
   let lastSyncState = 'idle'; // idle | saving | ok | error | local
 
-  // ===== GAS 서빙 모드 (구글 로그인 + 팀 공유) =====
-  const BOOT = (typeof window !== 'undefined' && window.__BOOT__) ? window.__BOOT__ : null;
-  const HAS_GAS = !!(typeof google !== 'undefined' && google.script && google.script.run);
-  const GAS_MODE = !!(BOOT && BOOT.loggedIn && HAS_GAS);
-  let MY = BOOT ? { email: BOOT.email || '', name: BOOT.name || '', team: BOOT.team || '',
-                    status: BOOT.status || 'pending', isAdmin: !!BOOT.isAdmin, members: BOOT.members || [] } : null;
+  // ===== Supabase 모드 (이름 ID + 비밀번호 로그인 / 관리자 계정 생성 / 팀 공유) =====
+  // 관리자: supabase-schema.sql 실행 후 아래 두 값을 채우세요. (anon key는 공개돼도 안전 — RLS로 보호)
+  const DEFAULT_SUPABASE_URL = '';      // 예: 'https://xxxx.supabase.co'
+  const DEFAULT_SUPABASE_ANON_KEY = ''; // 예: 'eyJhbGciOi...'
+  const SUPABASE_URL = (lsGet('dashboard:supaUrl') || DEFAULT_SUPABASE_URL || '').trim();
+  const SUPABASE_ANON_KEY = (lsGet('dashboard:supaKey') || DEFAULT_SUPABASE_ANON_KEY || '').trim();
+  const SUPA = (SUPABASE_URL && SUPABASE_ANON_KEY && typeof window !== 'undefined' && window.supabase)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  const LS_TOKEN = 'dashboard:token';
+  let TOKEN = lsGet(LS_TOKEN) || '';
+  let MY = null;             // { username, team, role, isAdmin, members:[{username}] }
+  let SUPA_MODE = false;     // 로그인 성공 후 true
 
-  function gasCall(fn) {
-    const args = Array.prototype.slice.call(arguments, 1);
-    return new Promise((resolve, reject) => {
-      if (!HAS_GAS) { reject(new Error('no-gas')); return; }
-      const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
-      runner[fn].apply(runner, args);
-    });
+  async function supaRpc(fn, params) {
+    if (!SUPA) throw new Error('no-supabase');
+    const { data, error } = await SUPA.rpc(fn, params);
+    if (error) throw error;
+    return data;
   }
 
   // 스코프별 캐시: priv(개인) / share(분기목표·자동화앱·AI작업) / team(캘린더)
   let PRIV = {}, SHARE = {}, TEAM = {};
   let shareReadOnly = false;    // 다른 팀원의 공유 데이터를 보는 중인지
-  let shareScopeEmail = null;   // 현재 SHARE 캐시 주인 (null = 나)
+  let shareScopeUser = null;    // 현재 SHARE 캐시 주인 (null = 나)
   const saveTimers = {};
 
   function scopeOf(key) {
@@ -1593,10 +1614,10 @@
     return 'priv';
   }
   function cacheFor(scope) { return scope === 'team' ? TEAM : scope === 'share' ? SHARE : PRIV; }
-  function scopeKeyStr(scope, email) {
+  function scopeKeyStr(scope, user) {
     if (scope === 'team') return 'team:' + (MY.team || '_none');
-    if (scope === 'share') return 'share:' + (email || shareScopeEmail || MY.email);
-    return 'priv:' + MY.email;
+    if (scope === 'share') return 'share:' + (user || shareScopeUser || MY.username);
+    return 'priv:' + MY.username;
   }
   function scheduleScopeSave(scope) {
     if (scope === 'share' && shareReadOnly) return; // 보기 전용
@@ -1604,14 +1625,14 @@
     clearTimeout(saveTimers[scope]);
     saveTimers[scope] = setTimeout(async () => {
       try {
-        const r = await gasCall('apiSave', scopeKeyStr(scope), JSON.stringify(cacheFor(scope)));
+        const r = await supaRpc('app_save', { p_token: TOKEN, p_scope: scopeKeyStr(scope), p_data: cacheFor(scope) });
         setSyncState(r && r.ok ? 'ok' : 'error');
       } catch (e) { console.error('save', scope, e); setSyncState('error'); }
     }, 700);
   }
-  async function loadScopeInto(scope, email) {
+  async function loadScopeInto(scope, user) {
     try {
-      const r = await gasCall('apiLoad', scopeKeyStr(scope, email));
+      const r = await supaRpc('app_load', { p_token: TOKEN, p_scope: scopeKeyStr(scope, user) });
       const obj = (r && r.ok && r.data && typeof r.data === 'object') ? r.data : {};
       if (scope === 'team') TEAM = obj; else if (scope === 'share') SHARE = obj; else PRIV = obj;
       setSyncState('ok');
@@ -1691,21 +1712,21 @@
   }
 
   async function storeGet(key) {
-    if (GAS_MODE) { const c = cacheFor(scopeOf(key)); return (key in c) ? c[key] : null; }
+    if (SUPA_MODE) { const c = cacheFor(scopeOf(key)); return (key in c) ? c[key] : null; }
     return (key in CACHE) ? CACHE[key] : null;
   }
   async function storeSet(key, value) {
-    if (GAS_MODE) { const s = scopeOf(key); cacheFor(s)[key] = String(value); scheduleScopeSave(s); return true; }
+    if (SUPA_MODE) { const s = scopeOf(key); cacheFor(s)[key] = String(value); scheduleScopeSave(s); return true; }
     CACHE[key] = String(value); schedulePush(); return true;
   }
   async function storeDelete(key) {
-    if (GAS_MODE) { const s = scopeOf(key); delete cacheFor(s)[key]; scheduleScopeSave(s); return; }
+    if (SUPA_MODE) { const s = scopeOf(key); delete cacheFor(s)[key]; scheduleScopeSave(s); return; }
     delete CACHE[key]; schedulePush();
   }
 
   async function initStore() {
-    if (GAS_MODE) {
-      shareScopeEmail = null; shareReadOnly = false;
+    if (SUPA_MODE) {
+      shareScopeUser = null; shareReadOnly = false;
       await loadScopeInto('priv');
       await loadScopeInto('share');
       await loadScopeInto('team');
@@ -1738,7 +1759,7 @@
   function updateUserBadge() {
     const el = document.getElementById('userBadge');
     if (!el) return;
-    if (GAS_MODE) el.textContent = `👤 ${MY.name}${MY.team ? ' · ' + MY.team + '팀' : ''}`;
+    if (SUPA_MODE) el.textContent = `👤 ${MY.username}${MY.team ? ' · ' + MY.team + '팀' : ''}`;
     else el.textContent = USER_ID ? `👤 ${USER_ID}` : '👤 게스트';
   }
 
@@ -2991,6 +3012,7 @@
   // ---------- Settings / Sync Modal ----------
   const settingsModal = document.getElementById('settingsModalBackdrop');
   function openSettings() {
+    if (SUPA_MODE) return; // Supabase 모드에선 설정 대신 로그아웃 사용
     document.getElementById('set-userId').value = USER_ID;
     document.getElementById('set-syncUrl').value = SYNC_URL;
     const st = document.getElementById('set-status');
@@ -3510,37 +3532,49 @@
     renderApps();
   }
 
-  // ===================== 로그인 게이트 + 팀원 토글 + 관리자 =====================
-  function showAuthGate(status) {
+  // ===================== 로그인 / 팀원 토글 / 관리자 (Supabase) =====================
+  const TEAM_LIST = ['A', 'B', 'C', 'D'];
+  function showLoginGate() {
     const gate = document.getElementById('authGate');
-    const emoji = document.getElementById('authEmoji');
-    const title = document.getElementById('authTitle');
-    const msg = document.getElementById('authMsg');
-    const meta = document.getElementById('authMeta');
-    if (status === 'denied') {
-      emoji.textContent = '🚫'; title.textContent = '접근 권한 없음';
-      msg.textContent = '허용된 회사 계정이 아닙니다. 회사 구글계정(@' + (BOOT.allowedDomain || '') + ')으로 로그인해 주세요.';
-    } else if (status === 'notloggedin') {
-      emoji.textContent = '🔑'; title.textContent = '로그인이 필요합니다';
-      msg.textContent = '구글 계정으로 로그인 후 이용할 수 있습니다.';
-    } else {
-      emoji.textContent = '⏳'; title.textContent = '승인 대기 중';
-      msg.textContent = '관리자 승인 후 이용할 수 있습니다. 승인되면 새로고침하세요.';
-    }
-    meta.textContent = (MY && MY.email) ? MY.email : '';
+    if (!SUPA) document.getElementById('auth-config-note').style.display = 'block';
     gate.classList.add('show');
+    setTimeout(() => { const f = document.getElementById('login-id'); if (f) f.focus(); }, 100);
   }
-  document.getElementById('authRefresh').addEventListener('click', () => location.reload());
+  function hideLoginGate() { document.getElementById('authGate').classList.remove('show'); }
+  async function doLogin() {
+    const err = document.getElementById('login-err');
+    const id = document.getElementById('login-id').value.trim();
+    const pw = document.getElementById('login-pw').value;
+    if (!SUPA) { err.textContent = 'Supabase 설정이 필요합니다.'; return; }
+    if (!id || !pw) { err.textContent = '아이디와 비밀번호를 입력하세요.'; return; }
+    err.textContent = '로그인 중…'; err.style.color = 'var(--text-grey)';
+    try {
+      const r = await supaRpc('app_login', { p_username: id, p_pw: pw });
+      if (!r || !r.ok) { err.style.color = 'var(--danger)'; err.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.'; return; }
+      TOKEN = r.token; lsSet(LS_TOKEN, TOKEN);
+      MY = { username: r.username, team: r.team || '', role: r.role || 'member', isAdmin: r.role === 'admin', members: r.members || [] };
+      hideLoginGate();
+      await startApp();
+    } catch (e) { err.style.color = 'var(--danger)'; err.textContent = '로그인 오류: ' + (e.message || e); }
+  }
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('login-pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('login-id').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('login-pw').focus(); });
 
-  function setupGasTopbar() {
+  function setupSupaTopbar() {
     const s = document.getElementById('settingsBtn'); if (s) s.style.display = 'none';
     const a = document.getElementById('adminBtn'); if (a && MY.isAdmin) a.style.display = '';
+    const u = document.getElementById('userBadge'); if (u) u.title = '클릭하면 로그아웃';
     setSyncState('ok');
+  }
+  async function doLogout() {
+    try { await supaRpc('app_logout', { p_token: TOKEN }); } catch (e) {}
+    lsSet(LS_TOKEN, ''); location.reload();
   }
 
   // 팀원 보기 토글 (분기목표 + 자동화앱 = share 스코프)
   function injectMemberBars() {
-    if (!GAS_MODE) return;
+    if (!SUPA_MODE) return;
     const goalsView = document.getElementById('view-goals');
     if (goalsView && !document.getElementById('goalsMemberBar')) {
       const bar = document.createElement('div'); bar.id = 'goalsMemberBar'; bar.className = 'member-bar';
@@ -3557,10 +3591,11 @@
     }
   }
   function renderMemberBars() {
-    if (!GAS_MODE) return;
-    const people = [{ email: MY.email, name: MY.name + ' (나)' }]
-      .concat((MY.members || []).filter(m => m.email !== MY.email));
-    const sel = shareScopeEmail || MY.email;
+    if (!SUPA_MODE) return;
+    const others = (MY.members || []).filter(m => m.username !== MY.username);
+    const people = [{ username: MY.username, label: MY.username + ' (나)' }]
+      .concat(others.map(m => ({ username: m.username, label: m.username })));
+    const sel = shareScopeUser || MY.username;
     ['goalsMemberBar', 'appsMemberBar'].forEach(id => {
       const bar = document.getElementById(id); if (!bar) return;
       bar.innerHTML = '';
@@ -3568,30 +3603,29 @@
       bar.style.display = 'flex';
       people.forEach(p => {
         const chip = document.createElement('div');
-        chip.className = 'cal-cat-tab' + (sel === p.email ? ' active' : '');
-        chip.textContent = p.name;
-        if (sel === p.email) chip.style.background = 'var(--bg)';
-        chip.addEventListener('click', () => setShareMember(p.email));
+        chip.className = 'cal-cat-tab' + (sel === p.username ? ' active' : '');
+        chip.textContent = p.label;
+        if (sel === p.username) chip.style.background = 'var(--bg)';
+        chip.addEventListener('click', () => setShareMember(p.username));
         bar.appendChild(chip);
       });
     });
   }
   function applyShareReadOnly() {
     document.body.classList.toggle('share-ro', shareReadOnly);
-    const who = (MY.members || []).find(m => m.email === shareScopeEmail);
-    const name = who ? who.name : '팀원';
+    const name = shareScopeUser || '팀원';
     ['goalsRoBanner', 'appsRoBanner'].forEach(id => {
       const b = document.getElementById(id); if (!b) return;
       b.classList.toggle('show', shareReadOnly);
       b.textContent = `👀 ${name} 님의 보드를 보는 중입니다 (보기 전용). 편집하려면 "나"를 선택하세요.`;
     });
   }
-  async function setShareMember(email) {
-    if (!GAS_MODE) return;
-    const target = (email && email !== MY.email) ? email : null;
-    shareScopeEmail = target;
+  async function setShareMember(username) {
+    if (!SUPA_MODE) return;
+    const target = (username && username !== MY.username) ? username : null;
+    shareScopeUser = target;
     shareReadOnly = !!target;
-    await loadScopeInto('share', target || MY.email);
+    await loadScopeInto('share', target || MY.username);
     await loadGoals(); await loadMissions(); await loadProjectIndex(); await loadApps();
     renderFilters(); renderGoals(); renderMissions(); await renderGallery(); renderApps();
     renderMemberBars(); applyShareReadOnly();
@@ -3599,52 +3633,69 @@
 
   // 관리자 패널
   const adminModal = document.getElementById('adminModalBackdrop');
-  function openAdmin() { adminModal.classList.add('open'); loadAdminUsers(); }
+  function fillTeamSelect(sel, val) {
+    sel.innerHTML = '<option value="">팀 없음</option>' + TEAM_LIST.map(t => `<option value="${t}" ${val === t ? 'selected' : ''}>${t}팀</option>`).join('');
+  }
+  function openAdmin() { adminModal.classList.add('open'); fillTeamSelect(document.getElementById('newAcc-team'), ''); loadAdminUsers(); }
   function closeAdmin() { adminModal.classList.remove('open'); }
   document.getElementById('adminBtn').addEventListener('click', openAdmin);
   document.getElementById('adminCloseBtn').addEventListener('click', closeAdmin);
   document.getElementById('adminDoneBtn').addEventListener('click', closeAdmin);
   document.getElementById('adminReloadBtn').addEventListener('click', loadAdminUsers);
   adminModal.addEventListener('click', (e) => { if (e.target === adminModal) closeAdmin(); });
+  document.getElementById('newAcc-add').addEventListener('click', async () => {
+    const msg = document.getElementById('newAcc-msg');
+    const id = document.getElementById('newAcc-id').value.trim();
+    const pw = document.getElementById('newAcc-pw').value.trim();
+    const team = document.getElementById('newAcc-team').value;
+    const role = document.getElementById('newAcc-role').value;
+    if (!id || !pw) { msg.style.color = 'var(--danger)'; msg.textContent = '아이디와 초기 비밀번호를 입력하세요.'; return; }
+    msg.style.color = 'var(--text-grey)'; msg.textContent = '생성 중…';
+    try {
+      const r = await supaRpc('app_admin_create', { p_token: TOKEN, p_username: id, p_pw: pw, p_team: team, p_role: role });
+      if (r && r.ok) { msg.style.color = 'var(--success)'; msg.textContent = `✓ '${id}' 계정 생성됨 (초기 비번: ${pw})`;
+        document.getElementById('newAcc-id').value = ''; document.getElementById('newAcc-pw').value = ''; loadAdminUsers(); }
+      else { msg.style.color = 'var(--danger)'; msg.textContent = r && r.error === 'exists' ? '이미 있는 아이디입니다.' : '생성 실패'; }
+    } catch (e) { msg.style.color = 'var(--danger)'; msg.textContent = '오류: ' + (e.message || e); }
+  });
   async function loadAdminUsers() {
     const root = document.getElementById('adminUserList');
     root.innerHTML = '<div class="notes-empty">불러오는 중…</div>';
     let res;
-    try { res = await gasCall('apiAdminListUsers'); } catch (e) { root.innerHTML = '<div class="notes-empty">불러오기 실패: ' + e.message + '</div>'; return; }
+    try { res = await supaRpc('app_admin_list', { p_token: TOKEN }); }
+    catch (e) { root.innerHTML = '<div class="notes-empty">불러오기 실패: ' + (e.message || e) + '</div>'; return; }
     if (!res || !res.ok) { root.innerHTML = '<div class="notes-empty">권한이 없거나 오류입니다.</div>'; return; }
-    const teams = res.teams || ['A', 'B', 'C', 'D'];
-    let html = `<div class="admin-row head"><span>이메일 / 이름</span><span>상태</span><span>팀</span><span>역할</span><span></span></div>`;
+    let html = `<div class="admin-row head"><span>아이디</span><span>팀</span><span>역할</span><span>비번</span><span></span></div>`;
     res.users.forEach(u => {
-      const teamOpts = ['<option value="">-</option>'].concat(teams.map(t => `<option value="${t}" ${u.team === t ? 'selected' : ''}>${t}팀</option>`)).join('');
-      html += `<div class="admin-row" data-email="${escapeHTML(u.email)}">
-        <span class="a-email" title="${escapeHTML(u.email)}">${escapeHTML(u.name || '')}<br><small style="color:var(--text-light)">${escapeHTML(u.email)}</small></span>
-        <select class="a-status">
-          <option value="pending" ${u.status === 'pending' ? 'selected' : ''}>대기</option>
-          <option value="approved" ${u.status === 'approved' ? 'selected' : ''}>승인</option>
-        </select>
+      const teamOpts = '<option value="">-</option>' + TEAM_LIST.map(t => `<option value="${t}" ${u.team === t ? 'selected' : ''}>${t}팀</option>`).join('');
+      html += `<div class="admin-row" data-username="${escapeHTML(u.username)}">
+        <span class="a-email" title="${escapeHTML(u.username)}">${escapeHTML(u.username)}</span>
         <select class="a-team">${teamOpts}</select>
-        <select class="a-role">
-          <option value="member" ${u.role === 'member' ? 'selected' : ''}>멤버</option>
-          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>관리자</option>
-        </select>
+        <select class="a-role"><option value="member" ${u.role === 'member' ? 'selected' : ''}>멤버</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>관리자</option></select>
+        <button class="a-reset" title="비밀번호 초기화">🔑 초기화</button>
         <span><button class="a-save">저장</button> <button class="a-del" title="삭제">🗑</button></span>
       </div>`;
     });
     root.innerHTML = html;
-    root.querySelectorAll('.admin-row[data-email]').forEach(row => {
-      const email = row.dataset.email;
+    root.querySelectorAll('.admin-row[data-username]').forEach(row => {
+      const username = row.dataset.username;
       row.querySelector('.a-save').addEventListener('click', async () => {
         const team = row.querySelector('.a-team').value;
-        const status = row.querySelector('.a-status').value;
         const role = row.querySelector('.a-role').value;
         const btn = row.querySelector('.a-save'); btn.textContent = '저장 중…';
-        try { const r = await gasCall('apiAdminUpdateUser', email, team, status, role); btn.textContent = r && r.ok ? '✓ 저장됨' : '실패'; }
+        try { const r = await supaRpc('app_admin_update', { p_token: TOKEN, p_username: username, p_team: team, p_role: role }); btn.textContent = r && r.ok ? '✓' : '실패'; }
         catch (e) { btn.textContent = '실패'; }
         setTimeout(() => { btn.textContent = '저장'; }, 1500);
       });
+      row.querySelector('.a-reset').addEventListener('click', async () => {
+        const np = prompt(`'${username}' 의 새 임시 비밀번호를 입력하세요:`);
+        if (!np) return;
+        try { const r = await supaRpc('app_admin_resetpw', { p_token: TOKEN, p_username: username, p_pw: np }); alert(r && r.ok ? `'${username}' 비밀번호가 '${np}' 로 변경됐습니다.` : '실패'); }
+        catch (e) { alert('오류: ' + (e.message || e)); }
+      });
       row.querySelector('.a-del').addEventListener('click', async () => {
-        if (!confirm(email + ' 계정을 삭제할까요?')) return;
-        try { await gasCall('apiAdminRemoveUser', email); loadAdminUsers(); } catch (e) {}
+        if (!confirm(username + ' 계정을 삭제할까요?')) return;
+        try { const r = await supaRpc('app_admin_delete', { p_token: TOKEN, p_username: username }); if (r && !r.ok && r.error === 'self') alert('본인 계정은 삭제할 수 없습니다.'); loadAdminUsers(); } catch (e) {}
       });
     });
   }
@@ -3668,11 +3719,27 @@
     renderApps();
   }
 
-  // Init
-  (async function init() {
-    if (BOOT && BOOT.loggedIn === false) { showAuthGate('notloggedin'); return; }
-    if (GAS_MODE && MY.status !== 'approved') { showAuthGate(MY.status === 'denied' ? 'denied' : 'pending'); return; }
-    if (GAS_MODE) setupGasTopbar();
+  // 로그인 성공/세션 복원 후 앱 시작
+  let appStarted = false;
+  async function startApp() {
+    if (appStarted) return;
+    appStarted = true;
+    SUPA_MODE = true;
+    setupSupaTopbar();
+    await initStore();
+    updateUserBadge();
+    organizeViews();
+    injectMemberBars();
+    buildEmojiPop();
+    setupGoalListener();
+    await reloadAll();
+    renderMemberBars();
+    applyShareReadOnly();
+    switchView(lsGet(LS_VIEW) || 'board');
+  }
+
+  // 비-Supabase(레거시) 모드로 시작
+  async function startLegacy() {
     await initStore();
     updateUserBadge();
     organizeViews();
@@ -3682,7 +3749,30 @@
     await reloadAll();
     if (GAS_MODE) { renderMemberBars(); applyShareReadOnly(); }
     switchView(lsGet(LS_VIEW) || 'board');
+  }
+
+  // Init
+  (async function init() {
+    if (!SUPA) {
+      // Supabase 미설정 → 기존(레거시) 방식으로 동작
+      await startLegacy();
+      return;
+    }
+    // 저장된 토큰으로 세션 복원 시도
+    if (TOKEN) {
+      try {
+        const me = await supaRpc('app_me', { p_token: TOKEN });
+        if (me && me.ok) {
+          MY = { username: me.username, team: me.team || '', role: me.role || 'member', isAdmin: !!me.isAdmin, members: me.members || [] };
+          await startApp();
+          return;
+        }
+      } catch (e) { console.error('세션 복원 실패', e); }
+      lsSet(LS_TOKEN, ''); TOKEN = '';
+    }
+    showLoginGate();
   })();
+  document.getElementById('userBadge').addEventListener('click', () => { if (SUPA_MODE) doLogout(); });
 </script>
 </body>
 </html>

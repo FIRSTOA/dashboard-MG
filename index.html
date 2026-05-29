@@ -3743,9 +3743,11 @@
     await initStore();
     updateUserBadge();
     organizeViews();
+    injectMemberBars();
     buildEmojiPop();
     setupGoalListener();
     await reloadAll();
+    if (GAS_MODE) { renderMemberBars(); applyShareReadOnly(); }
     switchView(lsGet(LS_VIEW) || 'board');
   }
 

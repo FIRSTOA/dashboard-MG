@@ -879,6 +879,40 @@
   /* board sub-widget tabs reuse .tab-bar */
   .widget-tabs { display: flex; gap: 4px; background: var(--card-soft); border-radius: 10px; padding: 4px; margin-left: auto; }
 
+  /* ===== Auth gate ===== */
+  .auth-gate { position: fixed; inset: 0; z-index: 500; display: none; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #5B4FE8 0%, #4A3FD4 100%); padding: 24px; }
+  .auth-gate.show { display: flex; }
+  .auth-card { background: white; border-radius: 24px; padding: 40px 36px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 24px 60px rgba(20,14,80,0.4); }
+  .auth-emoji { font-size: 52px; margin-bottom: 10px; }
+  .auth-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+  .auth-card p { font-size: 14px; color: var(--text-grey); line-height: 1.6; }
+  .auth-meta { font-size: 12.5px; color: var(--text-light); margin-top: 14px; background: var(--card-soft); border-radius: 10px; padding: 10px 12px; word-break: break-all; }
+
+  /* ===== Team member bar ===== */
+  .member-bar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .member-bar::before { content: '👥 팀원 보기'; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7); margin-right: 6px; }
+  .ro-banner { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white;
+    border-radius: 10px; padding: 8px 14px; font-size: 12.5px; margin-bottom: 14px; display: none; }
+  .ro-banner.show { display: block; }
+  /* 팀원 보기(읽기 전용) 시 편집 요소 숨김 */
+  body.share-ro .add-goal-card, body.share-ro .ai-add-card, body.share-ro .app-add-card,
+  body.share-ro #addGoalBtn, body.share-ro #addProjectBtn, body.share-ro #addAppBtn,
+  body.share-ro #syncBtn, body.share-ro .mission-add-row, body.share-ro .gc-check,
+  body.share-ro .mission-remove, body.share-ro .mission-notes-btn, body.share-ro .app-edit { display: none !important; }
+  body.share-ro .mission-check, body.share-ro .gc-card { pointer-events: none; }
+
+  /* ===== Admin list ===== */
+  .admin-row { display: grid; grid-template-columns: 1.6fr 0.8fr 1fr 0.9fr auto; gap: 8px; align-items: center;
+    padding: 9px 6px; border-bottom: 1px solid var(--divider); font-size: 13px; }
+  .admin-row.head { font-weight: 700; color: var(--text-grey); font-size: 11.5px; border-bottom: 2px solid var(--border); }
+  .admin-row .a-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .admin-row select { border: 1.5px solid var(--border); border-radius: 8px; padding: 5px 6px; font-size: 12.5px; font-family: inherit; background: var(--card-soft); }
+  .admin-row .a-save { padding: 5px 10px; border-radius: 8px; border: none; background: var(--bg); color: white; font-weight: 600; font-size: 12px; cursor: pointer; }
+  .admin-row .a-del { padding: 5px 8px; border-radius: 8px; border: none; background: transparent; color: var(--danger); cursor: pointer; font-size: 12px; }
+  .admin-badge-pending { color: var(--warning); font-weight: 700; }
+  .admin-badge-approved { color: var(--success); font-weight: 700; }
+
   @media (max-width: 960px) {
     .apps-grid { grid-template-columns: repeat(2, 1fr); }
     .cal-cell { min-height: 64px; }
@@ -903,6 +937,7 @@
       <span class="dot"></span>
       <span class="sync-badge" id="syncBadge"><span class="s-dot"></span><span class="s-txt">—</span></span>
       <button class="topbar-btn" id="userBadge">👤 게스트</button>
+      <button class="topbar-btn" id="adminBtn" title="관리자 패널" style="display:none">🛡️ 관리자</button>
       <button class="topbar-btn" id="settingsBtn" title="동기화 설정">⚙️</button>
     </div>
   </div>
@@ -1393,6 +1428,37 @@
   </div>
 </div>
 
+<!-- Auth Gate (로그인/승인 대기) -->
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <div class="auth-emoji" id="authEmoji">⏳</div>
+    <h2 id="authTitle">승인 대기 중</h2>
+    <p id="authMsg">관리자 승인 후 이용할 수 있습니다.</p>
+    <div class="auth-meta" id="authMeta"></div>
+    <button class="btn btn-primary" id="authRefresh" style="margin-top:16px">새로고침</button>
+  </div>
+</div>
+
+<!-- Admin Panel Modal -->
+<div class="modal-backdrop" id="adminModalBackdrop">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-head">
+      <h3>🛡️ 관리자 패널 — 계정 승인 / 팀 배정</h3>
+      <button class="modal-close" id="adminCloseBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="help-note">신규 로그인한 직원을 <strong>승인</strong>하고 <strong>팀(A/B/C/D)</strong>을 지정하세요. 승인되면 그 사람은 개인 보드 + 소속 팀 보드를 사용합니다.</div>
+      <div id="adminUserList"><div class="notes-empty">불러오는 중…</div></div>
+    </div>
+    <div class="modal-foot">
+      <div class="modal-foot-right">
+        <button class="btn" id="adminReloadBtn">목록 새로고침</button>
+        <button class="btn btn-primary" id="adminDoneBtn">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Emoji Picker Popover -->
 <div class="emoji-pop" id="emojiPop"></div>
 
@@ -1498,6 +1564,60 @@
   let pushTimer = null;
   let lastSyncState = 'idle'; // idle | saving | ok | error | local
 
+  // ===== GAS 서빙 모드 (구글 로그인 + 팀 공유) =====
+  const BOOT = (typeof window !== 'undefined' && window.__BOOT__) ? window.__BOOT__ : null;
+  const HAS_GAS = !!(typeof google !== 'undefined' && google.script && google.script.run);
+  const GAS_MODE = !!(BOOT && BOOT.loggedIn && HAS_GAS);
+  let MY = BOOT ? { email: BOOT.email || '', name: BOOT.name || '', team: BOOT.team || '',
+                    status: BOOT.status || 'pending', isAdmin: !!BOOT.isAdmin, members: BOOT.members || [] } : null;
+
+  function gasCall(fn) {
+    const args = Array.prototype.slice.call(arguments, 1);
+    return new Promise((resolve, reject) => {
+      if (!HAS_GAS) { reject(new Error('no-gas')); return; }
+      const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+      runner[fn].apply(runner, args);
+    });
+  }
+
+  // 스코프별 캐시: priv(개인) / share(분기목표·자동화앱·AI작업) / team(캘린더)
+  let PRIV = {}, SHARE = {}, TEAM = {};
+  let shareReadOnly = false;    // 다른 팀원의 공유 데이터를 보는 중인지
+  let shareScopeEmail = null;   // 현재 SHARE 캐시 주인 (null = 나)
+  const saveTimers = {};
+
+  function scopeOf(key) {
+    if (key === 'calendar-events') return 'team';
+    if (key.indexOf('quarter-goals') === 0 || key.indexOf('quarter-missions') === 0
+        || key === 'automation-apps' || key.indexOf('ai-project') === 0) return 'share';
+    return 'priv';
+  }
+  function cacheFor(scope) { return scope === 'team' ? TEAM : scope === 'share' ? SHARE : PRIV; }
+  function scopeKeyStr(scope, email) {
+    if (scope === 'team') return 'team:' + (MY.team || '_none');
+    if (scope === 'share') return 'share:' + (email || shareScopeEmail || MY.email);
+    return 'priv:' + MY.email;
+  }
+  function scheduleScopeSave(scope) {
+    if (scope === 'share' && shareReadOnly) return; // 보기 전용
+    setSyncState('saving');
+    clearTimeout(saveTimers[scope]);
+    saveTimers[scope] = setTimeout(async () => {
+      try {
+        const r = await gasCall('apiSave', scopeKeyStr(scope), JSON.stringify(cacheFor(scope)));
+        setSyncState(r && r.ok ? 'ok' : 'error');
+      } catch (e) { console.error('save', scope, e); setSyncState('error'); }
+    }, 700);
+  }
+  async function loadScopeInto(scope, email) {
+    try {
+      const r = await gasCall('apiLoad', scopeKeyStr(scope, email));
+      const obj = (r && r.ok && r.data && typeof r.data === 'object') ? r.data : {};
+      if (scope === 'team') TEAM = obj; else if (scope === 'share') SHARE = obj; else PRIV = obj;
+      setSyncState('ok');
+    } catch (e) { console.error('load', scope, e); setSyncState('error'); }
+  }
+
   function syncEnabled() { return !!(SYNC_URL && USER_ID); }
   function blobKey() { return `dashboard:blob:${USER_ID || '_local'}`; }
 
@@ -1570,11 +1690,27 @@
     pushTimer = setTimeout(remotePush, 800);
   }
 
-  async function storeGet(key) { return (key in CACHE) ? CACHE[key] : null; }
-  async function storeSet(key, value) { CACHE[key] = String(value); schedulePush(); return true; }
-  async function storeDelete(key) { delete CACHE[key]; schedulePush(); }
+  async function storeGet(key) {
+    if (GAS_MODE) { const c = cacheFor(scopeOf(key)); return (key in c) ? c[key] : null; }
+    return (key in CACHE) ? CACHE[key] : null;
+  }
+  async function storeSet(key, value) {
+    if (GAS_MODE) { const s = scopeOf(key); cacheFor(s)[key] = String(value); scheduleScopeSave(s); return true; }
+    CACHE[key] = String(value); schedulePush(); return true;
+  }
+  async function storeDelete(key) {
+    if (GAS_MODE) { const s = scopeOf(key); delete cacheFor(s)[key]; scheduleScopeSave(s); return; }
+    delete CACHE[key]; schedulePush();
+  }
 
   async function initStore() {
+    if (GAS_MODE) {
+      shareScopeEmail = null; shareReadOnly = false;
+      await loadScopeInto('priv');
+      await loadScopeInto('share');
+      await loadScopeInto('team');
+      return;
+    }
     try { const raw = localStorage.getItem(blobKey()); if (raw) CACHE = JSON.parse(raw) || {}; }
     catch (e) { CACHE = {}; }
     importLegacy();
@@ -1601,7 +1737,9 @@
   }
   function updateUserBadge() {
     const el = document.getElementById('userBadge');
-    if (el) el.textContent = USER_ID ? `👤 ${USER_ID}` : '👤 게스트';
+    if (!el) return;
+    if (GAS_MODE) el.textContent = `👤 ${MY.name}${MY.team ? ' · ' + MY.team + '팀' : ''}`;
+    else el.textContent = USER_ID ? `👤 ${USER_ID}` : '👤 게스트';
   }
 
   // ---------- Date ----------
@@ -2033,6 +2171,7 @@
   }
 
   function openGoalModal(goal = null) {
+    if (shareReadOnly) return;
     editingGoalId = goal ? goal.id : null;
     document.getElementById('goalModalTitle').textContent = goal ? '목표 편집' : '새 분기 목표';
     document.getElementById('goalDeleteBtn').style.display = goal ? 'inline-flex' : 'none';
@@ -2164,6 +2303,7 @@
   let missionEditDraft = null; // { title, done }
 
   function openMissionModal(m) {
+    if (shareReadOnly) return;
     editingMissionId = m.id;
     missionEditDraft = { title: m.title, done: !!m.done };
     document.getElementById('missionModalTitle').textContent = '미션 진행 기록';
@@ -2636,6 +2776,7 @@
     });
   }
   function openModal(project = null) {
+    if (shareReadOnly) return;
     currentEditingId = project ? project.id : null;
     document.getElementById('modalTitle').textContent = project ? '프로젝트 편집' : '새 AI 프로젝트';
     deleteBtn.style.display = project ? 'inline-flex' : 'none';
@@ -3369,14 +3510,177 @@
     renderApps();
   }
 
+  // ===================== 로그인 게이트 + 팀원 토글 + 관리자 =====================
+  function showAuthGate(status) {
+    const gate = document.getElementById('authGate');
+    const emoji = document.getElementById('authEmoji');
+    const title = document.getElementById('authTitle');
+    const msg = document.getElementById('authMsg');
+    const meta = document.getElementById('authMeta');
+    if (status === 'denied') {
+      emoji.textContent = '🚫'; title.textContent = '접근 권한 없음';
+      msg.textContent = '허용된 회사 계정이 아닙니다. 회사 구글계정(@' + (BOOT.allowedDomain || '') + ')으로 로그인해 주세요.';
+    } else if (status === 'notloggedin') {
+      emoji.textContent = '🔑'; title.textContent = '로그인이 필요합니다';
+      msg.textContent = '구글 계정으로 로그인 후 이용할 수 있습니다.';
+    } else {
+      emoji.textContent = '⏳'; title.textContent = '승인 대기 중';
+      msg.textContent = '관리자 승인 후 이용할 수 있습니다. 승인되면 새로고침하세요.';
+    }
+    meta.textContent = (MY && MY.email) ? MY.email : '';
+    gate.classList.add('show');
+  }
+  document.getElementById('authRefresh').addEventListener('click', () => location.reload());
+
+  function setupGasTopbar() {
+    const s = document.getElementById('settingsBtn'); if (s) s.style.display = 'none';
+    const a = document.getElementById('adminBtn'); if (a && MY.isAdmin) a.style.display = '';
+    setSyncState('ok');
+  }
+
+  // 팀원 보기 토글 (분기목표 + 자동화앱 = share 스코프)
+  function injectMemberBars() {
+    if (!GAS_MODE) return;
+    const goalsView = document.getElementById('view-goals');
+    if (goalsView && !document.getElementById('goalsMemberBar')) {
+      const bar = document.createElement('div'); bar.id = 'goalsMemberBar'; bar.className = 'member-bar';
+      const ro = document.createElement('div'); ro.id = 'goalsRoBanner'; ro.className = 'ro-banner';
+      goalsView.insertBefore(ro, goalsView.firstChild);
+      goalsView.insertBefore(bar, goalsView.firstChild);
+    }
+    const appsSection = document.querySelector('#view-apps .apps-section');
+    if (appsSection && !document.getElementById('appsMemberBar')) {
+      const bar = document.createElement('div'); bar.id = 'appsMemberBar'; bar.className = 'member-bar';
+      const ro = document.createElement('div'); ro.id = 'appsRoBanner'; ro.className = 'ro-banner';
+      appsSection.insertBefore(ro, appsSection.firstChild);
+      appsSection.insertBefore(bar, appsSection.firstChild);
+    }
+  }
+  function renderMemberBars() {
+    if (!GAS_MODE) return;
+    const people = [{ email: MY.email, name: MY.name + ' (나)' }]
+      .concat((MY.members || []).filter(m => m.email !== MY.email));
+    const sel = shareScopeEmail || MY.email;
+    ['goalsMemberBar', 'appsMemberBar'].forEach(id => {
+      const bar = document.getElementById(id); if (!bar) return;
+      bar.innerHTML = '';
+      if (people.length <= 1) { bar.style.display = 'none'; return; }
+      bar.style.display = 'flex';
+      people.forEach(p => {
+        const chip = document.createElement('div');
+        chip.className = 'cal-cat-tab' + (sel === p.email ? ' active' : '');
+        chip.textContent = p.name;
+        if (sel === p.email) chip.style.background = 'var(--bg)';
+        chip.addEventListener('click', () => setShareMember(p.email));
+        bar.appendChild(chip);
+      });
+    });
+  }
+  function applyShareReadOnly() {
+    document.body.classList.toggle('share-ro', shareReadOnly);
+    const who = (MY.members || []).find(m => m.email === shareScopeEmail);
+    const name = who ? who.name : '팀원';
+    ['goalsRoBanner', 'appsRoBanner'].forEach(id => {
+      const b = document.getElementById(id); if (!b) return;
+      b.classList.toggle('show', shareReadOnly);
+      b.textContent = `👀 ${name} 님의 보드를 보는 중입니다 (보기 전용). 편집하려면 "나"를 선택하세요.`;
+    });
+  }
+  async function setShareMember(email) {
+    if (!GAS_MODE) return;
+    const target = (email && email !== MY.email) ? email : null;
+    shareScopeEmail = target;
+    shareReadOnly = !!target;
+    await loadScopeInto('share', target || MY.email);
+    await loadGoals(); await loadMissions(); await loadProjectIndex(); await loadApps();
+    renderFilters(); renderGoals(); renderMissions(); await renderGallery(); renderApps();
+    renderMemberBars(); applyShareReadOnly();
+  }
+
+  // 관리자 패널
+  const adminModal = document.getElementById('adminModalBackdrop');
+  function openAdmin() { adminModal.classList.add('open'); loadAdminUsers(); }
+  function closeAdmin() { adminModal.classList.remove('open'); }
+  document.getElementById('adminBtn').addEventListener('click', openAdmin);
+  document.getElementById('adminCloseBtn').addEventListener('click', closeAdmin);
+  document.getElementById('adminDoneBtn').addEventListener('click', closeAdmin);
+  document.getElementById('adminReloadBtn').addEventListener('click', loadAdminUsers);
+  adminModal.addEventListener('click', (e) => { if (e.target === adminModal) closeAdmin(); });
+  async function loadAdminUsers() {
+    const root = document.getElementById('adminUserList');
+    root.innerHTML = '<div class="notes-empty">불러오는 중…</div>';
+    let res;
+    try { res = await gasCall('apiAdminListUsers'); } catch (e) { root.innerHTML = '<div class="notes-empty">불러오기 실패: ' + e.message + '</div>'; return; }
+    if (!res || !res.ok) { root.innerHTML = '<div class="notes-empty">권한이 없거나 오류입니다.</div>'; return; }
+    const teams = res.teams || ['A', 'B', 'C', 'D'];
+    let html = `<div class="admin-row head"><span>이메일 / 이름</span><span>상태</span><span>팀</span><span>역할</span><span></span></div>`;
+    res.users.forEach(u => {
+      const teamOpts = ['<option value="">-</option>'].concat(teams.map(t => `<option value="${t}" ${u.team === t ? 'selected' : ''}>${t}팀</option>`)).join('');
+      html += `<div class="admin-row" data-email="${escapeHTML(u.email)}">
+        <span class="a-email" title="${escapeHTML(u.email)}">${escapeHTML(u.name || '')}<br><small style="color:var(--text-light)">${escapeHTML(u.email)}</small></span>
+        <select class="a-status">
+          <option value="pending" ${u.status === 'pending' ? 'selected' : ''}>대기</option>
+          <option value="approved" ${u.status === 'approved' ? 'selected' : ''}>승인</option>
+        </select>
+        <select class="a-team">${teamOpts}</select>
+        <select class="a-role">
+          <option value="member" ${u.role === 'member' ? 'selected' : ''}>멤버</option>
+          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>관리자</option>
+        </select>
+        <span><button class="a-save">저장</button> <button class="a-del" title="삭제">🗑</button></span>
+      </div>`;
+    });
+    root.innerHTML = html;
+    root.querySelectorAll('.admin-row[data-email]').forEach(row => {
+      const email = row.dataset.email;
+      row.querySelector('.a-save').addEventListener('click', async () => {
+        const team = row.querySelector('.a-team').value;
+        const status = row.querySelector('.a-status').value;
+        const role = row.querySelector('.a-role').value;
+        const btn = row.querySelector('.a-save'); btn.textContent = '저장 중…';
+        try { const r = await gasCall('apiAdminUpdateUser', email, team, status, role); btn.textContent = r && r.ok ? '✓ 저장됨' : '실패'; }
+        catch (e) { btn.textContent = '실패'; }
+        setTimeout(() => { btn.textContent = '저장'; }, 1500);
+      });
+      row.querySelector('.a-del').addEventListener('click', async () => {
+        if (!confirm(email + ' 계정을 삭제할까요?')) return;
+        try { await gasCall('apiAdminRemoveUser', email); loadAdminUsers(); } catch (e) {}
+      });
+    });
+  }
+
+  async function reloadAll() {
+    await loadTasksAndLinks();
+    renderAllTasks();
+    renderQuickLinks();
+    await refreshWeeklyGoal();
+    await loadGoals();
+    await loadMissions();
+    renderFilters(); renderGoals(); renderMissions();
+    await loadProjectIndex();
+    await renderGallery();
+    await loadCalendar();
+    renderMini();
+    renderCalendar();
+    await loadMemo();
+    renderMemo();
+    await loadApps();
+    renderApps();
+  }
+
   // Init
   (async function init() {
+    if (BOOT && BOOT.loggedIn === false) { showAuthGate('notloggedin'); return; }
+    if (GAS_MODE && MY.status !== 'approved') { showAuthGate(MY.status === 'denied' ? 'denied' : 'pending'); return; }
+    if (GAS_MODE) setupGasTopbar();
     await initStore();
     updateUserBadge();
     organizeViews();
+    injectMemberBars();
     buildEmojiPop();
     setupGoalListener();
     await reloadAll();
+    if (GAS_MODE) { renderMemberBars(); applyShareReadOnly(); }
     switchView(lsGet(LS_VIEW) || 'board');
   })();
 </script>

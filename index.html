@@ -142,10 +142,16 @@
     padding: 3px 8px; border-radius: 6px; font-weight: 600;
   }
   .goal-content {
-    min-height: 80px; font-size: 14px; line-height: 1.65;
-    outline: none; white-space: pre-wrap; padding: 4px 2px; border-radius: 6px;
+    min-height: 90px; font-size: 15.5px; line-height: 1.7; font-weight: 600;
+    color: #2A1A05; outline: none; white-space: pre-wrap;
+    padding: 12px 14px; border-radius: 12px;
+    background: rgba(255,255,255,0.7);
+    border: 1.5px solid rgba(255,255,255,0.6);
+    transition: background 0.15s, border-color 0.15s;
   }
-  .goal-content:empty:before { content: attr(data-placeholder); color: rgba(26, 27, 58, 0.4); }
+  .goal-content:hover { background: rgba(255,255,255,0.82); }
+  .goal-content:focus { background: #FFFFFF; border-color: #FB923C; }
+  .goal-content:empty:before { content: attr(data-placeholder); color: rgba(120, 70, 20, 0.55); font-weight: 500; }
   .goal-hint { font-size: 11px; color: rgba(26, 27, 58, 0.5); margin-top: 8px; text-align: right; opacity: 0; transition: opacity 0.3s; }
   .goal-hint.visible { opacity: 1; }
 
@@ -683,6 +689,67 @@
     .task-meta { display: none; }
     .task-desc { white-space: normal; }
   }
+
+  /* Topbar buttons / sync badge */
+  .topbar-btn {
+    background: rgba(255,255,255,0.14); color: white;
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 9px;
+    padding: 5px 11px; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: background 0.1s;
+  }
+  .topbar-btn:hover { background: rgba(255,255,255,0.26); }
+  .sync-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+  .sync-badge .s-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4); transition: background 0.2s; }
+
+  /* Section add buttons */
+  .w-add-btn {
+    background: var(--card-soft); color: var(--bg);
+    border: none; border-radius: 8px; padding: 5px 11px;
+    font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+    margin-left: auto; transition: all 0.1s;
+  }
+  .w-add-btn:hover { background: #E9E5FA; }
+
+  /* Header shortcut icon */
+  .head-shortcut {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 9px; margin-left: 8px;
+    background: rgba(255,255,255,0.18); text-decoration: none; font-size: 15px;
+    transition: all 0.12s; vertical-align: middle;
+  }
+  .head-shortcut:hover { background: rgba(255,255,255,0.32); transform: translateY(-1px); }
+
+  /* Edit affordance on task / link items */
+  .task-item, .quick-item { position: relative; }
+  .item-edit {
+    position: absolute; top: 6px; right: 6px;
+    width: 24px; height: 24px; border-radius: 7px;
+    background: rgba(255,255,255,0.9); border: 1px solid var(--border);
+    color: var(--text-grey); font-size: 12px; cursor: pointer;
+    display: none; align-items: center; justify-content: center; z-index: 3;
+  }
+  .task-item:hover .item-edit, .quick-item:hover .item-edit { display: flex; }
+  .item-edit:hover { background: var(--bg); color: white; border-color: var(--bg); }
+  .quick-item .item-edit { top: 4px; right: 4px; }
+
+  /* Color picker swatches */
+  .color-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .color-swatch {
+    width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
+    border: 2px solid transparent; transition: transform 0.1s;
+  }
+  .color-swatch:hover { transform: scale(1.1); }
+  .color-swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px white inset; }
+
+  /* Task-link editor rows */
+  .tk-link-row { display: grid; grid-template-columns: 60px 1fr auto; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .tk-link-row input { border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; background: var(--card-soft); outline: none; }
+  .tk-link-row input:focus { border-color: var(--bg); background: white; }
+  .tk-link-row .tk-link-del { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 14px; padding: 4px 8px; border-radius: 6px; }
+  .tk-link-row .tk-link-del:hover { background: #FEE2E2; color: var(--danger); }
+
+  .quick-empty, .task-empty { font-size: 12.5px; color: var(--text-light); padding: 10px 2px; }
+  .quick-empty { grid-column: 1 / -1; }
 </style>
 </head>
 <body>
@@ -694,6 +761,10 @@
       <span id="topbarDate">—</span>
       <span class="dot"></span>
       <span id="topbarWeek">—</span>
+      <span class="dot"></span>
+      <span class="sync-badge" id="syncBadge"><span class="s-dot"></span><span class="s-txt">—</span></span>
+      <button class="topbar-btn" id="userBadge">👤 게스트</button>
+      <button class="topbar-btn" id="settingsBtn" title="동기화 설정">⚙️</button>
     </div>
   </div>
 
@@ -723,77 +794,17 @@
       <div class="w-head">
         <div class="w-icon" style="background:var(--g-orange)">☀️</div>
         <div class="w-title">매일 할 일</div>
-        <div class="w-meta">우선순위 순</div>
+        <button class="w-add-btn" id="addDailyBtn">+ 추가</button>
       </div>
-      <div class="task-list">
-        <div class="task-item" data-id="d-receipt">
-          <span class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg></span>
-          <span class="task-icon" style="background:var(--g-pink)">🧾</span>
-          <div class="task-text">
-            <div class="task-title">영수증 처리</div>
-            <div class="task-desc">이카운트에 당일 법인카드 영수증 업로드</div>
-          </div>
-          <span class="task-meta">법카 쓴 날</span>
-          <div class="task-links">
-            <a class="task-link" href="https://login.ecount.com/Login/KR/" target="_blank" rel="noopener">↗</a>
-          </div>
-        </div>
-        <div class="task-item" data-id="d-schedule">
-          <span class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg></span>
-          <span class="task-icon" style="background:var(--g-cyan)">📅</span>
-          <div class="task-text">
-            <div class="task-title">스케줄 짜기</div>
-            <div class="task-desc">네이버 캘린더 + 워킨맵으로 오늘 동선 정리</div>
-          </div>
-          <div class="task-links">
-            <a class="task-link" href="https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fcalendar.naver.com%2Fmain" target="_blank" rel="noopener">📅</a>
-            <a class="task-link" href="https://www.workinmap.com/work1" target="_blank" rel="noopener">🗺</a>
-          </div>
-        </div>
-        <div class="task-item" data-id="d-weekly-board">
-          <span class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg></span>
-          <span class="task-icon" style="background:var(--g-violet)">📊</span>
-          <div class="task-text">
-            <div class="task-title">주간현황판 작성</div>
-            <div class="task-desc">하루 업무 정리 · 주간목표 진행 상황 기록</div>
-          </div>
-          <div class="task-links">
-            <a class="task-link" href="https://docs.google.com/spreadsheets/d/1C_YHqY61wJkxCpn_Jd7opoFVBuJj39xORKVdctrrFOo/edit?gid=1939823870#gid=1939823870" target="_blank" rel="noopener">↗</a>
-          </div>
-        </div>
-      </div>
+      <div class="task-list" id="dailyList"></div>
 
       <div style="margin-top: 20px;">
         <div class="w-head" style="margin-bottom: 12px;">
           <div class="w-icon" style="background:var(--g-emerald)">🗓️</div>
           <div class="w-title" style="font-size: 14px;">주 1회</div>
-          <div class="w-meta">월요일 리셋</div>
+          <button class="w-add-btn" id="addWeeklyBtn">+ 추가</button>
         </div>
-        <div class="task-list">
-          <div class="task-item" data-id="w-blog">
-            <span class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg></span>
-            <span class="task-icon" style="background:var(--g-green)">💬</span>
-            <div class="task-text">
-              <div class="task-title">회사 블로그 댓글</div>
-              <div class="task-desc">mai0819 블로그 댓글 + 기록 시트</div>
-            </div>
-            <div class="task-links">
-              <a class="task-link" href="https://blog.naver.com/mai0819" target="_blank" rel="noopener">📝</a>
-              <a class="task-link" href="https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=1665859459#gid=1665859459" target="_blank" rel="noopener">📊</a>
-            </div>
-          </div>
-          <div class="task-item" data-id="w-gainge">
-            <span class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg></span>
-            <span class="task-icon" style="background:var(--g-rose)">🎬</span>
-            <div class="task-text">
-              <div class="task-title">가인지 큐레이션</div>
-              <div class="task-desc">영상 시청 후 GPT 요약본 업로드</div>
-            </div>
-            <div class="task-links">
-              <a class="task-link" href="https://gainge.com/contents/curation" target="_blank" rel="noopener">↗</a>
-            </div>
-          </div>
-        </div>
+        <div class="task-list" id="weeklyList"></div>
       </div>
     </div>
 
@@ -813,7 +824,9 @@
   <!-- Quarter Goals -->
   <div class="quarter-section">
     <div class="quarter-head">
-      <div class="quarter-title"><div class="icon">🏁</div>분기 목표</div>
+      <div class="quarter-title"><div class="icon">🏁</div>분기 목표
+        <a class="head-shortcut" href="https://docs.google.com/spreadsheets/d/1IbcagsyTIBPfSQrD9L4Fr5ajBk2E56LaN5Fl4c749WU/edit?gid=74381469#gid=74381469" target="_blank" rel="noopener" title="골든미팅카드 시트 바로가기">🃏</a>
+      </div>
       <div class="quarter-actions">
         <span class="quarter-tag" id="quarterPeriod">—</span>
         <button class="btn-ghost-white" id="syncBtn">📋 시트 가져오기</button>
@@ -841,7 +854,9 @@
   <!-- AI Projects -->
   <div class="ai-section">
     <div class="ai-section-head">
-      <div class="ai-h-title"><div class="icon">🤖</div>AI 자동화 작업</div>
+      <div class="ai-h-title"><div class="icon">🤖</div>AI 자동화 작업
+        <a class="head-shortcut" href="https://docs.google.com/spreadsheets/d/1iL49NTAPSHzOEka5y7TmTgnb17_GKckXAAWSRlKquFY/edit?gid=1826162532#gid=1826162532" target="_blank" rel="noopener" title="자동화진행시트 바로가기">📑</a>
+      </div>
       <button class="btn-white-small" id="addProjectBtn">+ 새 프로젝트</button>
     </div>
     <div class="ai-gallery" id="aiGallery"></div>
@@ -856,72 +871,14 @@
         <button class="tab active" data-tab="work">업무용</button>
         <button class="tab" data-tab="lookup">조회용</button>
       </div>
+      <button class="w-add-btn" id="addLinkBtn">+ 추가</button>
     </div>
 
-    <div class="quick-grid tab-content active" data-tab-content="work">
-      <a class="quick-item" href="https://docs.google.com/spreadsheets/d/1C_YHqY61wJkxCpn_Jd7opoFVBuJj39xORKVdctrrFOo/edit?gid=1939823870#gid=1939823870" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-violet)">📊</span>
-        <div class="q-text"><div class="q-name">주간현황판</div><div class="q-meta">Sheets</div></div>
-      </a>
-      <a class="quick-item" href="https://docs.google.com/spreadsheets/d/1iL49NTAPSHzOEka5y7TmTgnb17_GKckXAAWSRlKquFY/edit?gid=1826162532#gid=1826162532" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-indigo)">🤖</span>
-        <div class="q-text"><div class="q-name">AI 자동화 시트</div><div class="q-meta">Sheets</div></div>
-      </a>
-      <a class="quick-item" href="https://login.ecount.com/Login/KR/" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-pink)">🧾</span>
-        <div class="q-text"><div class="q-name">이카운트</div><div class="q-meta">영수증</div></div>
-      </a>
-      <a class="quick-item" href="https://blog.naver.com/mai0819" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-green)">📝</span>
-        <div class="q-text"><div class="q-name">회사 블로그</div><div class="q-meta">Naver Blog</div></div>
-      </a>
-      <a class="quick-item" href="https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=1665859459#gid=1665859459" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-emerald)">💬</span>
-        <div class="q-text"><div class="q-name">블로그 댓글</div><div class="q-meta">Sheets</div></div>
-      </a>
-      <a class="quick-item" href="https://gainge.com/contents/curation" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-rose)">🎬</span>
-        <div class="q-text"><div class="q-name">가인지</div><div class="q-meta">영상</div></div>
-      </a>
-      <a class="quick-item" href="https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fcalendar.naver.com%2Fmain" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-cyan)">📅</span>
-        <div class="q-text"><div class="q-name">네이버 캘린더</div><div class="q-meta">일정</div></div>
-      </a>
-      <a class="quick-item" href="https://www.workinmap.com/work1" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-blue)">🗺️</span>
-        <div class="q-text"><div class="q-name">워킨맵</div><div class="q-meta">동선 지도</div></div>
-      </a>
-    </div>
-
-    <div class="quick-grid tab-content" data-tab-content="lookup">
-      <a class="quick-item" href="https://docs.google.com/spreadsheets/d/1Q0u_ok6s3o7_qnSFyDW632zkspV_MqttRnFQ4uurmpg/edit?gid=1571265600#gid=1571265600" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-orange)">💻</span>
-        <div class="q-text"><div class="q-name">PC 확장성</div><div class="q-meta">Sheets</div></div>
-      </a>
-      <a class="quick-item" href="https://docs.google.com/spreadsheets/d/10850TfeSvd0Z1iiI1ycCyGskGRPXicRUd1_Xx996QKQ/edit?gid=746760933#gid=746760933" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-yellow)">🖨️</span>
-        <div class="q-text"><div class="q-name">복합기 확장성</div><div class="q-meta">Sheets</div></div>
-      </a>
-      <a class="quick-item" href="https://docs.google.com/spreadsheets/d/1gc5bcv6GuJ0PV1iXpu0CLBwiAoLJYdBaPqRQCqn4yHU/edit?gid=1754535432#gid=1754535432&fvid=1279190544" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-rose)">💸</span>
-        <div class="q-text"><div class="q-name">C지역 미수</div><div class="q-meta">Sheets</div></div>
-      </a>
-      <a class="quick-item" href="https://docs.google.com/spreadsheets/d/1YySH2gK0ZUth4872zCy3pzp1zu8ZM7yAXopvyfTnp-0/edit?gid=108651391#gid=108651391" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-red)">⚠️</span>
-        <div class="q-text"><div class="q-name">초과</div><div class="q-meta">Sheets</div></div>
-      </a>
-      <a class="quick-item" href="https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=419415178#gid=419415178" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-pink)">📣</span>
-        <div class="q-text"><div class="q-name">불만</div><div class="q-meta">Sheets</div></div>
-      </a>
-      <a class="quick-item" href="https://docs.google.com/spreadsheets/d/1YySH2gK0ZUth4872zCy3pzp1zu8ZM7yAXopvyfTnp-0/edit?gid=1037918773#gid=1037918773" target="_blank" rel="noopener">
-        <span class="q-icon" style="background:var(--g-cyan)">📋</span>
-        <div class="q-text"><div class="q-name">임대리스트</div><div class="q-meta">Sheets</div></div>
-      </a>
-    </div>
+    <div class="quick-grid tab-content active" data-tab-content="work" id="linksWork"></div>
+    <div class="quick-grid tab-content" data-tab-content="lookup" id="linksLookup"></div>
   </div>
 
-  <div class="footer">매일 자동 리셋 · 주간은 월요일 리셋 · AI 프로젝트 & 분기 목표는 영구 저장</div>
+  <div class="footer">매일 자동 리셋 · 주간은 월요일 리셋 · 모든 항목은 직접 추가/편집/삭제 가능 · ⚙️ 설정에서 기기 간 동기화</div>
 </div>
 
 <!-- AI Project Modal -->
@@ -1093,36 +1050,251 @@
   </div>
 </div>
 
+<!-- Settings / Sync Modal -->
+<div class="modal-backdrop" id="settingsModalBackdrop">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h3>⚙️ 동기화 설정</h3>
+      <button class="modal-close" id="settingsCloseBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="help-note">
+        같은 데이터를 <strong>어느 기기에서든</strong> 보려면 Google Apps Script 백엔드가 필요합니다.<br>
+        함께 받은 <strong>apps-script-backend.gs</strong> 코드를 배포한 뒤, 생성된 웹앱 URL을 아래에 넣어주세요.
+        <strong>"내 이름"</strong>을 다르게 하면 한 백엔드로 여러 명이 각자 보드를 쓸 수 있습니다.
+      </div>
+      <div class="field">
+        <label class="field-label">내 이름 / ID <span class="req">*</span></label>
+        <input type="text" class="input" id="set-userId" placeholder="예: 미현, hyun, 영업1팀…">
+      </div>
+      <div class="field">
+        <label class="field-label">동기화 서버 URL (Apps Script 웹앱)</label>
+        <input type="url" class="input" id="set-syncUrl" placeholder="https://script.google.com/macros/s/XXXX/exec">
+      </div>
+      <div id="set-status" style="font-size:12.5px; min-height:18px; color:var(--text-grey)"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="settingsTestBtn">연결 테스트</button>
+      <div class="modal-foot-right">
+        <button class="btn" id="settingsCancelBtn">취소</button>
+        <button class="btn btn-primary" id="settingsSaveBtn">저장 후 동기화</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Edit Modal (매일 할 일 / 주 1회 공용) -->
+<div class="modal-backdrop" id="taskModalBackdrop">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head">
+      <h3 id="taskModalTitle">할 일</h3>
+      <button class="modal-close" id="taskCloseBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">아이콘 (이모지)</label>
+          <input type="text" class="input" id="tk-icon" maxlength="4" placeholder="✅">
+        </div>
+        <div class="field">
+          <label class="field-label">색상</label>
+          <div class="color-group" id="tk-colors"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">제목 <span class="req">*</span></label>
+        <input type="text" class="input" id="tk-title">
+      </div>
+      <div class="field">
+        <label class="field-label">설명</label>
+        <input type="text" class="input" id="tk-desc">
+      </div>
+      <div class="field">
+        <label class="field-label">메타 태그 (선택, 예: "법카 쓴 날")</label>
+        <input type="text" class="input" id="tk-meta">
+      </div>
+      <div class="field">
+        <label class="field-label">바로가기 링크</label>
+        <div id="tk-links"></div>
+        <button class="btn" id="tk-add-link" style="margin-top:8px">+ 링크 추가</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="taskDeleteBtn" style="display:none">삭제</button>
+      <div class="modal-foot-right">
+        <button class="btn" id="taskCancelBtn">취소</button>
+        <button class="btn btn-primary" id="taskSaveBtn">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Link Edit Modal -->
+<div class="modal-backdrop" id="linkModalBackdrop">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3 id="linkModalTitle">빠른 링크</h3>
+      <button class="modal-close" id="linkCloseBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">아이콘 (이모지)</label>
+          <input type="text" class="input" id="lk-icon" maxlength="4" placeholder="🔗">
+        </div>
+        <div class="field">
+          <label class="field-label">색상</label>
+          <div class="color-group" id="lk-colors"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">이름 <span class="req">*</span></label>
+        <input type="text" class="input" id="lk-name">
+      </div>
+      <div class="field">
+        <label class="field-label">분류 라벨 (선택, 예: Sheets)</label>
+        <input type="text" class="input" id="lk-meta">
+      </div>
+      <div class="field">
+        <label class="field-label">URL <span class="req">*</span></label>
+        <input type="url" class="input" id="lk-url" placeholder="https://…">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="linkDeleteBtn" style="display:none">삭제</button>
+      <div class="modal-foot-right">
+        <button class="btn" id="linkCancelBtn">취소</button>
+        <button class="btn btn-primary" id="linkSaveBtn">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-  // ---------- Storage (localStorage 우선, claude.ai 환경에선 window.storage 폴백) ----------
-  const HAS_CLAUDE_STORAGE = (typeof window !== 'undefined' && window.storage && typeof window.storage.get === 'function');
-  async function storeGet(key) {
-    if (HAS_CLAUDE_STORAGE) {
-      try { const r = await window.storage.get(key); return r ? r.value : null; }
-      catch (e) { return null; }
-    }
-    try { return localStorage.getItem(key); } catch (e) { return null; }
-  }
-  async function storeSet(key, value) {
-    if (HAS_CLAUDE_STORAGE) {
-      try { await window.storage.set(key, value); return true; }
-      catch (e) { console.error(e); return false; }
-    }
-    try { localStorage.setItem(key, value); return true; }
+  // ---------- 동기화 저장소 (Google Apps Script + 시트 백엔드) ----------
+  // 사용 방법:
+  //  1) 함께 제공된 apps-script-backend.gs 코드를 Apps Script에 붙여넣고 웹앱으로 배포
+  //  2) 배포 URL을 아래 DEFAULT_SYNC_URL 에 넣거나, 우측 상단 "⚙️ 설정"에서 입력
+  //  3) "내 이름"을 정하면 사람마다 각자의 보드가 저장됩니다 (하나의 백엔드 공유)
+  const DEFAULT_SYNC_URL = ''; // 예: 'https://script.google.com/macros/s/XXXX/exec'
+
+  const LS_SYNC_URL = 'dashboard:syncUrl';
+  const LS_USER_ID  = 'dashboard:userId';
+
+  // 샌드박스 iframe 등에서 localStorage 접근이 막혀도 죽지 않도록 안전 래퍼 사용
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+
+  let SYNC_URL = (lsGet(LS_SYNC_URL) || DEFAULT_SYNC_URL || '').trim();
+  let USER_ID  = (lsGet(LS_USER_ID) || '').trim();
+  let CACHE = {};          // key -> string value (현재 사용자의 전체 데이터)
+  let pushTimer = null;
+  let lastSyncState = 'idle'; // idle | saving | ok | error | local
+
+  function syncEnabled() { return !!(SYNC_URL && USER_ID); }
+  function blobKey() { return `dashboard:blob:${USER_ID || '_local'}`; }
+
+  function persistLocal() {
+    try { localStorage.setItem(blobKey(), JSON.stringify(CACHE)); }
     catch (e) {
-      console.error('localStorage 저장 실패:', e);
       if (e && e.name === 'QuotaExceededError') {
-        alert('브라우저 저장 공간이 가득 찼습니다. 사진 첨부가 많은 프로젝트를 정리해주세요.');
+        console.warn('localStorage 용량 초과 — 원격 동기화만 사용합니다.');
       }
+    }
+  }
+
+  // 기존 raw localStorage 데이터를 캐시로 가져오기 (최초 1회 마이그레이션)
+  function importLegacy() {
+    const prefixes = ['check:', 'goal:', 'quarter-goals:', 'quarter-missions:', 'ai-projects:', 'ai-project:'];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && prefixes.some(p => k.startsWith(p)) && !(k in CACHE)) {
+          CACHE[k] = localStorage.getItem(k);
+        }
+      }
+    } catch (e) {}
+  }
+
+  async function remoteLoad() {
+    if (!syncEnabled()) return false;
+    try {
+      const url = SYNC_URL + (SYNC_URL.includes('?') ? '&' : '?')
+        + 'userId=' + encodeURIComponent(USER_ID) + '&t=' + Date.now();
+      const res = await fetch(url, { method: 'GET' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      if (json && json.ok && json.data && typeof json.data === 'object') {
+        CACHE = json.data;
+        persistLocal();
+      }
+      setSyncState('ok');
+      return true;
+    } catch (e) {
+      console.error('remoteLoad 실패:', e);
+      setSyncState('error');
       return false;
     }
   }
-  async function storeDelete(key) {
-    if (HAS_CLAUDE_STORAGE) {
-      try { await window.storage.delete(key); } catch (e) {}
-      return;
+
+  async function remotePush() {
+    if (!syncEnabled()) return false;
+    try {
+      const res = await fetch(SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS preflight 회피
+        body: JSON.stringify({ userId: USER_ID, data: CACHE })
+      });
+      const json = await res.json().catch(() => null);
+      setSyncState(json && json.ok ? 'ok' : 'error');
+      return !!(json && json.ok);
+    } catch (e) {
+      console.error('remotePush 실패:', e);
+      setSyncState('error');
+      return false;
     }
-    try { localStorage.removeItem(key); } catch (e) {}
+  }
+
+  function schedulePush() {
+    persistLocal();
+    if (!syncEnabled()) { setSyncState('local'); return; }
+    setSyncState('saving');
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(remotePush, 800);
+  }
+
+  async function storeGet(key) { return (key in CACHE) ? CACHE[key] : null; }
+  async function storeSet(key, value) { CACHE[key] = String(value); schedulePush(); return true; }
+  async function storeDelete(key) { delete CACHE[key]; schedulePush(); }
+
+  async function initStore() {
+    try { const raw = localStorage.getItem(blobKey()); if (raw) CACHE = JSON.parse(raw) || {}; }
+    catch (e) { CACHE = {}; }
+    importLegacy();
+    persistLocal();
+    if (syncEnabled()) await remoteLoad();
+    else setSyncState('local');
+  }
+
+  // ---------- 동기화 상태 배지 / 사용자 표시 ----------
+  function setSyncState(state) {
+    lastSyncState = state;
+    const badge = document.getElementById('syncBadge');
+    if (!badge) return;
+    const map = {
+      idle:   { dot: 'rgba(255,255,255,0.4)', txt: '—' },
+      saving: { dot: '#FBBF24', txt: '저장 중…' },
+      ok:     { dot: '#22C55E', txt: '동기화됨' },
+      error:  { dot: '#EF4444', txt: '동기화 오류' },
+      local:  { dot: '#9B9CB5', txt: '이 기기에만 저장' },
+    };
+    const m = map[state] || map.idle;
+    badge.querySelector('.s-dot').style.background = m.dot;
+    badge.querySelector('.s-txt').textContent = m.txt;
+  }
+  function updateUserBadge() {
+    const el = document.getElementById('userBadge');
+    if (el) el.textContent = USER_ID ? `👤 ${USER_ID}` : '👤 게스트';
   }
 
   // ---------- Date ----------
@@ -1177,47 +1349,183 @@
   document.getElementById('weeklyPeriod').textContent = WEEK;
   document.getElementById('quarterPeriod').textContent = QUARTER;
 
-  // ---------- Checks ----------
-  const dailyIds = ['d-receipt','d-schedule','d-weekly-board'];
-  const weeklyIds = ['w-blog','w-gainge'];
-  function keyFor(id) { return id.startsWith('d-') ? `check:${TODAY}:${id}` : `check:${WEEK}:${id}`; }
-  async function loadChecks() {
-    for (const id of [...dailyIds, ...weeklyIds]) {
-      const row = document.querySelector(`[data-id="${id}"]`);
-      if (!row) continue;
-      const v = await storeGet(keyFor(id));
-      if (v === 'true' || v === true) row.classList.add('done');
-      row.addEventListener('click', async (e) => {
-        if (e.target.closest('a')) return;
-        const d = row.classList.toggle('done');
-        await storeSet(keyFor(id), d ? 'true' : 'false');
+  function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+  const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg>';
+
+  // 색상 그라데이션 (CSS :root 와 동일)
+  const GRADIENTS = {
+    'g-pink':'linear-gradient(135deg, #F472B6, #FB7185)',
+    'g-orange':'linear-gradient(135deg, #FB923C, #F97316)',
+    'g-yellow':'linear-gradient(135deg, #FBBF24, #F59E0B)',
+    'g-green':'linear-gradient(135deg, #34D399, #10B981)',
+    'g-emerald':'linear-gradient(135deg, #6EE7B7, #10B981)',
+    'g-cyan':'linear-gradient(135deg, #22D3EE, #06B6D4)',
+    'g-blue':'linear-gradient(135deg, #60A5FA, #3B82F6)',
+    'g-indigo':'linear-gradient(135deg, #818CF8, #6366F1)',
+    'g-purple':'linear-gradient(135deg, #A78BFA, #8B5CF6)',
+    'g-violet':'linear-gradient(135deg, #C084FC, #A855F7)',
+    'g-rose':'linear-gradient(135deg, #FB7185, #E11D48)',
+    'g-red':'linear-gradient(135deg, #F87171, #DC2626)',
+  };
+  const GRAD_KEYS = Object.keys(GRADIENTS);
+  function gradOf(c) { return GRADIENTS[c] || GRADIENTS['g-blue']; }
+
+  // ---------- 기본값 (최초 1회 시드) ----------
+  const DEFAULT_DAILY = [
+    { id:'d-receipt', icon:'🧾', color:'g-pink', title:'영수증 처리', desc:'이카운트에 당일 법인카드 영수증 업로드', meta:'법카 쓴 날', links:[{icon:'↗', url:'https://login.ecount.com/Login/KR/'}] },
+    { id:'d-schedule', icon:'📅', color:'g-cyan', title:'스케줄 짜기', desc:'네이버 캘린더 + 워킨맵으로 오늘 동선 정리', meta:'', links:[{icon:'📅', url:'https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fcalendar.naver.com%2Fmain'},{icon:'🗺', url:'https://www.workinmap.com/work1'}] },
+    { id:'d-weekly-board', icon:'📊', color:'g-violet', title:'주간현황판 작성', desc:'하루 업무 정리 · 주간목표 진행 상황 기록', meta:'', links:[{icon:'↗', url:'https://docs.google.com/spreadsheets/d/1C_YHqY61wJkxCpn_Jd7opoFVBuJj39xORKVdctrrFOo/edit?gid=1939823870#gid=1939823870'}] },
+  ];
+  const DEFAULT_WEEKLY = [
+    { id:'w-blog', icon:'💬', color:'g-green', title:'회사 블로그 댓글', desc:'mai0819 블로그 댓글 + 기록 시트', meta:'', links:[{icon:'📝', url:'https://blog.naver.com/mai0819'},{icon:'📊', url:'https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=1665859459#gid=1665859459'}] },
+    { id:'w-gainge', icon:'🎬', color:'g-rose', title:'가인지 큐레이션', desc:'영상 시청 후 GPT 요약본 업로드', meta:'', links:[{icon:'↗', url:'https://gainge.com/contents/curation'}] },
+  ];
+  const DEFAULT_LINKS = {
+    work: [
+      { id:'l-week', icon:'📊', color:'g-violet', name:'주간현황판', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1C_YHqY61wJkxCpn_Jd7opoFVBuJj39xORKVdctrrFOo/edit?gid=1939823870#gid=1939823870' },
+      { id:'l-auto', icon:'📑', color:'g-indigo', name:'자동화진행시트', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1iL49NTAPSHzOEka5y7TmTgnb17_GKckXAAWSRlKquFY/edit?gid=1826162532#gid=1826162532' },
+      { id:'l-golden', icon:'🃏', color:'g-yellow', name:'골든미팅카드 시트', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1IbcagsyTIBPfSQrD9L4Fr5ajBk2E56LaN5Fl4c749WU/edit?gid=74381469#gid=74381469' },
+      { id:'l-ecount', icon:'🧾', color:'g-pink', name:'이카운트', meta:'영수증', url:'https://login.ecount.com/Login/KR/' },
+      { id:'l-blog', icon:'📝', color:'g-green', name:'회사 블로그', meta:'Naver Blog', url:'https://blog.naver.com/mai0819' },
+      { id:'l-comment', icon:'💬', color:'g-emerald', name:'블로그 댓글', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=1665859459#gid=1665859459' },
+      { id:'l-gainge', icon:'🎬', color:'g-rose', name:'가인지', meta:'영상', url:'https://gainge.com/contents/curation' },
+      { id:'l-naver', icon:'📅', color:'g-cyan', name:'네이버 캘린더', meta:'일정', url:'https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fcalendar.naver.com%2Fmain' },
+      { id:'l-map', icon:'🗺️', color:'g-blue', name:'워킨맵', meta:'동선 지도', url:'https://www.workinmap.com/work1' },
+    ],
+    lookup: [
+      { id:'l-rent-status', icon:'🏢', color:'g-indigo', name:'임대현황표', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1qA9l4Xu2P8wQyNTJU_jgUq-zbKNb-_-4TtIsHs9rtDI/edit?gid=1360067034#gid=1360067034' },
+      { id:'l-db-dash', icon:'📈', color:'g-purple', name:'통합DB대시보드', meta:'Apps Script', url:'https://script.google.com/macros/s/AKfycbwDGT6PSZCN8ELo5dny5inf7-gdw-QBgyiKOiZPrnFGiYsHd3TekrsSZGbNQ93fNlyx/exec' },
+      { id:'l-pc', icon:'💻', color:'g-orange', name:'PC 확장성', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1Q0u_ok6s3o7_qnSFyDW632zkspV_MqttRnFQ4uurmpg/edit?gid=1571265600#gid=1571265600' },
+      { id:'l-printer', icon:'🖨️', color:'g-yellow', name:'복합기 확장성', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/10850TfeSvd0Z1iiI1ycCyGskGRPXicRUd1_Xx996QKQ/edit?gid=746760933#gid=746760933' },
+      { id:'l-credit', icon:'💸', color:'g-rose', name:'C지역 미수', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1gc5bcv6GuJ0PV1iXpu0CLBwiAoLJYdBaPqRQCqn4yHU/edit?gid=1754535432#gid=1754535432&fvid=1279190544' },
+      { id:'l-over', icon:'⚠️', color:'g-red', name:'초과', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1YySH2gK0ZUth4872zCy3pzp1zu8ZM7yAXopvyfTnp-0/edit?gid=108651391#gid=108651391' },
+      { id:'l-complaint', icon:'📣', color:'g-pink', name:'불만', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=419415178#gid=419415178' },
+      { id:'l-rentlist', icon:'📋', color:'g-cyan', name:'임대리스트', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1YySH2gK0ZUth4872zCy3pzp1zu8ZM7yAXopvyfTnp-0/edit?gid=1037918773#gid=1037918773' },
+    ],
+  };
+
+  // ---------- 매일 할 일 / 주 1회 / 빠른 링크 (편집 가능 + 동기화) ----------
+  let dailyTasks = [];
+  let weeklyTasks = [];
+  let quickLinks = { work: [], lookup: [] };
+
+  function checkKey(type, id) { return type === 'daily' ? `check:${TODAY}:${id}` : `check:${WEEK}:${id}`; }
+  function isDone(type, id) { return CACHE[checkKey(type, id)] === 'true'; }
+
+  async function loadTasksAndLinks() {
+    const rawD = await storeGet('daily-tasks');
+    if (rawD) { try { dailyTasks = JSON.parse(rawD); } catch { dailyTasks = clone(DEFAULT_DAILY); } }
+    else { dailyTasks = clone(DEFAULT_DAILY); await saveDaily(); }
+
+    const rawW = await storeGet('weekly-tasks');
+    if (rawW) { try { weeklyTasks = JSON.parse(rawW); } catch { weeklyTasks = clone(DEFAULT_WEEKLY); } }
+    else { weeklyTasks = clone(DEFAULT_WEEKLY); await saveWeekly(); }
+
+    const rawL = await storeGet('quick-links');
+    if (rawL) { try { quickLinks = JSON.parse(rawL); } catch { quickLinks = clone(DEFAULT_LINKS); } }
+    else { quickLinks = clone(DEFAULT_LINKS); await saveLinks(); }
+    if (!Array.isArray(quickLinks.work)) quickLinks.work = [];
+    if (!Array.isArray(quickLinks.lookup)) quickLinks.lookup = [];
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  async function saveDaily()  { await storeSet('daily-tasks', JSON.stringify(dailyTasks)); }
+  async function saveWeekly() { await storeSet('weekly-tasks', JSON.stringify(weeklyTasks)); }
+  async function saveLinks()  { await storeSet('quick-links', JSON.stringify(quickLinks)); }
+
+  function renderTaskList(rootId, tasks, type) {
+    const root = document.getElementById(rootId);
+    root.innerHTML = '';
+    if (!tasks.length) {
+      root.innerHTML = `<div class="task-empty">아직 항목이 없어요. "+ 추가"로 만들어 보세요.</div>`;
+      return;
+    }
+    tasks.forEach(t => {
+      const done = isDone(type, t.id);
+      const item = document.createElement('div');
+      item.className = 'task-item' + (done ? ' done' : '');
+      item.dataset.id = t.id;
+      const linksHtml = (t.links || []).filter(l => l.url).map(l =>
+        `<a class="task-link" href="${escapeHTML(l.url)}" target="_blank" rel="noopener">${escapeHTML(l.icon || '↗')}</a>`).join('');
+      item.innerHTML = `
+        <span class="task-check">${CHECK_SVG}</span>
+        <span class="task-icon" style="background:${gradOf(t.color)}">${escapeHTML(t.icon || '✅')}</span>
+        <div class="task-text">
+          <div class="task-title">${escapeHTML(t.title)}</div>
+          ${t.desc ? `<div class="task-desc">${escapeHTML(t.desc)}</div>` : ''}
+        </div>
+        ${t.meta ? `<span class="task-meta">${escapeHTML(t.meta)}</span>` : ''}
+        <div class="task-links">${linksHtml}</div>
+        <button class="item-edit" title="편집">✎</button>
+      `;
+      item.addEventListener('click', async (e) => {
+        if (e.target.closest('a') || e.target.closest('.item-edit')) return;
+        const nowDone = !isDone(type, t.id);
+        await storeSet(checkKey(type, t.id), nowDone ? 'true' : 'false');
+        item.classList.toggle('done', nowDone);
         updateProgress();
       });
-    }
+      item.querySelector('.item-edit').addEventListener('click', (e) => {
+        e.stopPropagation(); openTaskModal(type, t);
+      });
+      root.appendChild(item);
+    });
+  }
+  function renderAllTasks() {
+    renderTaskList('dailyList', dailyTasks, 'daily');
+    renderTaskList('weeklyList', weeklyTasks, 'weekly');
     updateProgress();
   }
   function updateProgress() {
-    const all = [...dailyIds, ...weeklyIds];
-    const done = all.filter(id => document.querySelector(`[data-id="${id}"]`)?.classList.contains('done')).length;
-    const pct = Math.round((done / all.length) * 100);
+    const all = [...dailyTasks.map(t => ['daily', t.id]), ...weeklyTasks.map(t => ['weekly', t.id])];
+    const total = all.length || 1;
+    const done = all.filter(([type, id]) => isDone(type, id)).length;
+    const pct = Math.round((done / total) * 100);
     const circ = 2 * Math.PI * 50;
     document.getElementById('ringFg').style.strokeDashoffset = circ - (circ * pct / 100);
     document.getElementById('ringNum').textContent = `${pct}%`;
     document.getElementById('ringLbl').textContent = `${done} / ${all.length}`;
   }
 
+  function renderQuickLinks() {
+    renderLinkGrid('linksWork', quickLinks.work, 'work');
+    renderLinkGrid('linksLookup', quickLinks.lookup, 'lookup');
+  }
+  function renderLinkGrid(rootId, links, tab) {
+    const root = document.getElementById(rootId);
+    root.innerHTML = '';
+    if (!links.length) {
+      root.innerHTML = `<div class="quick-empty">아직 링크가 없어요. "+ 추가"로 만들어 보세요.</div>`;
+      return;
+    }
+    links.forEach(l => {
+      const a = document.createElement('a');
+      a.className = 'quick-item';
+      a.href = l.url || '#'; a.target = '_blank'; a.rel = 'noopener';
+      a.innerHTML = `
+        <span class="q-icon" style="background:${gradOf(l.color)}">${escapeHTML(l.icon || '🔗')}</span>
+        <div class="q-text"><div class="q-name">${escapeHTML(l.name)}</div><div class="q-meta">${escapeHTML(l.meta || '')}</div></div>
+        <button class="item-edit" title="편집">✎</button>
+      `;
+      a.querySelector('.item-edit').addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation(); openLinkModal(tab, l);
+      });
+      root.appendChild(a);
+    });
+  }
+
   // ---------- Weekly Goal ----------
-  function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
-  async function setupGoal(elId, hintId, key) {
-    const el = document.getElementById(elId);
-    const hint = document.getElementById(hintId);
-    const stored = await storeGet(key);
-    if (stored) el.textContent = stored;
+  function setupGoalListener() {
+    const el = document.getElementById('weeklyGoal');
+    const hint = document.getElementById('weeklyGoalHint');
     el.addEventListener('input', debounce(async () => {
-      await storeSet(key, el.textContent);
+      await storeSet(`goal:weekly:${WEEK}`, el.textContent);
       hint.classList.add('visible');
       setTimeout(() => hint.classList.remove('visible'), 1200);
     }, 500));
+  }
+  async function refreshWeeklyGoal() {
+    const v = await storeGet(`goal:weekly:${WEEK}`);
+    document.getElementById('weeklyGoal').textContent = v || '';
   }
 
   // ---------- Quarter Goals ----------
@@ -2067,17 +2375,222 @@
     await deleteProjectStore(currentEditingId); closeModal(); await renderGallery();
   });
 
-  // Init
-  (async function init() {
-    await loadChecks();
-    await setupGoal('weeklyGoal', 'weeklyGoalHint', `goal:weekly:${WEEK}`);
+  // ---------- 색상 스와치 공용 ----------
+  function renderColorSwatches(containerId, selected, onPick) {
+    const c = document.getElementById(containerId);
+    c.innerHTML = '';
+    GRAD_KEYS.forEach(k => {
+      const s = document.createElement('div');
+      s.className = 'color-swatch' + (k === selected ? ' active' : '');
+      s.style.background = GRADIENTS[k];
+      s.title = k;
+      s.addEventListener('click', () => {
+        onPick(k);
+        [...c.children].forEach(x => x.classList.remove('active'));
+        s.classList.add('active');
+      });
+      c.appendChild(s);
+    });
+  }
+
+  // ---------- Task Edit Modal ----------
+  const taskModal = document.getElementById('taskModalBackdrop');
+  let editingTask = null; // { type, id|null }
+  let tkColor = 'g-blue';
+  let tkLinks = [];
+
+  function renderTkLinks() {
+    const c = document.getElementById('tk-links');
+    c.innerHTML = '';
+    tkLinks.forEach((l, i) => {
+      const row = document.createElement('div');
+      row.className = 'tk-link-row';
+      row.innerHTML = `
+        <input data-f="icon" maxlength="4" placeholder="↗" value="${escapeHTML(l.icon || '')}">
+        <input data-f="url" placeholder="https://…" value="${escapeHTML(l.url || '')}">
+        <button class="tk-link-del" title="삭제">✕</button>`;
+      row.querySelector('[data-f="icon"]').addEventListener('input', e => tkLinks[i].icon = e.target.value);
+      row.querySelector('[data-f="url"]').addEventListener('input', e => tkLinks[i].url = e.target.value);
+      row.querySelector('.tk-link-del').addEventListener('click', () => { tkLinks.splice(i, 1); renderTkLinks(); });
+      c.appendChild(row);
+    });
+  }
+  function openTaskModal(type, task = null) {
+    editingTask = { type, id: task ? task.id : null };
+    document.getElementById('taskModalTitle').textContent =
+      (type === 'daily' ? '매일 할 일' : '주 1회') + (task ? ' 편집' : ' 추가');
+    document.getElementById('tk-icon').value = task?.icon || '';
+    document.getElementById('tk-title').value = task?.title || '';
+    document.getElementById('tk-desc').value = task?.desc || '';
+    document.getElementById('tk-meta').value = task?.meta || '';
+    tkColor = task?.color || 'g-blue';
+    renderColorSwatches('tk-colors', tkColor, k => tkColor = k);
+    tkLinks = (task?.links || []).map(l => ({ icon: l.icon || '↗', url: l.url || '' }));
+    renderTkLinks();
+    document.getElementById('taskDeleteBtn').style.display = task ? 'inline-flex' : 'none';
+    taskModal.classList.add('open');
+    setTimeout(() => document.getElementById('tk-title').focus(), 100);
+  }
+  function closeTaskModal() { taskModal.classList.remove('open'); editingTask = null; }
+  document.getElementById('taskCloseBtn').addEventListener('click', closeTaskModal);
+  document.getElementById('taskCancelBtn').addEventListener('click', closeTaskModal);
+  taskModal.addEventListener('click', (e) => { if (e.target === taskModal) closeTaskModal(); });
+  document.getElementById('tk-add-link').addEventListener('click', () => { tkLinks.push({ icon: '↗', url: '' }); renderTkLinks(); });
+  document.getElementById('taskSaveBtn').addEventListener('click', async () => {
+    const titleEl = document.getElementById('tk-title');
+    const title = titleEl.value.trim();
+    if (!title) { titleEl.focus(); titleEl.style.borderColor = 'var(--danger)'; return; }
+    const data = {
+      icon: document.getElementById('tk-icon').value.trim() || '✅',
+      color: tkColor,
+      title,
+      desc: document.getElementById('tk-desc').value.trim(),
+      meta: document.getElementById('tk-meta').value.trim(),
+      links: tkLinks.filter(l => l.url && l.url.trim())
+        .map(l => ({ icon: (l.icon || '↗').trim() || '↗', url: l.url.trim() })),
+    };
+    const list = editingTask.type === 'daily' ? dailyTasks : weeklyTasks;
+    if (editingTask.id) {
+      const idx = list.findIndex(t => t.id === editingTask.id);
+      if (idx >= 0) list[idx] = { ...list[idx], ...data };
+    } else {
+      const prefix = editingTask.type === 'daily' ? 'd' : 'w';
+      list.push({ id: `${prefix}${Date.now()}`, ...data });
+    }
+    if (editingTask.type === 'daily') await saveDaily(); else await saveWeekly();
+    closeTaskModal();
+    renderAllTasks();
+  });
+  document.getElementById('taskDeleteBtn').addEventListener('click', async () => {
+    if (!editingTask?.id) return;
+    if (editingTask.type === 'daily') {
+      dailyTasks = dailyTasks.filter(t => t.id !== editingTask.id); await saveDaily();
+    } else {
+      weeklyTasks = weeklyTasks.filter(t => t.id !== editingTask.id); await saveWeekly();
+    }
+    closeTaskModal();
+    renderAllTasks();
+  });
+
+  // ---------- Link Edit Modal ----------
+  const linkModal = document.getElementById('linkModalBackdrop');
+  let editingLink = null; // { tab, id|null }
+  let lkColor = 'g-blue';
+
+  function openLinkModal(tab, link = null) {
+    editingLink = { tab, id: link ? link.id : null };
+    document.getElementById('linkModalTitle').textContent =
+      (tab === 'work' ? '업무용' : '조회용') + ' 링크' + (link ? ' 편집' : ' 추가');
+    document.getElementById('lk-icon').value = link?.icon || '';
+    document.getElementById('lk-name').value = link?.name || '';
+    document.getElementById('lk-meta').value = link?.meta || '';
+    document.getElementById('lk-url').value = link?.url || '';
+    lkColor = link?.color || 'g-blue';
+    renderColorSwatches('lk-colors', lkColor, k => lkColor = k);
+    document.getElementById('linkDeleteBtn').style.display = link ? 'inline-flex' : 'none';
+    linkModal.classList.add('open');
+    setTimeout(() => document.getElementById('lk-name').focus(), 100);
+  }
+  function closeLinkModal() { linkModal.classList.remove('open'); editingLink = null; }
+  document.getElementById('linkCloseBtn').addEventListener('click', closeLinkModal);
+  document.getElementById('linkCancelBtn').addEventListener('click', closeLinkModal);
+  linkModal.addEventListener('click', (e) => { if (e.target === linkModal) closeLinkModal(); });
+  document.getElementById('linkSaveBtn').addEventListener('click', async () => {
+    const nameEl = document.getElementById('lk-name');
+    const urlEl = document.getElementById('lk-url');
+    const name = nameEl.value.trim();
+    const url = urlEl.value.trim();
+    if (!name) { nameEl.focus(); nameEl.style.borderColor = 'var(--danger)'; return; }
+    if (!url) { urlEl.focus(); urlEl.style.borderColor = 'var(--danger)'; return; }
+    const data = { icon: document.getElementById('lk-icon').value.trim() || '🔗', color: lkColor, name, meta: document.getElementById('lk-meta').value.trim(), url };
+    const list = quickLinks[editingLink.tab];
+    if (editingLink.id) {
+      const idx = list.findIndex(l => l.id === editingLink.id);
+      if (idx >= 0) list[idx] = { ...list[idx], ...data };
+    } else {
+      list.push({ id: `l${Date.now()}`, ...data });
+    }
+    await saveLinks();
+    closeLinkModal();
+    renderQuickLinks();
+  });
+  document.getElementById('linkDeleteBtn').addEventListener('click', async () => {
+    if (!editingLink?.id) return;
+    quickLinks[editingLink.tab] = quickLinks[editingLink.tab].filter(l => l.id !== editingLink.id);
+    await saveLinks();
+    closeLinkModal();
+    renderQuickLinks();
+  });
+
+  // 섹션 "+ 추가" 버튼
+  document.getElementById('addDailyBtn').addEventListener('click', () => openTaskModal('daily'));
+  document.getElementById('addWeeklyBtn').addEventListener('click', () => openTaskModal('weekly'));
+  document.getElementById('addLinkBtn').addEventListener('click', () => {
+    const activeTab = document.querySelector('.tab.active')?.dataset.tab || 'work';
+    openLinkModal(activeTab);
+  });
+
+  // ---------- Settings / Sync Modal ----------
+  const settingsModal = document.getElementById('settingsModalBackdrop');
+  function openSettings() {
+    document.getElementById('set-userId').value = USER_ID;
+    document.getElementById('set-syncUrl').value = SYNC_URL;
+    const st = document.getElementById('set-status');
+    st.style.color = 'var(--text-grey)'; st.textContent = '';
+    settingsModal.classList.add('open');
+  }
+  function closeSettings() { settingsModal.classList.remove('open'); }
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('userBadge').addEventListener('click', openSettings);
+  document.getElementById('settingsCloseBtn').addEventListener('click', closeSettings);
+  document.getElementById('settingsCancelBtn').addEventListener('click', closeSettings);
+  settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+  document.getElementById('settingsTestBtn').addEventListener('click', async () => {
+    const url = document.getElementById('set-syncUrl').value.trim();
+    const uid = document.getElementById('set-userId').value.trim() || 'test';
+    const st = document.getElementById('set-status');
+    if (!url) { st.style.color = 'var(--danger)'; st.textContent = '먼저 서버 URL을 입력하세요.'; return; }
+    st.style.color = 'var(--text-grey)'; st.textContent = '연결 확인 중…';
+    try {
+      const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'userId=' + encodeURIComponent(uid) + '&t=' + Date.now());
+      const j = await res.json();
+      if (j && j.ok) { st.style.color = 'var(--success)'; st.textContent = '✓ 연결 성공! 저장 후 동기화하세요.'; }
+      else { st.style.color = 'var(--danger)'; st.textContent = '응답 형식이 올바르지 않습니다.'; }
+    } catch (e) { st.style.color = 'var(--danger)'; st.textContent = '연결 실패: ' + e.message; }
+  });
+  document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
+    const uidEl = document.getElementById('set-userId');
+    const uid = uidEl.value.trim();
+    const url = document.getElementById('set-syncUrl').value.trim();
+    if (!uid) { uidEl.focus(); uidEl.style.borderColor = 'var(--danger)'; return; }
+    USER_ID = uid; SYNC_URL = url;
+    lsSet(LS_USER_ID, uid);
+    lsSet(LS_SYNC_URL, url);
+    updateUserBadge();
+    closeSettings();
+    await initStore();
+    await reloadAll();
+  });
+
+  // ---------- 전체 재로딩 ----------
+  async function reloadAll() {
+    await loadTasksAndLinks();
+    renderAllTasks();
+    renderQuickLinks();
+    await refreshWeeklyGoal();
     await loadGoals();
     await loadMissions();
-    renderFilters();
-    renderGoals();
-    renderMissions();
+    renderFilters(); renderGoals(); renderMissions();
     await loadProjectIndex();
     await renderGallery();
+  }
+
+  // Init
+  (async function init() {
+    await initStore();
+    updateUserBadge();
+    setupGoalListener();
+    await reloadAll();
   })();
 </script>
 </body>

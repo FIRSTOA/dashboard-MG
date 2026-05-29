@@ -10,7 +10,7 @@
 --      (anon key 는 공개돼도 안전 — 모든 접근은 아래 함수 + 토큰으로만 가능)
 -- ============================================================
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 -- ---------- 테이블 ----------
 create table if not exists accounts (
@@ -42,7 +42,7 @@ alter table kv       enable row level security;
 
 -- ---------- 내부 헬퍼: 토큰 → 계정 ----------
 create or replace function _acct(p_token uuid)
-returns accounts language sql security definer set search_path = public, pg_temp stable as $$
+returns accounts language sql security definer set search_path = public, extensions, pg_temp stable as $$
   select a.* from accounts a
   join sessions s on s.account_id = a.id
   where s.token = p_token and s.expires_at > now()
@@ -50,7 +50,7 @@ $$;
 
 -- ---------- 로그인 / 세션 ----------
 create or replace function app_login(p_username text, p_pw text)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 declare a accounts; t uuid;
 begin
   select * into a from accounts where lower(username) = lower(p_username);
@@ -65,13 +65,13 @@ begin
 end $$;
 
 create or replace function members_of_(p_team text)
-returns json language sql security definer set search_path = public, pg_temp stable as $$
+returns json language sql security definer set search_path = public, extensions, pg_temp stable as $$
   select coalesce(json_agg(json_build_object('username', username) order by username), '[]'::json)
   from accounts where p_team <> '' and team = p_team
 $$;
 
 create or replace function app_me(p_token uuid)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 declare a accounts;
 begin
   select * into a from _acct(p_token);
@@ -81,14 +81,14 @@ begin
 end $$;
 
 create or replace function app_logout(p_token uuid)
-returns json language sql security definer set search_path = public, pg_temp as $$
+returns json language sql security definer set search_path = public, extensions, pg_temp as $$
   delete from sessions where token = p_token;
   select json_build_object('ok', true);
 $$;
 
 -- 본인 비밀번호 변경
 create or replace function app_change_pw(p_token uuid, p_old text, p_new text)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 declare a accounts;
 begin
   select * into a from _acct(p_token);
@@ -100,7 +100,7 @@ end $$;
 
 -- ---------- 데이터 로드/저장 (스코프 + 권한) ----------
 create or replace function app_load(p_token uuid, p_scope text)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 declare me accounts; kind text; who text; ok boolean := false; d jsonb;
 begin
   select * into me from _acct(p_token);
@@ -122,7 +122,7 @@ begin
 end $$;
 
 create or replace function app_save(p_token uuid, p_scope text, p_data jsonb)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 declare me accounts; kind text; who text; ok boolean := false;
 begin
   select * into me from _acct(p_token);
@@ -144,12 +144,12 @@ end $$;
 
 -- ---------- 관리자 ----------
 create or replace function _is_admin(p_token uuid)
-returns boolean language sql security definer set search_path = public, pg_temp stable as $$
+returns boolean language sql security definer set search_path = public, extensions, pg_temp stable as $$
   select coalesce((select role = 'admin' from _acct(p_token)), false)
 $$;
 
 create or replace function app_admin_list(p_token uuid)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 begin
   if not _is_admin(p_token) then return json_build_object('ok', false, 'error', 'forbidden'); end if;
   return json_build_object('ok', true,
@@ -158,7 +158,7 @@ begin
 end $$;
 
 create or replace function app_admin_create(p_token uuid, p_username text, p_pw text, p_team text, p_role text)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 begin
   if not _is_admin(p_token) then return json_build_object('ok', false, 'error', 'forbidden'); end if;
   if coalesce(p_username,'') = '' or coalesce(p_pw,'') = '' then return json_build_object('ok', false, 'error', 'empty'); end if;
@@ -171,7 +171,7 @@ begin
 end $$;
 
 create or replace function app_admin_update(p_token uuid, p_username text, p_team text, p_role text)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 begin
   if not _is_admin(p_token) then return json_build_object('ok', false, 'error', 'forbidden'); end if;
   update accounts set team = coalesce(p_team, ''), role = coalesce(p_role, 'member') where lower(username) = lower(p_username);
@@ -179,7 +179,7 @@ begin
 end $$;
 
 create or replace function app_admin_resetpw(p_token uuid, p_username text, p_pw text)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 begin
   if not _is_admin(p_token) then return json_build_object('ok', false, 'error', 'forbidden'); end if;
   update accounts set pwhash = crypt(p_pw, gen_salt('bf')) where lower(username) = lower(p_username);
@@ -187,7 +187,7 @@ begin
 end $$;
 
 create or replace function app_admin_delete(p_token uuid, p_username text)
-returns json language plpgsql security definer set search_path = public, pg_temp as $$
+returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 declare me accounts;
 begin
   select * into me from _acct(p_token);

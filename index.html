@@ -1583,8 +1583,8 @@
 
   // ===== Supabase 모드 (이름 ID + 비밀번호 로그인 / 관리자 계정 생성 / 팀 공유) =====
   // 관리자: supabase-schema.sql 실행 후 아래 두 값을 채우세요. (anon key는 공개돼도 안전 — RLS로 보호)
-  const DEFAULT_SUPABASE_URL = '';      // 예: 'https://xxxx.supabase.co'
-  const DEFAULT_SUPABASE_ANON_KEY = ''; // 예: 'eyJhbGciOi...'
+  const DEFAULT_SUPABASE_URL = 'https://msfxgxsapnrnxigxacpj.supabase.co';      // 예: 'https://xxxx.supabase.co'
+  const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_oBDarQA8w_R7ycu066YPxA_3-D79_PV'; // 예: 'eyJhbGciOi...'
   const SUPABASE_URL = (lsGet('dashboard:supaUrl') || DEFAULT_SUPABASE_URL || '').trim();
   const SUPABASE_ANON_KEY = (lsGet('dashboard:supaKey') || DEFAULT_SUPABASE_ANON_KEY || '').trim();
   const SUPA = (SUPABASE_URL && SUPABASE_ANON_KEY && typeof window !== 'undefined' && window.supabase)

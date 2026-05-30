@@ -54,9 +54,13 @@ function readGoals_() {
     values.forEach(function (r, i) {
       var gubun = String(r[COL.gubun - 1] || '').trim();
       var goal = String(r[COL.goal - 1] || '').trim();
-      // 머리글/제목 행 건너뜀 ('구분','목표','2026년 2분기' 같은 것)
+      // 머리글/제목 행 건너뜀 ('구분','목표','2026년 2분기', 월 머리글 등)
       if (gubun === '구분' || goal === '목표' || goal === '구분') return;
       if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goal)) return;
+      var m4v = String(r[COL.m4 - 1] || '').trim();
+      var m5v = String(r[COL.m5 - 1] || '').trim();
+      var m6v = String(r[COL.m6 - 1] || '').trim();
+      if (m4v === '4월' || m5v === '5월' || m6v === '6월') return; // 월 머리글 행
       if (gubun) lastGubun = gubun;
       if (goal === '') return; // 목표 없는 행(구분만/빈행)은 표시 안 함
       var rr = rich[i];

@@ -193,12 +193,11 @@
     box-shadow: 0 4px 16px rgba(20,14,80,0.07); }
   .rs-goal { font-size: 14.5px; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.45; }
   .rs-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .rs-month-label { font-size: 11.5px; font-weight: 700; color: var(--text-grey); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
-  .rs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
-  .rs-dot.saving { background: var(--warning); } .rs-dot.ok { background: var(--success); } .rs-dot.err { background: var(--danger); }
-  .rs-month textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 9px; padding: 8px 10px;
-    font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical; min-height: 60px; background: var(--card-soft); color: var(--text); }
-  .rs-month textarea:focus { outline: none; border-color: var(--bg); background: white; }
+  .rs-month-label { font-size: 11.5px; font-weight: 700; color: var(--text-grey); margin-bottom: 4px; }
+  .rs-month-view { border: 1.5px solid var(--border); border-radius: 9px; padding: 8px 10px;
+    font-size: 13px; line-height: 1.55; min-height: 44px; background: var(--card-soft); color: var(--text);
+    white-space: pre-wrap; word-break: break-word; }
+  .rs-month-view.empty { color: var(--text-light); }
   .rs-empty, .rs-loading { color: rgba(255,255,255,0.85); font-size: 14px; padding: 24px; text-align: center; }
   @media (max-width: 640px) { .rs-months { grid-template-columns: 1fr; } }
   .flyout-host { position: fixed; right: 72px; top: 84px; z-index: 360; width: 372px; max-width: calc(100vw - 100px);
@@ -2287,19 +2286,13 @@
     const months = document.createElement('div'); months.className = 'rs-months';
     [['m4', '4월'], ['m5', '5월'], ['m6', '6월']].forEach(([field, label]) => {
       const col = document.createElement('div'); col.className = 'rs-month';
-      const lab = document.createElement('div'); lab.className = 'rs-month-label';
-      const dot = document.createElement('span'); dot.className = 'rs-dot';
-      lab.appendChild(dot); lab.appendChild(document.createTextNode(label));
-      const ta = document.createElement('textarea'); ta.value = r[field] || ''; ta.placeholder = label + ' 내용';
-      const save = debounce(async () => {
-        dot.className = 'rs-dot saving';
-        const ok = await postResultUpdate(r.row, field, ta.value);
-        dot.className = 'rs-dot ' + (ok ? 'ok' : 'err');
-        if (ok) r[field] = ta.value;
-        setTimeout(() => { dot.className = 'rs-dot'; }, 1500);
-      }, 700);
-      ta.addEventListener('input', () => { autoGrowTextarea(ta); save(); });
-      col.appendChild(lab); col.appendChild(ta); months.appendChild(col);
+      const lab = document.createElement('div'); lab.className = 'rs-month-label'; lab.textContent = label;
+      const view = document.createElement('div'); view.className = 'rs-month-view';
+      const html = r[field + 'Html'];
+      if (html) view.innerHTML = html;                 // 시트 서식(색상) 그대로
+      else if (r[field]) view.textContent = r[field];  // 서식 없으면 일반 텍스트
+      else { view.textContent = '—'; view.classList.add('empty'); }
+      col.appendChild(lab); col.appendChild(view); months.appendChild(col);
     });
     card.appendChild(months);
     return card;

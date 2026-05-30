@@ -162,7 +162,7 @@ function doPost(e) {
       if (!after) return json_({ ok: false, error: 'bad params' });
       sh.insertRowAfter(after);
       sh.getRange(after + 1, COL.gubun).setValue(b.gubun || '');
-      sh.getRange(after + 1, COL.goal).setValue(b.goal || '새 목표');
+      sh.getRange(after + 1, Number(b.goalCol) || COL.goal).setValue(b.goal || '새 목표');
       return json_({ ok: true, row: after + 1 });
     }
     if (b.action === 'deleteRow') {

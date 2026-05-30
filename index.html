@@ -2619,9 +2619,26 @@
         }, 800);
         goal.addEventListener('input', save);
         head.appendChild(goal); head.appendChild(dot);
+        const delBtn = document.createElement('button'); delBtn.className = 'rs-del-btn'; delBtn.textContent = '🗑'; delBtn.title = '이 행 삭제';
+        delBtn.addEventListener('click', async () => {
+          if (!confirm('이 목표 행을 시트에서 삭제할까요?\n(기본·미션 같은 행이면 둘 다 삭제됩니다)')) return;
+          delBtn.disabled = true;
+          const ok = await postResult({ action: 'deleteRow', row: r.row });
+          if (ok) { await loadResultGoals(); } else { delBtn.disabled = false; alert('삭제 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
+        });
+        head.appendChild(delBtn);
         card.appendChild(head);
         wrap.appendChild(card);
       });
+      const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 목표 추가`;
+      addBtn.addEventListener('click', async () => {
+        const afterRow = groups[g][groups[g].length - 1].row;
+        const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
+        addBtn.disabled = true; addBtn.textContent = '추가 중…';
+        const ok = await postResult({ action: 'addRow', afterRow, gubun: g, goalCol: mode.goalCol });
+        if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 목표 추가`; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
+      });
+      wrap.appendChild(addBtn);
       root.appendChild(wrap);
     });
   }

@@ -1062,6 +1062,7 @@
         <button class="cal-nav-btn" id="calToday" style="width:auto;padding:0 12px;font-size:12.5px;font-weight:700">오늘</button>
         <div class="cal-cat-tabs" id="calCatTabs" style="margin-left:8px"></div>
         <button class="btn-white-small" id="addEventBtn" style="margin-left:auto">+ 일정</button>
+        <button class="btn-white-small" id="importEventBtn" style="margin-left:6px">📥 업로드</button>
       </div>
       <div class="cal-grid" id="calDowRow" style="margin-bottom:4px"></div>
       <div class="cal-grid" id="calGrid"></div>
@@ -1550,12 +1551,46 @@
         <label class="field-label">제목 <span class="req">*</span></label>
         <input type="text" class="input" id="ev-title" placeholder="일정 내용">
       </div>
+      <div class="field">
+        <label class="field-label">반복</label>
+        <select class="input" id="ev-repeat">
+          <option value="none">반복 없음</option>
+          <option value="weekly">매주</option>
+          <option value="monthly">매월</option>
+          <option value="yearly">매년</option>
+        </select>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-danger" id="eventDeleteBtn" style="display:none">삭제</button>
       <div class="modal-foot-right">
         <button class="btn" id="eventCancelBtn">취소</button>
         <button class="btn btn-primary" id="eventSaveBtn">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar Import Modal -->
+<div class="modal-backdrop" id="importModalBackdrop">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head">
+      <h3>📥 캘린더 시트 업로드</h3>
+      <button class="modal-close" id="importCloseBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="help-note">
+        구글시트/엑셀에서 <strong>표 영역을 복사(Ctrl+C)해서 아래에 붙여넣기(Ctrl+V)</strong> 하세요. 첫 줄은 <strong>헤더(컬럼명)</strong> 여야 합니다.<br>
+        인식하는 컬럼명: <code>날짜</code>(필수) · <code>제목</code>(필수) · <code>분류</code> · <code>시간</code> · <code>반복</code> · <code>메모</code><br>
+        예) 날짜 <code>2026-06-01</code> · 분류 <code>매월점검/재계약/휴가</code> · 반복 <code>없음/매주/매월/매년</code>
+      </div>
+      <textarea class="textarea" id="importText" rows="9" placeholder="날짜&#9;제목&#9;분류&#9;시간&#9;반복&#10;2026-06-01&#9;이오브로스 AS&#9;재계약&#9;10:00&#9;매월&#10;2026-06-03&#9;해피콜&#9;매월점검&#9;&#9;매주" style="font-family:monospace; font-size:12.5px; white-space:pre;"></textarea>
+      <div id="importPreview" style="font-size:12.5px; margin-top:8px; color:var(--text-grey);"></div>
+    </div>
+    <div class="modal-foot">
+      <div class="modal-foot-right">
+        <button class="btn" id="importCancelBtn">취소</button>
+        <button class="btn btn-primary" id="importDoBtn">미리보기</button>
       </div>
     </div>
   </div>
@@ -3265,6 +3300,19 @@
   }
   async function saveCalendar() { await storeSet('calendar-events', JSON.stringify(calEvents)); }
 
+  // 반복 일정: 해당 날짜에 이 일정이 표시되는지
+  function eventOccursOn(e, dateObj, ds) {
+    const rep = e.repeat || 'none';
+    if (rep === 'none') return e.date === ds;
+    if (ds < e.date) return false; // 시작일 이전
+    const start = new Date(e.date + 'T00:00:00');
+    if (rep === 'weekly') return dateObj.getDay() === start.getDay();
+    if (rep === 'monthly') return dateObj.getDate() === start.getDate();
+    if (rep === 'yearly') return dateObj.getDate() === start.getDate() && dateObj.getMonth() === start.getMonth();
+    return e.date === ds;
+  }
+  const REPEAT_LABEL = { weekly: '매주', monthly: '매월', yearly: '매년' };
+
   function renderDowRow(rootId) {
     const dows = ['일','월','화','수','목','금','토'];
     document.getElementById(rootId).innerHTML =
@@ -3299,7 +3347,7 @@
       const cell = document.createElement('div');
       cell.className = 'cal-cell' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '')
         + (HOLIDAYS[ds] ? ' holiday' : '') + (ds === todayStr ? ' today' : '');
-      const dayEvents = calEvents.filter(e => e.date === ds && (filter === 'all' || e.cat === filter));
+      const dayEvents = calEvents.filter(e => eventOccursOn(e, date, ds) && (filter === 'all' || e.cat === filter));
       if (mini) {
         cell.innerHTML = `<div class="cal-daynum">${d}</div>`;
         const dots = document.createElement('div'); dots.className = 'mini-dots';
@@ -3313,7 +3361,7 @@
         dayEvents.slice(0, 3).forEach(ev => {
           const chip = document.createElement('div'); chip.className = 'cal-ev';
           chip.style.background = (CAL_CAT_MAP[ev.cat] || {}).color || '#888';
-          chip.textContent = (ev.time ? ev.time + ' ' : '') + ev.title;
+          chip.textContent = (ev.time ? ev.time + ' ' : '') + ev.title + (ev.repeat && ev.repeat !== 'none' ? ' ↻' : '');
           chip.addEventListener('click', (e) => { e.stopPropagation(); openEventModal(ev); });
           cell.appendChild(chip);
         });
@@ -3365,6 +3413,7 @@
     document.getElementById('ev-date').value = ev ? ev.date : (presetDate || ymd(new Date()));
     document.getElementById('ev-time').value = ev ? (ev.time || '') : '';
     document.getElementById('ev-title').value = ev ? ev.title : '';
+    document.getElementById('ev-repeat').value = (ev && ev.repeat) ? ev.repeat : 'none';
     document.getElementById('eventDeleteBtn').style.display = ev ? 'inline-flex' : 'none';
     eventModal.classList.add('open');
     setTimeout(() => document.getElementById('ev-title').focus(), 100);
@@ -3379,7 +3428,7 @@
     const title = titleEl.value.trim();
     if (!date) { document.getElementById('ev-date').focus(); return; }
     if (!title) { titleEl.focus(); titleEl.style.borderColor = 'var(--danger)'; return; }
-    const data = { cat: evCat, date, time: document.getElementById('ev-time').value.trim(), title };
+    const data = { cat: evCat, date, time: document.getElementById('ev-time').value.trim(), title, repeat: document.getElementById('ev-repeat').value };
     if (editingEventId) {
       const i = calEvents.findIndex(e => e.id === editingEventId);
       if (i >= 0) calEvents[i] = { ...calEvents[i], ...data };
@@ -3395,6 +3444,74 @@
     calEvents = calEvents.filter(e => e.id !== editingEventId);
     await saveCalendar();
     closeEventModal();
+    renderCalendar(); renderMini();
+  });
+
+  // ---------- 캘린더 시트 업로드 (CSV/TSV 붙여넣기) ----------
+  const importModal = document.getElementById('importModalBackdrop');
+  let importParsed = [];
+  function normDate(s) {
+    s = String(s || '').trim();
+    if (!s) return '';
+    let m = s.match(/(\d{4})[.\-\/]\s*(\d{1,2})[.\-\/]\s*(\d{1,2})/); // 2026-06-01 / 2026.6.1
+    if (m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+    m = s.match(/^(\d{1,2})[.\-\/](\d{1,2})$/); // 6/1 → 올해
+    if (m) return `${new Date().getFullYear()}-${pad(+m[1])}-${pad(+m[2])}`;
+    return s;
+  }
+  function mapCat(s) {
+    s = String(s || '').trim();
+    const hit = CAL_CATS.find(c => c.label === s || c.id === s);
+    return hit ? hit.id : (CAL_CATS[0].id);
+  }
+  function mapRepeat(s) {
+    s = String(s || '').trim();
+    if (/주/.test(s) || /week/i.test(s)) return 'weekly';
+    if (/월/.test(s) || /month/i.test(s)) return 'monthly';
+    if (/년|해/.test(s) || /year/i.test(s)) return 'yearly';
+    return 'none';
+  }
+  function pick(row, names) {
+    for (const k of Object.keys(row)) {
+      const kk = k.trim();
+      if (names.some(n => kk === n || kk.includes(n))) return row[k];
+    }
+    return '';
+  }
+  function parseImport() {
+    const text = document.getElementById('importText').value.trim();
+    const prev = document.getElementById('importPreview');
+    importParsed = [];
+    if (!text) { prev.textContent = '내용을 붙여넣어 주세요.'; return; }
+    if (!(window.Papa && Papa.parse)) { prev.textContent = '파서를 불러오지 못했습니다.'; return; }
+    const res = Papa.parse(text, { header: true, skipEmptyLines: true });
+    (res.data || []).forEach(row => {
+      const date = normDate(pick(row, ['날짜', 'date', '일자']));
+      const title = String(pick(row, ['제목', 'title', '내용', '일정']) || '').trim();
+      if (!date || !title) return;
+      importParsed.push({
+        date, title,
+        cat: mapCat(pick(row, ['분류', 'cat', 'category', '구분'])),
+        time: String(pick(row, ['시간', 'time']) || '').trim(),
+        repeat: mapRepeat(pick(row, ['반복', 'repeat']))
+      });
+    });
+    if (!importParsed.length) { prev.innerHTML = '인식된 일정이 없습니다. <strong>날짜·제목</strong> 컬럼이 있는지 확인하세요.'; return; }
+    const sample = importParsed.slice(0, 4).map(e => `· ${e.date} ${e.time || ''} ${e.title}${e.repeat !== 'none' ? ' (' + REPEAT_LABEL[e.repeat] + ')' : ''}`).join('<br>');
+    prev.innerHTML = `<strong>${importParsed.length}건</strong> 인식됨:<br>${sample}${importParsed.length > 4 ? '<br>…' : ''}`;
+    document.getElementById('importDoBtn').textContent = `${importParsed.length}건 추가`;
+  }
+  function openImport() { document.getElementById('importText').value = ''; document.getElementById('importPreview').textContent = ''; document.getElementById('importDoBtn').textContent = '미리보기'; importParsed = []; importModal.classList.add('open'); }
+  function closeImport() { importModal.classList.remove('open'); }
+  document.getElementById('importEventBtn').addEventListener('click', openImport);
+  document.getElementById('importCloseBtn').addEventListener('click', closeImport);
+  document.getElementById('importCancelBtn').addEventListener('click', closeImport);
+  importModal.addEventListener('click', (e) => { if (e.target === importModal) closeImport(); });
+  document.getElementById('importDoBtn').addEventListener('click', async () => {
+    if (!importParsed.length) { parseImport(); return; }   // 1차: 미리보기, 2차: 추가
+    importParsed.forEach((e, i) => calEvents.push({ id: 'ev' + Date.now() + i, ...e }));
+    await saveCalendar();
+    closeImport();
     renderCalendar(); renderMini();
   });
 

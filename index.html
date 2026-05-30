@@ -913,6 +913,11 @@
   .admin-row .a-del { padding: 5px 8px; border-radius: 8px; border: none; background: transparent; color: var(--danger); cursor: pointer; font-size: 12px; }
   .admin-badge-pending { color: var(--warning); font-weight: 700; }
   .admin-badge-approved { color: var(--success); font-weight: 700; }
+  .user-menu { position: fixed; z-index: 600; background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(20,14,80,0.18); padding: 6px; min-width: 168px; display: flex; flex-direction: column; }
+  .user-menu button { background: none; border: none; text-align: left; padding: 9px 12px; border-radius: 8px; cursor: pointer;
+    font-size: 13.5px; font-family: inherit; color: var(--text); }
+  .user-menu button:hover { background: var(--card-soft); }
   .admin-create { display: grid; grid-template-columns: 1.3fr 1.3fr 0.9fr 0.9fr auto; gap: 8px; align-items: center; margin-bottom: 4px; }
   .admin-create .input, .admin-create .select { padding: 8px 10px; font-size: 13px; }
   @media (max-width: 640px) { .admin-create { grid-template-columns: 1fr 1fr; } }
@@ -3772,7 +3777,33 @@
     }
     showLoginGate();
   })();
-  document.getElementById('userBadge').addEventListener('click', () => { if (SUPA_MODE) doLogout(); });
+  // 사용자 메뉴 (비밀번호 변경 / 로그아웃)
+  let userMenuEl = null;
+  function closeUserMenu() { if (userMenuEl) { userMenuEl.remove(); userMenuEl = null; } }
+  function toggleUserMenu() {
+    if (userMenuEl) { closeUserMenu(); return; }
+    const badge = document.getElementById('userBadge');
+    const rect = badge.getBoundingClientRect();
+    const m = document.createElement('div');
+    m.className = 'user-menu';
+    m.style.top = (rect.bottom + 6) + 'px';
+    m.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
+    m.innerHTML = `<button data-act="pw">🔑 비밀번호 변경</button><button data-act="out">🚪 로그아웃</button>`;
+    document.body.appendChild(m);
+    userMenuEl = m;
+    m.querySelector('[data-act="pw"]').addEventListener('click', async () => {
+      closeUserMenu();
+      const oldp = prompt('현재 비밀번호:'); if (!oldp) return;
+      const newp = prompt('새 비밀번호:'); if (!newp) return;
+      try {
+        const r = await supaRpc('app_change_pw', { p_token: TOKEN, p_old: oldp, p_new: newp });
+        alert(r && r.ok ? '비밀번호가 변경됐습니다.' : (r && r.error === 'wrongpw' ? '현재 비밀번호가 틀립니다.' : '변경 실패'));
+      } catch (e) { alert('오류: ' + (e.message || e)); }
+    });
+    m.querySelector('[data-act="out"]').addEventListener('click', () => { closeUserMenu(); if (confirm('로그아웃 하시겠어요?')) doLogout(); });
+  }
+  document.addEventListener('click', (e) => { if (userMenuEl && !userMenuEl.contains(e.target) && e.target.id !== 'userBadge') closeUserMenu(); });
+  document.getElementById('userBadge').addEventListener('click', () => { if (SUPA_MODE) toggleUserMenu(); });
 </script>
 </body>
 </html>

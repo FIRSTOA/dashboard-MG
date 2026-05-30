@@ -177,6 +177,20 @@
   .brief-copy { margin-left: 8px; background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.7);
     border-radius: 8px; padding: 4px 10px; font-size: 11.5px; font-weight: 700; color: #5A3410; cursor: pointer; font-family: inherit; }
   .brief-copy:hover { background: rgba(255,255,255,0.9); }
+  /* 사이드 독 + 팝업 */
+  .side-dock { position: fixed; right: 14px; top: 50%; transform: translateY(-50%); z-index: 350;
+    display: flex; flex-direction: column; gap: 10px; }
+  .dock-btn { width: 46px; height: 46px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--card); box-shadow: 0 6px 18px rgba(20,14,80,0.12); cursor: pointer; font-size: 20px;
+    display: flex; align-items: center; justify-content: center; transition: transform .12s, background .12s; }
+  .dock-btn:hover { transform: translateY(-2px); }
+  .dock-btn.active { background: var(--bg); border-color: var(--bg); filter: saturate(1.1); }
+  .flyout-host { position: fixed; right: 72px; top: 84px; z-index: 360; width: 372px; max-width: calc(100vw - 100px);
+    max-height: 82vh; overflow-y: auto; display: none; }
+  .flyout-host.open { display: block; animation: flyIn .14s ease; }
+  .flyout-host .widget { margin-bottom: 0 !important; box-shadow: 0 18px 50px rgba(20,14,80,0.22); }
+  @keyframes flyIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 640px) { .flyout-host { right: 12px; left: 12px; width: auto; max-width: none; } .side-dock { right: 8px; gap: 8px; } .dock-btn { width: 42px; height: 42px; } }
   body.share-ro .brief-box { pointer-events: none; opacity: 0.85; }
 
   .quarter-section {
@@ -1482,6 +1496,14 @@
     </div>
   </div>
 </div>
+
+<!-- 사이드 독 (빠른링크 / 미니캘린더 / 메모) + 팝업 호스트 -->
+<div class="side-dock" id="sideDock">
+  <button class="dock-btn" data-panel="links" title="빠른 링크">🔗</button>
+  <button class="dock-btn" data-panel="cal" title="미니 캘린더">🗓️</button>
+  <button class="dock-btn" data-panel="memo" title="간편 메모장">📝</button>
+</div>
+<div class="flyout-host" id="flyoutHost"></div>
 
 <!-- Auth Gate (로그인) -->
 <div class="auth-gate" id="authGate">
@@ -3234,9 +3256,36 @@
     const ai = document.querySelector('.page > .ai-section');
     const miniCal = document.getElementById('miniCalWidget');
     if (grid && miniCal) board.insertBefore(grid, miniCal);
-    if (quick && miniCal) board.insertBefore(quick, miniCal);
     if (quarter) goals.appendChild(quarter);
     if (ai) goals.appendChild(ai);
+    setupSideDock(); // 빠른링크/미니캘린더/메모를 사이드 팝업으로 이동
+  }
+
+  // 빠른링크 · 미니캘린더 · 간편메모를 사이드 독 팝업으로
+  let sideDockReady = false;
+  function setupSideDock() {
+    const host = document.getElementById('flyoutHost');
+    const dock = document.getElementById('sideDock');
+    if (!host || !dock) return;
+    const map = { links: 'quickLinksWidget', cal: 'miniCalWidget', memo: 'memoWidget' };
+    Object.values(map).forEach(id => { const el = document.getElementById(id); if (el && el.parentElement !== host) { el.style.display = 'none'; host.appendChild(el); } });
+    if (sideDockReady) return;
+    sideDockReady = true;
+    let openPanel = null;
+    function showPanel(panel) {
+      openPanel = panel;
+      Object.entries(map).forEach(([k, id]) => { const el = document.getElementById(id); if (el) el.style.display = (k === panel) ? '' : 'none'; });
+      host.classList.add('open');
+      dock.querySelectorAll('.dock-btn').forEach(b => b.classList.toggle('active', b.dataset.panel === panel));
+    }
+    function closePanel() { openPanel = null; host.classList.remove('open'); dock.querySelectorAll('.dock-btn').forEach(b => b.classList.remove('active')); }
+    dock.querySelectorAll('.dock-btn').forEach(b => b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (openPanel === b.dataset.panel) closePanel(); else showPanel(b.dataset.panel);
+    }));
+    document.addEventListener('click', (e) => {
+      if (host.classList.contains('open') && !host.contains(e.target) && !dock.contains(e.target)) closePanel();
+    });
   }
   function switchView(view) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));

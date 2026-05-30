@@ -35,7 +35,15 @@ function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || 'goals';
   var gid = (e && e.parameter && e.parameter.gid) || '';
   if (action === 'goals') return json_(readGoals_(gid));
+  if (action === 'tabs') return json_(listTabs_());
+  if (action === 'card') return json_(readCard_(gid, e.parameter.quarter));
   return json_({ ok: true, msg: '결과표 연동 정상 작동 중' });
+}
+
+// 모든 탭(시트) 이름·gid 목록 — 계획표 등 탭 자동 인식용
+function listTabs_() {
+  var shs = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+  return { ok: true, tabs: shs.map(function (s) { return { name: s.getName(), gid: String(s.getSheetId()) }; }) };
 }
 
 // gid(시트ID)로 탭 찾기. 없으면 기본 TAB_NAME 사용
@@ -187,4 +195,87 @@ function esc_(s) {
 
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ===================== 골든미팅카드 (분기 × 질문4 × 카테고리6) =====================
+var CARD_QUESTIONS = [
+  { key: 'q1', label: '지난기간 나의 성과는?', kw: ['성과'] },
+  { key: 'q2', label: '타인의 성과에 내가 기여한 것은?', kw: ['기여'] },
+  { key: 'q3', label: '성장을 위한 학습 & 발견한 지식', kw: ['학습', '발견'] },
+  { key: 'q4', label: '다음 도전을 위한 지원 요청', kw: ['지원', '도전'] }
+];
+var CARD_CATS = [
+  { key: '매출', label: '매출증대·안정', kw: ['매출'] },
+  { key: '효율', label: '효율성', kw: ['효율'] },
+  { key: '비용', label: '비용절감', kw: ['비용'] },
+  { key: '자기', label: '자기개발', kw: ['자기개발'] },
+  { key: '소통', label: '소통', kw: ['소통'] },
+  { key: 'AI',  label: 'AI', kw: ['AI'] }
+];
+function qOf_(text) {
+  var t = String(text || '');
+  for (var i = 0; i < CARD_QUESTIONS.length; i++) {
+    var kw = CARD_QUESTIONS[i].kw;
+    for (var k = 0; k < kw.length; k++) if (t.indexOf(kw[k]) >= 0) return CARD_QUESTIONS[i];
+  }
+  return null;
+}
+function quarterOf_(text) {
+  var t = String(text || '').replace(/\s/g, '');
+  var m = t.match(/([1-4])\s*[Qq]/) || t.match(/([1-4])\s*분기/);
+  return m ? m[1] : '';
+}
+
+function readCard_(gid, quarter) {
+  var sh = getSheet_(gid);
+  if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다 (gid: ' + gid + ')' };
+  quarter = String(quarter || '').replace(/[^1-4]/g, '') || '2';
+  var lastRow = sh.getLastRow(), lastCol = Math.max(10, sh.getLastColumn());
+  if (lastRow < 1) return { ok: true, quarter: quarter, questions: [] };
+  var vals = sh.getRange(1, 1, lastRow, lastCol).getValues();
+  var rich = sh.getRange(1, 1, lastRow, lastCol).getRichTextValues();
+
+  // 1) 카테고리 헤더행/열 자동 탐지 (6개 중 3개 이상이 서로 다른 열에 있는 행)
+  var catCols = null;
+  for (var r = 0; r < Math.min(lastRow, 40); r++) {
+    var found = {}, cnt = 0;
+    for (var c = 0; c < lastCol; c++) {
+      var cell = String(vals[r][c] || '');
+      for (var ci = 0; ci < CARD_CATS.length; ci++) {
+        if (found[CARD_CATS[ci].key]) continue;
+        var ok = true; var kw = CARD_CATS[ci].kw;
+        for (var kk = 0; kk < kw.length; kk++) if (cell.indexOf(kw[kk]) < 0) ok = false;
+        // 카테고리 헤더 셀은 짧음(데이터와 구분) — 60자 이하만 헤더로 인정
+        if (ok && cell.replace(/\s/g, '').length <= 60) { found[CARD_CATS[ci].key] = c + 1; cnt++; }
+      }
+    }
+    if (cnt >= 3) { catCols = found; break; }
+  }
+  if (!catCols) { // 못 찾으면 기본값 C~H (3~8)
+    catCols = { '매출': 3, '효율': 4, '비용': 5, '자기': 6, '소통': 7, 'AI': 8 };
+  }
+
+  // 2) 질문 행 찾기 + 분기 추적(병합셀: A열 비면 위 분기 유지)
+  var curQ = '';
+  var questions = [];
+  var seen = {};
+  for (var r2 = 0; r2 < lastRow; r2++) {
+    var aCell = '';
+    for (var ac = 0; ac < 2; ac++) { var qv = quarterOf_(vals[r2][ac]); if (qv) { aCell = qv; break; } }
+    if (aCell) curQ = aCell;
+    if (curQ !== quarter) continue;
+    var qInfo = qOf_(vals[r2][1]) || qOf_(vals[r2][0]);
+    if (!qInfo || seen[qInfo.key]) continue;
+    seen[qInfo.key] = true;
+    var cells = CARD_CATS.map(function (cat) {
+      var col = catCols[cat.key] || 0;
+      return {
+        cat: cat.label, col: col,
+        text: col ? String(vals[r2][col - 1] || '') : '',
+        html: col ? cellHtml_(rich[r2][col - 1]) : ''
+      };
+    });
+    questions.push({ key: qInfo.key, label: qInfo.label, row: r2 + 1, cells: cells });
+  }
+  return { ok: true, quarter: quarter, questions: questions };
 }

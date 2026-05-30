@@ -186,9 +186,11 @@
   .dock-btn:hover { transform: translateY(-2px); }
   .dock-btn.active { background: var(--bg); border-color: var(--bg); filter: saturate(1.1); }
   .flyout-host { position: fixed; right: 72px; top: 84px; z-index: 360; width: 372px; max-width: calc(100vw - 100px);
-    max-height: 82vh; overflow-y: auto; display: none; }
+    max-height: 82vh; overflow-y: auto; overflow-x: hidden; display: none; }
   .flyout-host.open { display: block; animation: flyIn .14s ease; }
-  .flyout-host .widget { margin-bottom: 0 !important; box-shadow: 0 18px 50px rgba(20,14,80,0.22); }
+  .flyout-host .widget { margin-bottom: 0 !important; width: auto; box-shadow: 0 18px 50px rgba(20,14,80,0.22); }
+  .flyout-host .quick-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .flyout-host .quick-item { min-width: 0; }
   @keyframes flyIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
   @media (max-width: 640px) { .flyout-host { right: 12px; left: 12px; width: auto; max-width: none; } .side-dock { right: 8px; gap: 8px; } .dock-btn { width: 42px; height: 42px; } }
   body.share-ro .brief-box { pointer-events: none; opacity: 0.85; }
@@ -3283,7 +3285,8 @@
       e.stopPropagation();
       if (openPanel === b.dataset.panel) closePanel(); else showPanel(b.dataset.panel);
     }));
-    document.addEventListener('click', (e) => {
+    // 바깥 클릭 닫기는 mousedown으로 감지(클릭 시점에 내부 요소가 재렌더되어 사라지면 오판하므로)
+    document.addEventListener('mousedown', (e) => {
       if (host.classList.contains('open') && !host.contains(e.target) && !dock.contains(e.target)) closePanel();
     });
   }

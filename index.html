@@ -889,6 +889,7 @@
   .cal-cell.sat .cal-daynum { color: #3B82F6; }
   .cal-holiday-name { font-size: 10px; color: var(--danger); font-weight: 600; line-height: 1.2; }
   .cal-ev { font-size: 10.5px; font-weight: 600; color: white; border-radius: 5px; padding: 2px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
+  .cal-ev.done { opacity: 0.5; text-decoration: line-through; text-decoration-thickness: 1.5px; }
   .cal-more { font-size: 10px; color: var(--text-grey); font-weight: 600; padding-left: 2px; }
 
   /* mini calendar (board widget) */
@@ -1629,6 +1630,7 @@
     <div class="modal-foot">
       <button class="btn btn-danger" id="eventDeleteBtn" style="display:none">삭제</button>
       <div class="modal-foot-right">
+        <button class="btn" id="eventDoneBtn" style="display:none">✓ 완료</button>
         <button class="btn" id="eventCancelBtn">취소</button>
         <button class="btn btn-primary" id="eventSaveBtn">저장</button>
       </div>
@@ -3616,6 +3618,13 @@
     else calEvents = [];
   }
   async function saveCalendar() { await storeSet('calendar-events', JSON.stringify(calEvents)); }
+  // 특정 날짜의 일정 완료 여부 (반복 일정은 날짜별로 완료 관리)
+  function isOccDone(ev, ds) { return !!(ev.doneDates && ev.doneDates.includes(ds)); }
+  function toggleOccDone(ev, ds) {
+    if (!ev.doneDates) ev.doneDates = [];
+    const i = ev.doneDates.indexOf(ds);
+    if (i >= 0) ev.doneDates.splice(i, 1); else ev.doneDates.push(ds);
+  }
 
   // 반복 일정: 해당 날짜에 이 일정이 표시되는지
   function eventOccursOn(e, dateObj, ds) {
@@ -3669,17 +3678,18 @@
         cell.innerHTML = `<div class="cal-daynum">${d}</div>`;
         const dots = document.createElement('div'); dots.className = 'mini-dots';
         if (HOLIDAYS[ds]) { const h = document.createElement('div'); h.className = 'mini-dot'; h.style.background = 'var(--danger)'; dots.appendChild(h); }
-        dayEvents.slice(0, 5).forEach(ev => { const dot = document.createElement('div'); dot.className = 'mini-dot'; dot.style.background = (CAL_CAT_MAP[ev.cat] || {}).color || '#888'; dots.appendChild(dot); });
+        dayEvents.slice(0, 5).forEach(ev => { const dot = document.createElement('div'); dot.className = 'mini-dot'; dot.style.background = (CAL_CAT_MAP[ev.cat] || {}).color || '#888'; if (isOccDone(ev, ds)) dot.style.opacity = '0.3'; dots.appendChild(dot); });
         cell.appendChild(dots);
       } else {
         let html = `<div class="cal-daynum">${d}</div>`;
         if (HOLIDAYS[ds]) html += `<div class="cal-holiday-name">${HOLIDAYS[ds]}</div>`;
         cell.innerHTML = html;
         dayEvents.slice(0, 3).forEach(ev => {
-          const chip = document.createElement('div'); chip.className = 'cal-ev';
+          const done = isOccDone(ev, ds);
+          const chip = document.createElement('div'); chip.className = 'cal-ev' + (done ? ' done' : '');
           chip.style.background = (CAL_CAT_MAP[ev.cat] || {}).color || '#888';
-          chip.textContent = (ev.time ? ev.time + ' ' : '') + ev.title + (ev.repeat && ev.repeat !== 'none' ? ' ↻' : '');
-          chip.addEventListener('click', (e) => { e.stopPropagation(); openEventModal(ev); });
+          chip.textContent = (done ? '✓ ' : '') + (ev.time ? ev.time + ' ' : '') + ev.title + (ev.repeat && ev.repeat !== 'none' ? ' ↻' : '');
+          chip.addEventListener('click', (e) => { e.stopPropagation(); openEventModal(ev, ds); });
           cell.appendChild(chip);
         });
         if (dayEvents.length > 3) { const m = document.createElement('div'); m.className = 'cal-more'; m.textContent = `+${dayEvents.length - 3}건`; cell.appendChild(m); }
@@ -3710,7 +3720,15 @@
 
   // Event modal
   const eventModal = document.getElementById('eventModalBackdrop');
-  let editingEventId = null, evCat = 'monthly';
+  let editingEventId = null, evCat = 'monthly', modalOccDate = null;
+  function refreshDoneBtn(ev) {
+    const btn = document.getElementById('eventDoneBtn');
+    if (!ev || !modalOccDate) { btn.style.display = 'none'; return; }
+    const done = isOccDone(ev, modalOccDate);
+    btn.style.display = 'inline-flex';
+    btn.textContent = done ? '✓ 완료됨 (취소)' : '✓ 완료로 표시';
+    btn.classList.toggle('btn-primary', done);
+  }
   function buildEvCats(active) {
     const root = document.getElementById('ev-cats'); root.innerHTML = '';
     CAL_CATS.forEach(c => {
@@ -3724,6 +3742,7 @@
   }
   function openEventModal(ev = null, presetDate = null, presetCat = 'monthly') {
     editingEventId = ev ? ev.id : null;
+    modalOccDate = ev ? (presetDate || ev.date) : null; // 클릭한 그 날짜(반복일정 완료 기준)
     document.getElementById('eventModalTitle').textContent = ev ? '일정 수정' : '일정 추가';
     evCat = ev ? ev.cat : presetCat;
     buildEvCats(evCat);
@@ -3732,6 +3751,7 @@
     document.getElementById('ev-title').value = ev ? ev.title : '';
     document.getElementById('ev-repeat').value = (ev && ev.repeat) ? ev.repeat : 'none';
     document.getElementById('eventDeleteBtn').style.display = ev ? 'inline-flex' : 'none';
+    refreshDoneBtn(ev);
     eventModal.classList.add('open');
     setTimeout(() => document.getElementById('ev-title').focus(), 100);
   }
@@ -3754,6 +3774,15 @@
     }
     await saveCalendar();
     closeEventModal();
+    renderCalendar(); renderMini();
+  });
+  document.getElementById('eventDoneBtn').addEventListener('click', async () => {
+    if (!editingEventId || !modalOccDate) return;
+    const ev = calEvents.find(e => e.id === editingEventId);
+    if (!ev) return;
+    toggleOccDone(ev, modalOccDate);
+    await saveCalendar();
+    refreshDoneBtn(ev);
     renderCalendar(); renderMini();
   });
   document.getElementById('eventDeleteBtn').addEventListener('click', async () => {

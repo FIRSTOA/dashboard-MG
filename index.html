@@ -2262,6 +2262,7 @@
       root.innerHTML = '<div class="rs-empty">불러오기 실패: ' + (e.message || e) + '<br><small>결과표 연동 URL과 GAS 배포(액세스: 모든 사용자)를 확인하세요.</small></div>';
     }
   }
+  function autoGrowTextarea(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(60, ta.scrollHeight + 2) + 'px'; }
   function renderResultTable() {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
@@ -2277,6 +2278,7 @@
       groups[g].forEach(r => wrap.appendChild(buildResultCard(r)));
       root.appendChild(wrap);
     });
+    requestAnimationFrame(() => root.querySelectorAll('.rs-month textarea').forEach(autoGrowTextarea));
   }
   function buildResultCard(r) {
     const card = document.createElement('div'); card.className = 'rs-card';
@@ -2296,7 +2298,7 @@
         if (ok) r[field] = ta.value;
         setTimeout(() => { dot.className = 'rs-dot'; }, 1500);
       }, 700);
-      ta.addEventListener('input', save);
+      ta.addEventListener('input', () => { autoGrowTextarea(ta); save(); });
       col.appendChild(lab); col.appendChild(ta); months.appendChild(col);
     });
     card.appendChild(months);

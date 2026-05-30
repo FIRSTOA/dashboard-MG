@@ -20,7 +20,7 @@
 
 // ===================== CONFIG =====================
 var TAB_NAME = '결과표';     // 탭(시트) 이름
-var START_ROW = 2;          // 데이터가 시작하는 행 (헤더가 1행이면 2)
+var START_ROW = 1;          // 1부터 읽되 머리글/제목 행은 자동으로 건너뜀
 var COL = {
   gubun: 1,   // A열 = 구분
   goal:  2,   // B열 = 목표
@@ -52,6 +52,9 @@ function readGoals_() {
     values.forEach(function (r, i) {
       var gubun = String(r[COL.gubun - 1] || '').trim();
       var goal = String(r[COL.goal - 1] || '').trim();
+      // 머리글/제목 행 건너뜀 ('구분','목표','2026년 2분기' 같은 것)
+      if (gubun === '구분' || goal === '목표' || goal === '구분') return;
+      if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goal)) return;
       if (gubun) lastGubun = gubun;
       if (goal === '') return; // 목표 없는 행(구분만/빈행)은 표시 안 함
       rows.push({

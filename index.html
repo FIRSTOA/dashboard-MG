@@ -203,6 +203,14 @@
     border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .rs-merge-btn:hover { border-color: var(--bg); color: var(--bg); }
   .rs-merge-btn:disabled { opacity: 0.5; cursor: default; }
+  .rs-del-btn { flex: none; border: 1.5px solid var(--border); background: var(--card-soft); border-radius: 8px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+  .rs-del-btn:hover { border-color: var(--danger); background: #FEE2E2; }
+  .rs-del-btn:disabled { opacity: 0.5; cursor: default; }
+  .rs-goal[contenteditable]:focus { outline: none; background: white; box-shadow: inset 0 0 0 1.5px var(--bg); border-radius: 6px; }
+  .rs-goal:empty:before { content: attr(data-placeholder); color: var(--text-light); font-weight: 400; }
+  .rs-add-btn { width: 100%; border: 1.5px dashed var(--border); background: transparent; color: var(--text-grey); border-radius: 10px; padding: 9px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 2px; }
+  .rs-add-btn:hover { border-color: var(--bg); color: var(--bg); background: var(--card-soft); }
+  .rs-add-btn:disabled { opacity: 0.5; cursor: default; }
   .rs-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .rs-month-label { font-size: 11.5px; font-weight: 700; color: var(--text-grey); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
   .rs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex: none; }
@@ -1218,7 +1226,7 @@
     <div id="resultTabs" class="rs-tabs" style="display:none"></div>
     <div id="resultSection" style="display:none"></div>
 
-    <div class="mission-block">
+    <div class="mission-block" style="display:none">
       <div class="mission-block-head">
         <div class="mission-block-title"><span class="em">✨</span>추가 미션</div>
       </div>
@@ -1230,7 +1238,7 @@
   </div>
 
   <!-- AI Projects -->
-  <div class="ai-section">
+  <div class="ai-section" style="display:none">
     <div class="ai-section-head">
       <div class="ai-h-title"><div class="icon">🤖</div>AI 자동화 작업
         <a class="head-shortcut" href="https://docs.google.com/spreadsheets/d/1iL49NTAPSHzOEka5y7TmTgnb17_GKckXAAWSRlKquFY/edit?gid=1826162532#gid=1826162532" target="_blank" rel="noopener" title="자동화진행시트 바로가기">📑</a>
@@ -2393,6 +2401,15 @@
       const gt = document.createElement('div'); gt.className = 'rs-group-title'; gt.textContent = g;
       wrap.appendChild(gt);
       groups[g].forEach(r => wrap.appendChild(buildResultCard(r)));
+      const rowsInG = groups[g];
+      const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 목표 추가`;
+      addBtn.addEventListener('click', async () => {
+        const afterRow = rowsInG[rowsInG.length - 1].row;
+        addBtn.disabled = true; addBtn.textContent = '추가 중…';
+        const ok = await postResult({ action: 'addRow', afterRow, gubun: g });
+        if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 목표 추가`; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
+      });
+      wrap.appendChild(addBtn);
       root.appendChild(wrap);
     });
     requestAnimationFrame(() => root.querySelectorAll('.rs-month textarea').forEach(autoGrowTextarea));
@@ -2404,8 +2421,14 @@
     const count = allMonths.length;
     const head = document.createElement('div'); head.className = 'rs-card-head';
     const goal = document.createElement('div'); goal.className = 'rs-goal';
+    goal.setAttribute('contenteditable', 'true'); goal.dataset.placeholder = '목표 입력';
     if (r.goalHtml) goal.innerHTML = r.goalHtml;        // 목표(B): 줄바꿈+색상 그대로
-    else goal.textContent = r.goal || '(목표 없음)';
+    else if (r.goal) goal.textContent = r.goal;
+    const goalSave = debounce(async () => {
+      const ok = await postResultUpdate(r.row, 2, goal.innerText.replace(/ /g, ' ').trim()); // B열(2)=목표
+      if (ok) r.goal = goal.innerText.trim();
+    }, 800);
+    goal.addEventListener('input', goalSave);
     head.appendChild(goal);
     if (firstCol && count >= 2) {                       // 통합/월별 토글(셀 병합)
       const tg = document.createElement('button'); tg.className = 'rs-merge-btn';
@@ -2419,6 +2442,14 @@
       });
       head.appendChild(tg);
     }
+    const delBtn = document.createElement('button'); delBtn.className = 'rs-del-btn'; delBtn.textContent = '🗑'; delBtn.title = '이 목표 행 삭제';
+    delBtn.addEventListener('click', async () => {
+      if (!confirm('이 목표 행을 시트에서 삭제할까요?')) return;
+      delBtn.disabled = true;
+      const ok = await postResult({ action: 'deleteRow', row: r.row });
+      if (ok) { await loadResultGoals(); } else { delBtn.disabled = false; alert('삭제 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
+    });
+    head.appendChild(delBtn);
     card.appendChild(head);
     const mlabel = (m) => (r.merged && allMonths.length)
       ? (allMonths[0].label + '~' + allMonths[allMonths.length - 1].label + ' 통합') : m.label;

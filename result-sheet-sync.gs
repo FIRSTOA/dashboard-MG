@@ -143,6 +143,21 @@ function doPost(e) {
       sh.getRange(Number(b.row), uc, 1, ucnt).breakApart();
       return json_({ ok: true });
     }
+    if (b.action === 'addRow') {
+      // 특정 행 바로 아래에 새 목표 행 삽입(서식 복사) + 구분/목표 세팅
+      var after = Number(b.afterRow);
+      if (!after) return json_({ ok: false, error: 'bad params' });
+      sh.insertRowAfter(after);
+      sh.getRange(after + 1, COL.gubun).setValue(b.gubun || '');
+      sh.getRange(after + 1, COL.goal).setValue(b.goal || '새 목표');
+      return json_({ ok: true, row: after + 1 });
+    }
+    if (b.action === 'deleteRow') {
+      var dr = Number(b.row);
+      if (!dr) return json_({ ok: false, error: 'bad params' });
+      sh.deleteRow(dr);
+      return json_({ ok: true });
+    }
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) {
     return json_({ ok: false, error: String(err) });

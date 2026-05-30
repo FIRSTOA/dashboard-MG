@@ -1,0 +1,4 @@
+# clasp 로컬 설정(스크립트ID 포함) — 각자 만들어 사용
+.clasp.json
+.clasprc.json
+node_modules/

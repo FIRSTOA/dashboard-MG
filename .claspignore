@@ -1,0 +1,4 @@
+# clasp는 아래 두 파일만 Apps Script로 올림 (나머지 전부 제외)
+**/**
+!appsscript.json
+!result-sheet-sync.gs

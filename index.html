@@ -1132,6 +1132,7 @@
       <div class="quarter-actions">
         <span class="quarter-tag" id="quarterPeriod">—</span>
         <button class="btn-ghost-white" id="syncBtn">📋 시트 가져오기</button>
+        <button class="btn-ghost-white" id="goalSheetBtn" title="새 분기목표를 내 구글시트에도 자동 기록">🔗 시트연동</button>
         <button class="btn-white-small" id="addGoalBtn">+ 목표 추가</button>
       </div>
     </div>
@@ -2123,6 +2124,39 @@
     else goals = [];
   }
   async function saveGoals() { await storeSet(`quarter-goals:${QUARTER}`, JSON.stringify(goals)); }
+
+  // 분기목표 → 내 구글시트 자동 푸시 (개인 설정)
+  async function getGoalSheetUrl() { return (await storeGet('settings:goalSheetUrl')) || ''; }
+  async function pushGoalToSheet(goal) {
+    const url = await getGoalSheetUrl();
+    if (!url) return;
+    try {
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS preflight 회피
+        body: JSON.stringify({
+          quarter: QUARTER, title: goal.title, category: goal.category,
+          grade: goal.grade, purpose: goal.purpose, method: goal.method, done: !!goal.done
+        })
+      });
+    } catch (e) { console.error('시트 푸시 실패', e); }
+  }
+  const goalSheetBtn = document.getElementById('goalSheetBtn');
+  if (goalSheetBtn) goalSheetBtn.addEventListener('click', async () => {
+    const cur = await getGoalSheetUrl();
+    const v = prompt('분기목표를 자동 기록할 구글시트 웹앱(GAS) URL을 입력하세요.\n(goal-sheet-sync.gs 배포 후 받은 …/exec 주소)\n\n비우고 확인하면 연동 해제됩니다.', cur);
+    if (v === null) return;
+    const url = v.trim();
+    await storeSet('settings:goalSheetUrl', url);
+    if (url && !/\/exec$/.test(url)) alert('저장은 했지만, URL이 보통 …/exec 로 끝납니다. 다시 확인해 주세요.');
+    else alert(url ? '시트연동이 설정됐습니다. 이제 새 분기목표가 시트에도 기록됩니다.' : '시트연동이 해제됐습니다.');
+    updateGoalSheetBtn(url);
+  });
+  function updateGoalSheetBtn(url) {
+    if (!goalSheetBtn) return;
+    goalSheetBtn.textContent = url ? '🔗 시트연동됨' : '🔗 시트연동';
+    goalSheetBtn.style.opacity = url ? '1' : '';
+  }
   async function loadMissions() {
     const raw = await storeGet(`quarter-missions:${QUARTER}`);
     if (raw) {
@@ -2331,15 +2365,18 @@
       purpose: document.getElementById('gf-purpose').value.trim(),
       method: document.getElementById('gf-method').value.trim(),
     };
+    let createdGoal = null;
     if (editingGoalId) {
       const idx = goals.findIndex(g => g.id === editingGoalId);
       if (idx >= 0) goals[idx] = { ...goals[idx], ...data };
     } else {
-      goals.push({ id: `g${Date.now()}`, ...data, done: false, notes: [] });
+      createdGoal = { id: `g${Date.now()}`, ...data, done: false, notes: [] };
+      goals.push(createdGoal);
     }
     await saveGoals();
     closeGoalModal();
     renderFilters(); renderGoals();
+    if (createdGoal) pushGoalToSheet(createdGoal); // 새 목표만 시트에 기록
   });
   document.getElementById('goalDeleteBtn').addEventListener('click', async () => {
     if (!editingGoalId) return;
@@ -3695,25 +3732,6 @@
     await saveApps(); closeAppModal(); renderApps();
   });
 
-  async function reloadAll() {
-    await loadTasksAndLinks();
-    renderAllTasks();
-    renderQuickLinks();
-    await refreshWeeklyGoal();
-    await loadGoals();
-    await loadMissions();
-    renderFilters(); renderGoals(); renderMissions();
-    await loadProjectIndex();
-    await renderGallery();
-    await loadCalendar();
-    renderMini();
-    renderCalendar();
-    await loadMemo();
-    renderMemo();
-    await loadApps();
-    renderApps();
-  }
-
   // ===================== 로그인 / 팀원 토글 / 관리자 (Supabase) =====================
   const TEAM_LIST = ['A', 'B', 'C', 'D'];
   function showLoginGate() {
@@ -3899,6 +3917,7 @@
     renderMemo();
     await loadApps();
     renderApps();
+    if (typeof updateGoalSheetBtn === 'function') updateGoalSheetBtn(await getGoalSheetUrl());
   }
 
   // 로그인 성공/세션 복원 후 앱 시작

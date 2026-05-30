@@ -186,6 +186,11 @@
   .dock-btn:hover { transform: translateY(-2px); }
   .dock-btn.active { background: var(--bg); border-color: var(--bg); filter: saturate(1.1); }
   /* 결과표(시트연동) */
+  .rs-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .rs-tab { border: 1.5px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.1); color: white;
+    border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .rs-tab:hover { background: rgba(255,255,255,0.2); }
+  .rs-tab.active { background: white; color: var(--bg); border-color: white; }
   .rs-group { margin-bottom: 18px; }
   .rs-group-title { font-size: 13px; font-weight: 800; color: white; background: rgba(255,255,255,0.16);
     display: inline-block; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; }
@@ -1187,6 +1192,7 @@
     </div>
     <div class="filter-row" id="filterRow"></div>
     <div class="goal-grid" id="goalGrid"></div>
+    <div id="resultTabs" class="rs-tabs" style="display:none"></div>
     <div id="resultSection" style="display:none"></div>
 
     <div class="mission-block">
@@ -2243,12 +2249,30 @@
 
   // ===================== 결과표 시트 양방향 연동 =====================
   let resultRows = [];
+  const RESULT_TABS = [
+    { key: 'quarter', label: '📊 분기결과표', gid: '' },          // 기본 탭(결과표)
+    { key: 'mission', label: '🎯 미션결과표', gid: '1053550780' } // 미션결과표 탭
+  ];
+  let resultTab = 'quarter';
+  function currentResultGid() { const t = RESULT_TABS.find(x => x.key === resultTab); return t ? t.gid : ''; }
+  function renderResultTabs() {
+    const bar = document.getElementById('resultTabs'); if (!bar) return;
+    bar.innerHTML = '';
+    RESULT_TABS.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'rs-tab' + (t.key === resultTab ? ' active' : '');
+      b.textContent = t.label;
+      b.addEventListener('click', () => { if (resultTab === t.key) return; resultTab = t.key; renderResultTabs(); loadResultGoals(); });
+      bar.appendChild(b);
+    });
+  }
   async function getResultUrl() { return (await storeGet('settings:resultSheetUrl')) || ''; }
   function resultModeOn(active) {
     // 시트 표 모드 ↔ 기존 카드 모드 전환
     ['filterRow', 'goalGrid', 'syncBtn', 'goalSheetBtn', 'addGoalBtn', 'goalsMemberBar', 'goalsRoBanner'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = active ? 'none' : '';
     });
+    const rt = document.getElementById('resultTabs'); if (rt) rt.style.display = active ? '' : 'none';
     const rs = document.getElementById('resultSection'); if (rs) rs.style.display = active ? '' : 'none';
     const rf = document.getElementById('resultRefreshBtn'); if (rf) rf.style.display = active ? '' : 'none';
     const rl = document.getElementById('resultLinkBtn'); if (rl) rl.textContent = active ? '🔗 연동됨' : '🔗 결과표 연동';
@@ -2257,10 +2281,13 @@
     const url = await getResultUrl();
     if (!url) { resultModeOn(false); return; }
     resultModeOn(true);
+    renderResultTabs();
     const root = document.getElementById('resultSection');
     root.innerHTML = '<div class="rs-loading">결과표 불러오는 중…</div>';
     try {
-      const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'action=goals&t=' + Date.now());
+      const gid = currentResultGid();
+      const q = url + (url.includes('?') ? '&' : '?') + 'action=goals' + (gid ? '&gid=' + encodeURIComponent(gid) : '') + '&t=' + Date.now();
+      const res = await fetch(q);
       const json = await res.json();
       if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
       resultRows = json.rows || [];
@@ -2341,6 +2368,8 @@
   async function postResult(payload) {
     const url = await getResultUrl();
     if (!url) return false;
+    const gid = currentResultGid();
+    if (gid) payload = Object.assign({ gid }, payload);
     try {
       const res = await fetch(url, {
         method: 'POST',

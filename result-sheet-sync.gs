@@ -33,13 +33,26 @@ var COL = {
 
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || 'goals';
-  if (action === 'goals') return json_(readGoals_());
+  var gid = (e && e.parameter && e.parameter.gid) || '';
+  if (action === 'goals') return json_(readGoals_(gid));
   return json_({ ok: true, msg: '결과표 연동 정상 작동 중' });
 }
 
-function readGoals_() {
-  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_NAME);
-  if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다: ' + TAB_NAME };
+// gid(시트ID)로 탭 찾기. 없으면 기본 TAB_NAME 사용
+function getSheet_(gid) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (gid) {
+    var shs = ss.getSheets();
+    for (var i = 0; i < shs.length; i++) {
+      if (String(shs[i].getSheetId()) === String(gid)) return shs[i];
+    }
+  }
+  return ss.getSheetByName(TAB_NAME);
+}
+
+function readGoals_(gid) {
+  var sh = getSheet_(gid);
+  if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다 (gid: ' + (gid || TAB_NAME) + ')' };
   var last = sh.getLastRow();
   if (last < START_ROW) return { ok: true, months: [], rows: [] };
   var n = last - START_ROW + 1;
@@ -103,8 +116,8 @@ function readGoals_() {
 function doPost(e) {
   try {
     var b = JSON.parse(e.postData.contents || '{}');
-    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_NAME);
-    if (!sh) return json_({ ok: false, error: '탭 없음: ' + TAB_NAME });
+    var sh = getSheet_(b.gid);
+    if (!sh) return json_({ ok: false, error: '탭 없음 (gid: ' + (b.gid || TAB_NAME) + ')' });
 
     if (b.action === 'update') {
       // 한 셀(특정 행/열) 수정 — 열 번호로 지정(월 컬럼 자동대응)

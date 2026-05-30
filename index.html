@@ -185,6 +185,22 @@
     display: flex; align-items: center; justify-content: center; transition: transform .12s, background .12s; }
   .dock-btn:hover { transform: translateY(-2px); }
   .dock-btn.active { background: var(--bg); border-color: var(--bg); filter: saturate(1.1); }
+  /* 결과표(시트연동) */
+  .rs-group { margin-bottom: 18px; }
+  .rs-group-title { font-size: 13px; font-weight: 800; color: white; background: rgba(255,255,255,0.16);
+    display: inline-block; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; }
+  .rs-card { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
+    box-shadow: 0 4px 16px rgba(20,14,80,0.07); }
+  .rs-goal { font-size: 14.5px; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.45; }
+  .rs-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .rs-month-label { font-size: 11.5px; font-weight: 700; color: var(--text-grey); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+  .rs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+  .rs-dot.saving { background: var(--warning); } .rs-dot.ok { background: var(--success); } .rs-dot.err { background: var(--danger); }
+  .rs-month textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 9px; padding: 8px 10px;
+    font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical; min-height: 60px; background: var(--card-soft); color: var(--text); }
+  .rs-month textarea:focus { outline: none; border-color: var(--bg); background: white; }
+  .rs-empty, .rs-loading { color: rgba(255,255,255,0.85); font-size: 14px; padding: 24px; text-align: center; }
+  @media (max-width: 640px) { .rs-months { grid-template-columns: 1fr; } }
   .flyout-host { position: fixed; right: 72px; top: 84px; z-index: 360; width: 372px; max-width: calc(100vw - 100px);
     max-height: 82vh; overflow-y: auto; overflow-x: hidden; display: none; }
   .flyout-host.open { display: block; animation: flyIn .14s ease; }
@@ -1153,6 +1169,8 @@
         <span class="quarter-tag" id="quarterPeriod">—</span>
         <button class="btn-ghost-white" id="syncBtn">📋 시트 가져오기</button>
         <button class="btn-ghost-white" id="goalSheetBtn" title="새 분기목표를 내 구글시트에도 자동 기록">🔗 시트연동</button>
+        <button class="btn-ghost-white" id="resultRefreshBtn" title="결과표 새로고침" style="display:none">↻ 새로고침</button>
+        <button class="btn-ghost-white" id="resultLinkBtn" title="결과표 시트와 양방향 연동">🔗 결과표 연동</button>
         <button class="btn-white-small" id="addGoalBtn">+ 목표 추가</button>
       </div>
     </div>
@@ -1162,6 +1180,7 @@
     </div>
     <div class="filter-row" id="filterRow"></div>
     <div class="goal-grid" id="goalGrid"></div>
+    <div id="resultSection" style="display:none"></div>
 
     <div class="mission-block">
       <div class="mission-block-head">
@@ -2214,6 +2233,100 @@
     goalSheetBtn.textContent = url ? '🔗 시트연동됨' : '🔗 시트연동';
     goalSheetBtn.style.opacity = url ? '1' : '';
   }
+
+  // ===================== 결과표 시트 양방향 연동 =====================
+  let resultRows = [];
+  async function getResultUrl() { return (await storeGet('settings:resultSheetUrl')) || ''; }
+  function resultModeOn(active) {
+    // 시트 표 모드 ↔ 기존 카드 모드 전환
+    ['filterRow', 'goalGrid', 'syncBtn', 'goalSheetBtn', 'addGoalBtn', 'goalsMemberBar', 'goalsRoBanner'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.style.display = active ? 'none' : '';
+    });
+    const rs = document.getElementById('resultSection'); if (rs) rs.style.display = active ? '' : 'none';
+    const rf = document.getElementById('resultRefreshBtn'); if (rf) rf.style.display = active ? '' : 'none';
+    const rl = document.getElementById('resultLinkBtn'); if (rl) rl.textContent = active ? '🔗 연동됨' : '🔗 결과표 연동';
+  }
+  async function loadResultGoals() {
+    const url = await getResultUrl();
+    if (!url) { resultModeOn(false); return; }
+    resultModeOn(true);
+    const root = document.getElementById('resultSection');
+    root.innerHTML = '<div class="rs-loading">결과표 불러오는 중…</div>';
+    try {
+      const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'action=goals&t=' + Date.now());
+      const json = await res.json();
+      if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
+      resultRows = json.rows || [];
+      renderResultTable();
+    } catch (e) {
+      root.innerHTML = '<div class="rs-empty">불러오기 실패: ' + (e.message || e) + '<br><small>결과표 연동 URL과 GAS 배포(액세스: 모든 사용자)를 확인하세요.</small></div>';
+    }
+  }
+  function renderResultTable() {
+    const root = document.getElementById('resultSection');
+    root.innerHTML = '';
+    if (!resultRows.length) { root.innerHTML = '<div class="rs-empty">결과표에 데이터가 없습니다.</div>'; return; }
+    // 구분(A)별로 그룹화
+    const groups = {};
+    const order = [];
+    resultRows.forEach(r => { const g = r.gubun || '기타'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(r); });
+    order.forEach(g => {
+      const wrap = document.createElement('div'); wrap.className = 'rs-group';
+      const gt = document.createElement('div'); gt.className = 'rs-group-title'; gt.textContent = g;
+      wrap.appendChild(gt);
+      groups[g].forEach(r => wrap.appendChild(buildResultCard(r)));
+      root.appendChild(wrap);
+    });
+  }
+  function buildResultCard(r) {
+    const card = document.createElement('div'); card.className = 'rs-card';
+    const goal = document.createElement('div'); goal.className = 'rs-goal'; goal.textContent = r.goal || '(목표 없음)';
+    card.appendChild(goal);
+    const months = document.createElement('div'); months.className = 'rs-months';
+    [['m4', '4월'], ['m5', '5월'], ['m6', '6월']].forEach(([field, label]) => {
+      const col = document.createElement('div'); col.className = 'rs-month';
+      const lab = document.createElement('div'); lab.className = 'rs-month-label';
+      const dot = document.createElement('span'); dot.className = 'rs-dot';
+      lab.appendChild(dot); lab.appendChild(document.createTextNode(label));
+      const ta = document.createElement('textarea'); ta.value = r[field] || ''; ta.placeholder = label + ' 내용';
+      const save = debounce(async () => {
+        dot.className = 'rs-dot saving';
+        const ok = await postResultUpdate(r.row, field, ta.value);
+        dot.className = 'rs-dot ' + (ok ? 'ok' : 'err');
+        if (ok) r[field] = ta.value;
+        setTimeout(() => { dot.className = 'rs-dot'; }, 1500);
+      }, 700);
+      ta.addEventListener('input', save);
+      col.appendChild(lab); col.appendChild(ta); months.appendChild(col);
+    });
+    card.appendChild(months);
+    return card;
+  }
+  async function postResultUpdate(row, field, value) {
+    const url = await getResultUrl();
+    if (!url) return false;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'update', row, field, value })
+      });
+      const json = await res.json().catch(() => null);
+      return !!(json && json.ok);
+    } catch (e) { console.error('결과표 저장 실패', e); return false; }
+  }
+  const resultLinkBtn = document.getElementById('resultLinkBtn');
+  if (resultLinkBtn) resultLinkBtn.addEventListener('click', async () => {
+    const cur = await getResultUrl();
+    const v = prompt('결과표 시트와 연동할 GAS 웹앱 URL(…/exec)을 입력하세요.\n(result-sheet-sync.gs 배포 후 받은 주소)\n\n비우고 확인하면 연동 해제됩니다.', cur);
+    if (v === null) return;
+    const url = v.trim();
+    await storeSet('settings:resultSheetUrl', url);
+    if (url) await loadResultGoals(); else resultModeOn(false);
+  });
+  const resultRefreshBtn = document.getElementById('resultRefreshBtn');
+  if (resultRefreshBtn) resultRefreshBtn.addEventListener('click', loadResultGoals);
+
   async function loadMissions() {
     const raw = await storeGet(`quarter-missions:${QUARTER}`);
     if (raw) {
@@ -4003,6 +4116,7 @@
     await loadApps();
     renderApps();
     if (typeof updateGoalSheetBtn === 'function') updateGoalSheetBtn(await getGoalSheetUrl());
+    if (typeof loadResultGoals === 'function') await loadResultGoals();
   }
 
   // 로그인 성공/세션 복원 후 앱 시작

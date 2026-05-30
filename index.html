@@ -811,8 +811,12 @@
   .color-swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px white inset; }
 
   /* Task-link editor rows */
-  .tk-link-row { display: grid; grid-template-columns: 60px 1fr auto; gap: 6px; margin-bottom: 6px; align-items: center; }
-  .tk-link-row input { border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; background: var(--card-soft); outline: none; }
+  .tk-link-row { display: grid; grid-template-columns: 98px 1fr auto; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .tk-link-row input { border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; background: var(--card-soft); outline: none; min-width: 0; }
+  .tk-link-icon { display: flex; gap: 4px; align-items: center; }
+  .tk-link-icon input { width: 100%; text-align: center; padding-left: 6px; padding-right: 6px; }
+  .tk-emoji-mini { flex: none; border: 1.5px solid var(--border); background: var(--card-soft); border-radius: 8px; cursor: pointer; font-size: 13px; padding: 6px 7px; line-height: 1; }
+  .tk-emoji-mini:hover { border-color: var(--bg); background: white; }
   .tk-link-row input:focus { border-color: var(--bg); background: white; }
   .tk-link-row .tk-link-del { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 14px; padding: 4px 8px; border-radius: 6px; }
   .tk-link-row .tk-link-del:hover { background: #FEE2E2; color: var(--danger); }
@@ -3337,7 +3341,10 @@
       const row = document.createElement('div');
       row.className = 'tk-link-row';
       row.innerHTML = `
-        <input data-f="icon" maxlength="4" placeholder="↗" value="${escapeHTML(l.icon || '')}">
+        <div class="tk-link-icon">
+          <input data-f="icon" maxlength="4" placeholder="↗" value="${escapeHTML(l.icon || '')}">
+          <button type="button" class="emoji-pick-btn tk-emoji-mini" title="이모지 선택">😀</button>
+        </div>
         <input data-f="url" placeholder="https://…" value="${escapeHTML(l.url || '')}">
         <button class="tk-link-del" title="삭제">✕</button>`;
       row.querySelector('[data-f="icon"]').addEventListener('input', e => tkLinks[i].icon = e.target.value);
@@ -3592,7 +3599,13 @@
   function closeEmojiPop() { document.getElementById('emojiPop').classList.remove('open'); emojiTargetInput = null; }
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.emoji-pick-btn');
-    if (btn) { e.preventDefault(); openEmojiPop(document.getElementById(btn.dataset.target), btn); return; }
+    if (btn) {
+      e.preventDefault();
+      let input = btn.dataset.target ? document.getElementById(btn.dataset.target) : null;
+      if (!input) { const row = btn.closest('.tk-link-row'); input = row && row.querySelector('[data-f="icon"]'); }
+      if (input) openEmojiPop(input, btn);
+      return;
+    }
     if (!e.target.closest('#emojiPop')) closeEmojiPop();
   });
 
@@ -3642,10 +3655,12 @@
   // ===================== 캘린더 =====================
   const CAL_CATS = [
     { id:'monthly', label:'매월점검', color:'#3B82F6' },
-    { id:'recontract', label:'재계약', color:'#F97316' },
+    { id:'recontract_s', label:'재계약 S↓', color:'#F59E0B' },
+    { id:'recontract_ss', label:'재계약 SS↑', color:'#7C3AED' },
     { id:'vacation', label:'휴가', color:'#10B981' },
   ];
   const CAL_CAT_MAP = Object.fromEntries(CAL_CATS.map(c => [c.id, c]));
+  CAL_CAT_MAP['recontract'] = { id:'recontract', label:'재계약', color:'#F97316' }; // 레거시(예전 일정 색상)
   // 대한민국 공휴일 (2026~2027, 대체공휴일 포함 · 근사치)
   const HOLIDAYS = {
     '2026-01-01':'신정',
@@ -3989,9 +4004,11 @@
       if (!m || !company) return;
       const date = `20${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
       const title = company + (grade ? ` (${grade})` : '');
+      const gN = grade.toUpperCase().replace(/[^A-Z]/g, '');
+      const cat = (gN === 'SS' || gN === 'SSS') ? 'recontract_ss' : 'recontract_s'; // SS이상 / S이하
       const key = company + '|' + date;
       if (seen.has(key)) return; seen.add(key);
-      out.push({ cat: 'recontract', date, time: '', title, repeat: 'none', src: RECONTRACT_SRC });
+      out.push({ cat, date, time: '', title, repeat: 'none', src: RECONTRACT_SRC });
     });
     return out;
   }

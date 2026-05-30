@@ -155,6 +155,26 @@
   .goal-content:empty:before { content: attr(data-placeholder); color: rgba(120, 70, 20, 0.55); font-weight: 500; }
   .goal-hint { font-size: 11px; color: rgba(26, 27, 58, 0.5); margin-top: 8px; text-align: right; opacity: 0; transition: opacity 0.3s; }
   .goal-hint.visible { opacity: 1; }
+  /* 주간 계획 · 일일 브리핑 */
+  .brief-sec { margin-top: 12px; }
+  .brief-sec:first-of-type { margin-top: 4px; }
+  .brief-label { display: block; font-size: 12.5px; font-weight: 800; color: #5A3410; margin-bottom: 5px; }
+  .brief-sub { font-weight: 600; font-size: 11px; color: rgba(120,70,20,0.7); }
+  .brief-mini { font-size: 11.5px; font-weight: 700; color: #6A4015; margin-bottom: 4px; }
+  .brief-box {
+    min-height: 44px; font-size: 13.5px; line-height: 1.6; font-weight: 600;
+    color: #2A1A05; outline: none; white-space: pre-wrap;
+    padding: 9px 11px; border-radius: 10px;
+    background: rgba(255,255,255,0.72); border: 1.5px solid rgba(255,255,255,0.6);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  #bf-goals { min-height: 70px; }
+  .brief-box:hover { background: rgba(255,255,255,0.85); }
+  .brief-box:focus { background: #FFFFFF; border-color: #FB923C; }
+  .brief-box:empty:before { content: attr(data-placeholder); color: rgba(120, 70, 20, 0.5); font-weight: 500; }
+  .brief-row { display: flex; gap: 8px; }
+  .brief-half { flex: 1; min-width: 0; }
+  body.share-ro .brief-box { pointer-events: none; opacity: 0.85; }
 
   .quarter-section {
     background: rgba(255,255,255,0.06);
@@ -1070,13 +1090,33 @@
     </div>
 
     <div class="col-5">
-      <div class="goal-widget">
+      <div class="goal-widget brief-widget">
         <div class="w-head">
           <div class="w-icon" style="background:var(--g-orange)">📌</div>
-          <div class="w-title">주간 목표</div>
+          <div class="w-title">주간 계획 · 브리핑</div>
           <div class="w-meta" id="weeklyPeriod">—</div>
         </div>
-        <div class="goal-content" id="weeklyGoal" contenteditable="true" data-placeholder="이번 주 핵심 목표를 적어주세요."></div>
+        <div class="brief-sec">
+          <label class="brief-label">🚧 병목현상</label>
+          <div class="brief-box" id="bf-bottleneck" data-key="bottleneck" data-scope="week" contenteditable="true" data-placeholder="현재 가로막는 문제·제약을 적어주세요"></div>
+        </div>
+        <div class="brief-sec">
+          <label class="brief-label">🎯 주간목표 <span class="brief-sub">(목표 → 실행)</span></label>
+          <div class="brief-box" id="bf-goals" data-key="goals" data-scope="week" contenteditable="true" data-placeholder="1. 목표&#10; → 실행 방법"></div>
+        </div>
+        <div class="brief-sec brief-daily">
+          <label class="brief-label">📋 일일브리핑 <span class="brief-sub" id="briefDate">오늘</span></label>
+          <div class="brief-row">
+            <div class="brief-half">
+              <div class="brief-mini">🚗 외근</div>
+              <div class="brief-box" id="bf-out" data-key="out" data-scope="day" contenteditable="true" data-placeholder="외근 일정"></div>
+            </div>
+            <div class="brief-half">
+              <div class="brief-mini">🏢 내근</div>
+              <div class="brief-box" id="bf-in" data-key="in" data-scope="day" contenteditable="true" data-placeholder="내근 업무"></div>
+            </div>
+          </div>
+        </div>
         <div class="goal-hint" id="weeklyGoalHint">저장됨 ✓</div>
       </div>
     </div>
@@ -1994,19 +2034,39 @@
     });
   }
 
-  // ---------- Weekly Goal ----------
+  // ---------- 주간 계획 · 일일 브리핑 ----------
+  // week 스코프(병목/주간목표) = goal:weekly:<WEEK> / day 스코프(외근·내근) = brief:daily:<날짜>
+  function briefBoxes() { return Array.from(document.querySelectorAll('.brief-box')); }
+  function briefStoreKey(scope) { return scope === 'day' ? `brief:daily:${todayKey()}` : `goal:weekly:${WEEK}`; }
+  async function saveBrief(scope) {
+    const obj = {};
+    briefBoxes().filter(b => b.dataset.scope === scope).forEach(b => { obj[b.dataset.key] = b.innerText.replace(/ /g, ' '); });
+    await storeSet(briefStoreKey(scope), JSON.stringify(obj));
+  }
   function setupGoalListener() {
-    const el = document.getElementById('weeklyGoal');
     const hint = document.getElementById('weeklyGoalHint');
-    el.addEventListener('input', debounce(async () => {
-      await storeSet(`goal:weekly:${WEEK}`, el.textContent);
-      hint.classList.add('visible');
-      setTimeout(() => hint.classList.remove('visible'), 1200);
-    }, 500));
+    briefBoxes().forEach(box => {
+      box.addEventListener('input', debounce(async () => {
+        await saveBrief(box.dataset.scope);
+        hint.classList.add('visible');
+        setTimeout(() => hint.classList.remove('visible'), 1200);
+      }, 500));
+    });
+    const bd = document.getElementById('briefDate');
+    if (bd) bd.textContent = todayKey().slice(5).replace('-', '/');
+  }
+  function parseBrief(raw) {
+    if (!raw) return {};
+    try { const o = JSON.parse(raw); return (o && typeof o === 'object') ? o : { goals: String(raw) }; }
+    catch (e) { return { goals: String(raw) }; } // 옛 단순 텍스트 호환
   }
   async function refreshWeeklyGoal() {
-    const v = await storeGet(`goal:weekly:${WEEK}`);
-    document.getElementById('weeklyGoal').textContent = v || '';
+    const week = parseBrief(await storeGet(briefStoreKey('week')));
+    const day = parseBrief(await storeGet(briefStoreKey('day')));
+    briefBoxes().forEach(b => {
+      const src = b.dataset.scope === 'day' ? day : week;
+      b.innerText = src[b.dataset.key] || '';
+    });
   }
 
   // ---------- Quarter Goals ----------
@@ -3748,11 +3808,9 @@
     await initStore();
     updateUserBadge();
     organizeViews();
-    injectMemberBars();
     buildEmojiPop();
     setupGoalListener();
     await reloadAll();
-    if (GAS_MODE) { renderMemberBars(); applyShareReadOnly(); }
     switchView(lsGet(LS_VIEW) || 'board');
   }
 

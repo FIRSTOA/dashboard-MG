@@ -34,7 +34,7 @@ var COL = {
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || 'goals';
   var gid = (e && e.parameter && e.parameter.gid) || '';
-  if (action === 'goals') return json_(readGoals_(gid));
+  if (action === 'goals') return json_(readGoals_(gid, e.parameter.goalCol, e.parameter.noMonths));
   if (action === 'tabs') return json_(listTabs_());
   if (action === 'card') return json_(readCard_(gid, e.parameter.quarter));
   return json_({ ok: true, msg: '결과표 연동 정상 작동 중' });
@@ -58,9 +58,11 @@ function getSheet_(gid) {
   return ss.getSheetByName(TAB_NAME);
 }
 
-function readGoals_(gid) {
+function readGoals_(gid, goalColParam, noMonths) {
   var sh = getSheet_(gid);
   if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다 (gid: ' + (gid || TAB_NAME) + ')' };
+  var goalCol = Number(goalColParam) || COL.goal; // 계획표: C(3)=기본업무, I(9)=미션업무
+  var skipMonths = String(noMonths || '') === '1';
   var last = sh.getLastRow();
   if (last < START_ROW) return { ok: true, months: [], rows: [] };
   var n = last - START_ROW + 1;
@@ -70,15 +72,17 @@ function readGoals_(gid) {
 
   // 1) 월 머리글 행 자동 탐지 ('4월','5월'… 또는 '7월','8월'… 분기 바뀌어도 자동 인식)
   var monthCols = [];
-  for (var h = 0; h < n; h++) {
-    var found = [];
-    for (var c = 0; c < lastCol; c++) {
-      var hv = String(values[h][c] || '').trim();
-      if (/^\d{1,2}\s*월$/.test(hv)) found.push({ col: c + 1, label: hv.replace(/\s/g, '') });
+  if (!skipMonths) {
+    for (var h = 0; h < n; h++) {
+      var found = [];
+      for (var c = 0; c < lastCol; c++) {
+        var hv = String(values[h][c] || '').trim();
+        if (/^\d{1,2}\s*월$/.test(hv)) found.push({ col: c + 1, label: hv.replace(/\s/g, '') });
+      }
+      if (found.length >= 2) { monthCols = found; break; }
     }
-    if (found.length >= 2) { monthCols = found; break; }
+    if (!monthCols.length) monthCols = [{ col: 11, label: '4월' }, { col: 12, label: '5월' }, { col: 13, label: '6월' }];
   }
-  if (!monthCols.length) monthCols = [{ col: 11, label: '4월' }, { col: 12, label: '5월' }, { col: 13, label: '6월' }];
 
   // 1.5) 월 컬럼이 가로로 병합된 행 탐지(통합 표시용)
   var mergedRows = {};
@@ -98,9 +102,9 @@ function readGoals_(gid) {
   var lastGubun = '';
   for (var i = 0; i < n; i++) {
     var gubun = String(values[i][COL.gubun - 1] || '').trim();
-    var goal = String(values[i][COL.goal - 1] || '').trim();
+    var goal = String(values[i][goalCol - 1] || '').trim();
     var gN = gubun.replace(/\s/g, ''), goN = goal.replace(/\s/g, ''); // '구 분','목 표' 등 띄어쓰기 무시
-    if (gN === '구분' || goN === '목표' || goN === '구분') continue;
+    if (gN === '구분' || goN === '목표' || goN === '구분' || goN === '목 표') continue;
     if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goN)) continue;
     var isMonthHeader = monthCols.some(function (mc) { return String(values[i][mc.col - 1] || '').trim() === mc.label; });
     if (isMonthHeader) continue;
@@ -113,7 +117,8 @@ function readGoals_(gid) {
       row: START_ROW + i,
       gubun: gubun || lastGubun,
       goal: goal,
-      goalHtml: cellHtml_(rich[i][COL.goal - 1]), // 목표(B): 줄바꿈+색상 유지
+      goalCol: goalCol,
+      goalHtml: cellHtml_(rich[i][goalCol - 1]), // 목표: 줄바꿈+색상 유지
       months: months,
       merged: !!mergedRows[START_ROW + i]         // 월 셀 통합(병합) 여부
     });
@@ -198,12 +203,16 @@ function json_(o) {
 }
 
 // ===================== 골든미팅카드 (분기 × 질문4 × 카테고리6) =====================
+// 주의: 위에서부터 검사하므로, 더 구체적인 q2(기여)를 q1(성과)보다 먼저 둠
+// ("타인의 성과에 내가 기여한" 에도 '성과'가 있어 q1으로 잘못 잡히던 문제 방지)
 var CARD_QUESTIONS = [
-  { key: 'q1', label: '지난기간 나의 성과는?', kw: ['성과'] },
   { key: 'q2', label: '타인의 성과에 내가 기여한 것은?', kw: ['기여'] },
   { key: 'q3', label: '성장을 위한 학습 & 발견한 지식', kw: ['학습', '발견'] },
-  { key: 'q4', label: '다음 도전을 위한 지원 요청', kw: ['지원', '도전'] }
+  { key: 'q4', label: '다음 도전을 위한 지원 요청', kw: ['지원', '도전'] },
+  { key: 'q1', label: '지난기간 나의 성과는?', kw: ['지난기간', '나의성과', '나의 성과', '성과'] }
 ];
+// 화면 표시 순서(q1→q4)
+var CARD_Q_ORDER = ['q1', 'q2', 'q3', 'q4'];
 var CARD_CATS = [
   { key: '매출', label: '매출증대·안정', kw: ['매출'] },
   { key: '효율', label: '효율성', kw: ['효율'] },
@@ -277,5 +286,6 @@ function readCard_(gid, quarter) {
     });
     questions.push({ key: qInfo.key, label: qInfo.label, row: r2 + 1, cells: cells });
   }
+  questions.sort(function (a, b) { return CARD_Q_ORDER.indexOf(a.key) - CARD_Q_ORDER.indexOf(b.key); });
   return { ok: true, quarter: quarter, questions: questions };
 }

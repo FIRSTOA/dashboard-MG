@@ -24,6 +24,7 @@ var START_ROW = 2;          // 데이터가 시작하는 행 (헤더가 1행이�
 var COL = {
   gubun: 1,   // A열 = 구분
   goal:  2,   // B열 = 목표
+  j:    10,   // J열 = 구분 복사본 (A와 같게 자동 채움)
   m4:   11,   // K열 = 4월
   m5:   12,   // L열 = 5월
   m6:   13    // M열 = 6월
@@ -32,7 +33,11 @@ var COL = {
 
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || 'goals';
-  if (action === 'goals') return json_(readGoals_());
+  if (action === 'goals') {
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_NAME);
+    if (sh) { try { fillJfromA_(sh); } catch (x) {} } // J = A 자동 채움
+    return json_(readGoals_());
+  }
   return json_({ ok: true, msg: '결과표 연동 정상 작동 중' });
 }
 
@@ -43,13 +48,15 @@ function readGoals_() {
   var rows = [];
   if (last >= START_ROW) {
     var values = sh.getRange(START_ROW, 1, last - START_ROW + 1, 13).getValues();
+    var lastGubun = ''; // 병합셀: 구분이 비면 위 값 이어받기
     values.forEach(function (r, i) {
       var gubun = String(r[COL.gubun - 1] || '').trim();
       var goal = String(r[COL.goal - 1] || '').trim();
-      if (gubun === '' && goal === '') return; // 빈 행 건너뜀
+      if (gubun) lastGubun = gubun;
+      if (goal === '') return; // 목표 없는 행(구분만/빈행)은 표시 안 함
       rows.push({
         row: START_ROW + i,
-        gubun: gubun,
+        gubun: gubun || lastGubun, // 병합된 아래 행은 위 구분 사용
         goal: goal,
         m4: String(r[COL.m4 - 1] || ''),
         m5: String(r[COL.m5 - 1] || ''),
@@ -58,6 +65,22 @@ function readGoals_() {
     });
   }
   return { ok: true, rows: rows };
+}
+
+// A(구분)를 J열에도 같게 채움 (병합셀은 위 값 이어받아 내려 채움)
+function fillJfromA_(sh) {
+  var last = sh.getLastRow();
+  if (last < START_ROW) return;
+  var n = last - START_ROW + 1;
+  var aVals = sh.getRange(START_ROW, COL.gubun, n, 1).getValues();
+  var out = [];
+  var lastG = '';
+  for (var i = 0; i < n; i++) {
+    var v = String(aVals[i][0] || '').trim();
+    if (v) lastG = v;
+    out.push([lastG]);
+  }
+  sh.getRange(START_ROW, COL.j, n, 1).setValues(out);
 }
 
 function doPost(e) {

@@ -891,11 +891,24 @@
   .cal-holiday-name { font-size: 10px; color: var(--danger); font-weight: 600; line-height: 1.2; }
   .cal-ev { font-size: 10.5px; font-weight: 600; color: white; border-radius: 5px; padding: 2px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
   .cal-ev.done { opacity: 0.5; text-decoration: line-through; text-decoration-thickness: 1.5px; }
-  .cal-more { font-size: 10px; color: var(--text-grey); font-weight: 600; padding-left: 2px; }
+  .cal-more { font-size: 10px; color: var(--text-grey); font-weight: 700; padding: 1px 3px; cursor: pointer; border-radius: 4px; }
+  .cal-more:hover { background: rgba(20,14,80,0.08); color: var(--bg); text-decoration: underline; }
+  /* 하루 일정 더보기 */
+  .day-ev-row { display: flex; align-items: center; gap: 10px; padding: 11px 8px; border-radius: 9px; cursor: pointer; }
+  .day-ev-row:hover { background: var(--card-soft); }
+  .day-ev-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .day-ev-title { font-size: 14px; color: var(--text); }
+  .day-ev-row.done .day-ev-title { text-decoration: line-through; opacity: 0.55; }
+  .day-ev-row.holiday, .day-ev-row.holiday:hover { cursor: default; background: transparent; }
 
   /* mini calendar (board widget) */
-  .mini-cal .cal-cell { min-height: 46px; padding: 3px; }
+  .mini-cal .cal-cell { min-height: 58px; padding: 3px; }
   .mini-cal .cal-daynum { font-size: 11px; }
+  .mini-ev { font-size: 8.5px; font-weight: 700; color: white; border-radius: 3px; padding: 0 3px; margin-top: 2px;
+    line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .mini-ev.holiday { background: var(--danger); }
+  .mini-ev.done { opacity: 0.45; text-decoration: line-through; }
+  .mini-more { font-size: 8.5px; color: var(--text-light); font-weight: 700; padding-left: 2px; line-height: 1.4; }
   .mini-dots { display: flex; gap: 2px; flex-wrap: wrap; margin-top: auto; }
   .mini-dot { width: 5px; height: 5px; border-radius: 50%; }
 
@@ -1115,8 +1128,7 @@
         <button class="cal-nav-btn" id="calToday" style="width:auto;padding:0 12px;font-size:12.5px;font-weight:700">오늘</button>
         <div class="cal-cat-tabs" id="calCatTabs" style="margin-left:8px"></div>
         <button class="btn-white-small" id="addEventBtn" style="margin-left:auto">+ 일정</button>
-        <button class="btn-white-small" id="importEventBtn" style="margin-left:6px">📥 업로드</button>
-        <button class="btn-white-small" id="workmapBtn" style="margin-left:6px">📍 워킹맵</button>
+        <button class="btn-white-small" id="workmapBtn" style="margin-left:6px">📍 재계약 가져오기</button>
       </div>
       <div class="cal-grid" id="calDowRow" style="margin-bottom:4px"></div>
       <div class="cal-grid" id="calGrid"></div>
@@ -1669,31 +1681,44 @@
 <div class="modal-backdrop" id="workmapModalBackdrop">
   <div class="modal" style="max-width:540px">
     <div class="modal-head">
-      <h3>📍 워킹맵 가져오기</h3>
+      <h3>📍 재계약 가져오기</h3>
       <button class="modal-close" id="workmapCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="help-note">
-        구글맵 워킹맵 엑셀(<code>.xlsx</code>) 파일을 그대로 올리면 캘린더에 자동 등록돼요.<br>
-        같은 거래처(기기 여러 대)는 <strong>1개로 합쳐서</strong> 등록됩니다. 다시 올리면 이전 등록분은 교체돼요.
+        재계약(계약종료) 워킹맵 엑셀(<code>.xlsx</code>)을 그대로 올리면 캘린더에 자동 등록돼요.<br>
+        날짜 = 계약종료일(L) · 제목 = 거래처명(M) + 등급(O) · 같은 거래처는 <strong>1개로 합침</strong>.<br>
+        분기마다 새 파일을 올리면 <strong>이전 자동등록분은 교체</strong>됩니다.
       </div>
       <div class="field" style="border:1.5px solid var(--divider); border-radius:12px; padding:12px;">
-        <label class="field-label" style="font-weight:800;">📘 매월점검 <span style="color:var(--text-light);font-weight:600">· 매월 자동반복</span></label>
-        <div style="font-size:12px; color:var(--text-grey); margin:4px 0 8px;">점검일 = 이름(D) 앞 숫자 · 제목 = 회사명(U)</div>
-        <input type="file" id="wm-monthly-file" accept=".xlsx,.xls" style="display:none">
-        <button class="btn btn-primary" id="wm-monthly-btn">매월점검 파일 선택</button>
-      </div>
-      <div class="field" style="border:1.5px solid var(--divider); border-radius:12px; padding:12px; margin-top:10px;">
-        <label class="field-label" style="font-weight:800;">📙 재계약 <span style="color:var(--text-light);font-weight:600">· 분기마다 업로드</span></label>
-        <div style="font-size:12px; color:var(--text-grey); margin:4px 0 8px;">날짜 = 계약종료일(L) · 제목 = 거래처명(M) + 등급(O)</div>
         <input type="file" id="wm-recontract-file" accept=".xlsx,.xls" style="display:none">
-        <button class="btn btn-primary" id="wm-recontract-btn">재계약 파일 선택</button>
+        <button class="btn btn-primary" id="wm-recontract-btn">📂 재계약 파일 선택</button>
+        <button class="btn" id="wm-cancel-btn" style="margin-left:6px">🗑 등록 취소</button>
       </div>
       <div id="wm-result" style="font-size:13px; margin-top:12px; color:var(--text);"></div>
     </div>
     <div class="modal-foot">
       <div class="modal-foot-right">
         <button class="btn" id="workmapDoneBtn">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 하루 일정 더보기 Modal -->
+<div class="modal-backdrop" id="dayModalBackdrop">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h3 id="dayModalTitle">일정</h3>
+      <button class="modal-close" id="dayCloseBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="dayEventList"></div>
+    </div>
+    <div class="modal-foot">
+      <div class="modal-foot-right">
+        <button class="btn" id="dayCloseBtn2">닫기</button>
+        <button class="btn btn-primary" id="dayAddBtn">+ 이 날 일정 추가</button>
       </div>
     </div>
   </div>
@@ -3712,10 +3737,15 @@
       const dayEvents = calEvents.filter(e => eventOccursOn(e, date, ds) && (filter === 'all' || e.cat === filter));
       if (mini) {
         cell.innerHTML = `<div class="cal-daynum">${d}</div>`;
-        const dots = document.createElement('div'); dots.className = 'mini-dots';
-        if (HOLIDAYS[ds]) { const h = document.createElement('div'); h.className = 'mini-dot'; h.style.background = 'var(--danger)'; dots.appendChild(h); }
-        dayEvents.slice(0, 5).forEach(ev => { const dot = document.createElement('div'); dot.className = 'mini-dot'; dot.style.background = (CAL_CAT_MAP[ev.cat] || {}).color || '#888'; if (isOccDone(ev, ds)) dot.style.opacity = '0.3'; dots.appendChild(dot); });
-        cell.appendChild(dots);
+        if (HOLIDAYS[ds]) { const h = document.createElement('div'); h.className = 'mini-ev holiday'; h.textContent = HOLIDAYS[ds]; cell.appendChild(h); }
+        dayEvents.slice(0, 2).forEach(ev => {
+          const c = document.createElement('div'); c.className = 'mini-ev' + (isOccDone(ev, ds) ? ' done' : '');
+          c.style.background = (CAL_CAT_MAP[ev.cat] || {}).color || '#888';
+          c.textContent = ev.title;
+          cell.appendChild(c);
+        });
+        const extra = dayEvents.length - 2;
+        if (extra > 0) { const m = document.createElement('div'); m.className = 'mini-more'; m.textContent = `+${extra}`; cell.appendChild(m); }
       } else {
         let html = `<div class="cal-daynum">${d}</div>`;
         if (HOLIDAYS[ds]) html += `<div class="cal-holiday-name">${HOLIDAYS[ds]}</div>`;
@@ -3728,7 +3758,11 @@
           chip.addEventListener('click', (e) => { e.stopPropagation(); openEventModal(ev, ds); });
           cell.appendChild(chip);
         });
-        if (dayEvents.length > 3) { const m = document.createElement('div'); m.className = 'cal-more'; m.textContent = `+${dayEvents.length - 3}건`; cell.appendChild(m); }
+        if (dayEvents.length > 3) {
+          const m = document.createElement('div'); m.className = 'cal-more'; m.textContent = `+${dayEvents.length - 3}건 더보기`;
+          m.addEventListener('click', (e) => { e.stopPropagation(); openDayModal(ds); });
+          cell.appendChild(m);
+        }
       }
       cell.addEventListener('click', () => openEventModal(null, ds, filter === 'all' ? 'monthly' : filter));
       grid.appendChild(cell);
@@ -3885,7 +3919,7 @@
   }
   function openImport() { document.getElementById('importText').value = ''; document.getElementById('importPreview').textContent = ''; document.getElementById('importDoBtn').textContent = '미리보기'; importParsed = []; importModal.classList.add('open'); }
   function closeImport() { importModal.classList.remove('open'); }
-  document.getElementById('importEventBtn').addEventListener('click', openImport);
+  document.getElementById('importEventBtn')?.addEventListener('click', openImport);
   document.getElementById('importCloseBtn').addEventListener('click', closeImport);
   document.getElementById('importCancelBtn').addEventListener('click', closeImport);
   importModal.addEventListener('click', (e) => { if (e.target === importModal) closeImport(); });
@@ -3943,25 +3977,7 @@
       r.onerror = reject; r.readAsArrayBuffer(file);
     });
   }
-  // 매월점검: D 앞 숫자=점검일, 제목=U(회사명), U기준 중복제거, 매월반복
-  function parseMonthlyWorkmap(rows) {
-    const out = [], seen = new Set();
-    rows.slice(1).forEach(r => {
-      const name = String(r[3] || '').trim();      // D 이름
-      const company = String(r[20] || '').trim();  // U 회사명
-      if (!name) return;
-      const m = name.match(/^\s*(\d{1,2})/);
-      if (!m) return;
-      const day = parseInt(m[1], 10);
-      if (day < 1 || day > 31) return;
-      const title = company || name.replace(/^\s*\d{1,2}/, '').trim();
-      if (!title) return;
-      const key = title;
-      if (seen.has(key)) return; seen.add(key);
-      out.push({ cat: 'monthly', date: `2024-01-${pad(day)}`, time: '', title, repeat: 'monthly', src: 'workmap-monthly', _day: day });
-    });
-    return out;
-  }
+  const RECONTRACT_SRC = 'workmap-recontract';
   // 재계약: L=계약종료일, 제목=M(거래처명)+O(등급), 거래처+날짜 중복제거, 단발
   function parseRecontractWorkmap(rows) {
     const out = [], seen = new Set();
@@ -3975,36 +3991,74 @@
       const title = company + (grade ? ` (${grade})` : '');
       const key = company + '|' + date;
       if (seen.has(key)) return; seen.add(key);
-      out.push({ cat: 'recontract', date, time: '', title, repeat: 'none', src: 'workmap-recontract' });
+      out.push({ cat: 'recontract', date, time: '', title, repeat: 'none', src: RECONTRACT_SRC });
     });
     return out;
   }
-  async function handleWorkmapFile(file, type) {
+  async function handleWorkmapFile(file) {
     const result = document.getElementById('wm-result');
     result.innerHTML = '파일 읽는 중…';
     let rows;
     try { rows = await readXlsxRows(file); }
     catch (e) { result.innerHTML = '<span style="color:var(--danger)">읽기 실패: ' + (e.message || e) + '</span>'; return; }
-    const parsed = type === 'monthly' ? parseMonthlyWorkmap(rows) : parseRecontractWorkmap(rows);
-    if (!parsed.length) { result.innerHTML = '<span style="color:var(--danger)">인식된 항목이 없어요. 워킹맵 원본 파일이 맞는지 확인해 주세요.</span>'; return; }
-    const label = type === 'monthly' ? '매월점검' : '재계약';
-    const src = type === 'monthly' ? 'workmap-monthly' : 'workmap-recontract';
-    const prevCnt = calEvents.filter(e => e.src === src).length;
-    const sample = parsed.slice(0, 5).map(e => type === 'monthly'
-      ? `· 매월 ${e._day}일 — ${e.title}`
-      : `· ${e.date} — ${e.title}`).join('<br>');
-    const ok = confirm(`${label} ${parsed.length}건을 캘린더에 등록할까요?` + (prevCnt ? `\n(기존 ${label} 자동등록 ${prevCnt}건은 교체됩니다)` : ''));
+    const parsed = parseRecontractWorkmap(rows);
+    if (!parsed.length) { result.innerHTML = '<span style="color:var(--danger)">인식된 항목이 없어요. 재계약 워킹맵 원본 파일이 맞는지 확인해 주세요.</span>'; return; }
+    const prevCnt = calEvents.filter(e => e.src === RECONTRACT_SRC).length;
+    const sample = parsed.slice(0, 5).map(e => `· ${e.date} — ${e.title}`).join('<br>');
+    const ok = confirm(`재계약 ${parsed.length}건을 캘린더에 등록할까요?` + (prevCnt ? `\n(기존 재계약 자동등록 ${prevCnt}건은 교체됩니다)` : ''));
     if (!ok) { result.innerHTML = ''; return; }
-    calEvents = calEvents.filter(e => e.src !== src); // 이전 자동등록 교체
-    parsed.forEach((e, i) => { const { _day, ...ev } = e; calEvents.push({ id: 'wm' + Date.now() + i, ...ev }); });
+    calEvents = calEvents.filter(e => e.src !== RECONTRACT_SRC); // 이전 자동등록 교체
+    parsed.forEach((e, i) => calEvents.push({ id: 'wm' + Date.now() + i, ...e }));
     await saveCalendar();
     renderCalendar(); renderMini();
-    result.innerHTML = `<strong style="color:var(--success)">✓ ${label} ${parsed.length}건 등록 완료</strong><br><span style="color:var(--text-grey);font-size:12px;">${sample}${parsed.length > 5 ? '<br>…' : ''}</span>`;
+    result.innerHTML = `<strong style="color:var(--success)">✓ 재계약 ${parsed.length}건 등록 완료</strong><br><span style="color:var(--text-grey);font-size:12px;">${sample}${parsed.length > 5 ? '<br>…' : ''}</span>`;
   }
-  document.getElementById('wm-monthly-btn').addEventListener('click', () => document.getElementById('wm-monthly-file').click());
   document.getElementById('wm-recontract-btn').addEventListener('click', () => document.getElementById('wm-recontract-file').click());
-  document.getElementById('wm-monthly-file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) handleWorkmapFile(f, 'monthly'); e.target.value = ''; });
-  document.getElementById('wm-recontract-file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) handleWorkmapFile(f, 'recontract'); e.target.value = ''; });
+  document.getElementById('wm-recontract-file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) handleWorkmapFile(f); e.target.value = ''; });
+  document.getElementById('wm-cancel-btn').addEventListener('click', async () => {
+    const cnt = calEvents.filter(e => e.src === RECONTRACT_SRC).length;
+    if (!cnt) { document.getElementById('wm-result').innerHTML = '취소할 자동등록 재계약 일정이 없어요.'; return; }
+    if (!confirm(`자동등록된 재계약 일정 ${cnt}건을 모두 삭제할까요?\n(직접 추가한 일정은 그대로 유지됩니다)`)) return;
+    calEvents = calEvents.filter(e => e.src !== RECONTRACT_SRC);
+    await saveCalendar();
+    renderCalendar(); renderMini();
+    document.getElementById('wm-result').innerHTML = `<strong style="color:var(--danger)">🗑 재계약 ${cnt}건 등록 취소 완료</strong>`;
+  });
+
+  // ===================== 하루 일정 더보기 =====================
+  const dayModal = document.getElementById('dayModalBackdrop');
+  let dayModalDs = null;
+  const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
+  function openDayModal(ds) {
+    dayModalDs = ds;
+    const dt = new Date(ds + 'T00:00:00');
+    document.getElementById('dayModalTitle').textContent = `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW_KR[dt.getDay()]})`;
+    renderDayList();
+    dayModal.classList.add('open');
+  }
+  function renderDayList() {
+    const ds = dayModalDs, dt = new Date(ds + 'T00:00:00');
+    const root = document.getElementById('dayEventList'); root.innerHTML = '';
+    if (HOLIDAYS[ds]) {
+      const h = document.createElement('div'); h.className = 'day-ev-row holiday';
+      h.innerHTML = `<span class="day-ev-dot" style="background:var(--danger)"></span><span class="day-ev-title">${escapeHTML(HOLIDAYS[ds])} · 공휴일</span>`;
+      root.appendChild(h);
+    }
+    const list = calEvents.filter(e => eventOccursOn(e, dt, ds) && (calFilter === 'all' || e.cat === calFilter));
+    if (!list.length && !HOLIDAYS[ds]) { root.innerHTML = '<div style="color:var(--text-grey); padding:10px 4px;">일정이 없습니다.</div>'; return; }
+    list.forEach(ev => {
+      const done = isOccDone(ev, ds);
+      const row = document.createElement('div'); row.className = 'day-ev-row' + (done ? ' done' : '');
+      const color = (CAL_CAT_MAP[ev.cat] || {}).color || '#888';
+      row.innerHTML = `<span class="day-ev-dot" style="background:${color}"></span><span class="day-ev-title">${done ? '✓ ' : ''}${ev.time ? escapeHTML(ev.time) + ' ' : ''}${escapeHTML(ev.title)}${ev.repeat && ev.repeat !== 'none' ? ' ↻' : ''}</span>`;
+      row.addEventListener('click', () => { dayModal.classList.remove('open'); openEventModal(ev, ds); });
+      root.appendChild(row);
+    });
+  }
+  document.getElementById('dayCloseBtn').addEventListener('click', () => dayModal.classList.remove('open'));
+  document.getElementById('dayCloseBtn2').addEventListener('click', () => dayModal.classList.remove('open'));
+  dayModal.addEventListener('click', (e) => { if (e.target === dayModal) dayModal.classList.remove('open'); });
+  document.getElementById('dayAddBtn').addEventListener('click', () => { dayModal.classList.remove('open'); openEventModal(null, dayModalDs, calFilter === 'all' ? 'monthly' : calFilter); });
 
   // ===================== 간편 메모장 (mini-Notion) =====================
   let memoBlocks = [];

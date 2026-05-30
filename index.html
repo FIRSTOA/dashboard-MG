@@ -191,7 +191,7 @@
     display: inline-block; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; }
   .rs-card { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
     box-shadow: 0 4px 16px rgba(20,14,80,0.07); }
-  .rs-goal { font-size: 14.5px; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.45; }
+  .rs-goal { font-size: 14.5px; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
   .rs-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .rs-month-label { font-size: 11.5px; font-weight: 700; color: var(--text-grey); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
   .rs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex: none; }
@@ -2284,7 +2284,9 @@
   }
   function buildResultCard(r) {
     const card = document.createElement('div'); card.className = 'rs-card';
-    const goal = document.createElement('div'); goal.className = 'rs-goal'; goal.textContent = r.goal || '(목표 없음)';
+    const goal = document.createElement('div'); goal.className = 'rs-goal';
+    if (r.goalHtml) goal.innerHTML = r.goalHtml;        // 목표(B): 줄바꿈+색상 그대로
+    else goal.textContent = r.goal || '(목표 없음)';
     card.appendChild(goal);
     const months = document.createElement('div'); months.className = 'rs-months';
     const list = r.months || [];
@@ -2297,14 +2299,13 @@
       const box = document.createElement('div');
       box.className = 'rs-month-edit'; box.setAttribute('contenteditable', 'true');
       box.dataset.placeholder = m.label + ' 내용 입력';
-      if (m.html) box.innerHTML = m.html;              // 시트 서식(색상) 그대로 표시
-      else if (m.text) box.textContent = m.text;
+      if (m.text) box.textContent = m.text;            // 월칸은 검정 텍스트로
       const save = debounce(async () => {
         dot.className = 'rs-dot saving';
         const text = box.innerText.replace(/ /g, ' ');
         const ok = await postResultUpdate(r.row, m.col, text);
         dot.className = 'rs-dot ' + (ok ? 'ok' : 'err');
-        if (ok) { m.text = text; m.html = ''; }
+        if (ok) m.text = text;
         setTimeout(() => { dot.className = 'rs-dot'; }, 1500);
       }, 800);
       box.addEventListener('input', save);

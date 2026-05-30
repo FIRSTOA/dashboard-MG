@@ -59,6 +59,19 @@ function readGoals_() {
   }
   if (!monthCols.length) monthCols = [{ col: 11, label: '4월' }, { col: 12, label: '5월' }, { col: 13, label: '6월' }];
 
+  // 1.5) 월 컬럼이 가로로 병합된 행 탐지(통합 표시용)
+  var mergedRows = {};
+  if (monthCols.length >= 2) {
+    var firstC = monthCols[0].col, cnt = monthCols.length;
+    try {
+      sh.getRange(START_ROW, firstC, n, cnt).getMergedRanges().forEach(function (rng) {
+        if (rng.getNumColumns() >= cnt) {
+          for (var rr = rng.getRow(); rr < rng.getRow() + rng.getNumRows(); rr++) mergedRows[rr] = true;
+        }
+      });
+    } catch (e) {}
+  }
+
   // 2) 데이터 행
   var rows = [];
   var lastGubun = '';
@@ -80,7 +93,8 @@ function readGoals_() {
       gubun: gubun || lastGubun,
       goal: goal,
       goalHtml: cellHtml_(rich[i][COL.goal - 1]), // 목표(B): 줄바꿈+색상 유지
-      months: months
+      months: months,
+      merged: !!mergedRows[START_ROW + i]         // 월 셀 통합(병합) 여부
     });
   }
   return { ok: true, months: monthCols.map(function (m) { return m.label; }), rows: rows };
@@ -97,6 +111,23 @@ function doPost(e) {
       var col = Number(b.col) || ({ m4: COL.m4, m5: COL.m5, m6: COL.m6 })[b.field];
       if (!col || !b.row) return json_({ ok: false, error: 'bad params' });
       sh.getRange(Number(b.row), col).setValue(b.value == null ? '' : b.value);
+      return json_({ ok: true });
+    }
+
+    if (b.action === 'mergeMonths') {
+      // 한 행의 월 칸들을 가로로 통합(병합)
+      var mc = Number(b.col), mcnt = Number(b.count);
+      if (!b.row || !mc || mcnt < 2) return json_({ ok: false, error: 'bad params' });
+      var rng = sh.getRange(Number(b.row), mc, 1, mcnt);
+      rng.breakApart();    // 이미 일부 병합돼 있으면 먼저 해제
+      rng.mergeAcross();   // 좌측 값 유지하며 가로 병합
+      return json_({ ok: true });
+    }
+    if (b.action === 'unmergeMonths') {
+      // 통합 해제 → 다시 월별로
+      var uc = Number(b.col), ucnt = Number(b.count);
+      if (!b.row || !uc || ucnt < 2) return json_({ ok: false, error: 'bad params' });
+      sh.getRange(Number(b.row), uc, 1, ucnt).breakApart();
       return json_({ ok: true });
     }
     return json_({ ok: false, error: 'unknown action' });

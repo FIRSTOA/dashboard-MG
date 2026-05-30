@@ -1702,6 +1702,7 @@
             <input type="file" id="ap-photo-file" accept="image/*" style="display:none">
             <button type="button" class="btn" id="ap-photo-btn">📷 사진 선택</button>
             <button type="button" class="btn" id="ap-photo-clear" style="display:none">사진 제거</button>
+            <span style="font-size:11.5px; color:var(--text-light); line-height:1.4;">캡처 후 <b>Ctrl+V</b><br>또는 끌어다 놓기</span>
           </div>
         </div>
       </div>
@@ -4017,15 +4018,40 @@
   appModal.addEventListener('click', (e) => { if (e.target === appModal) closeAppModal(); });
   document.getElementById('ap-photo-btn').addEventListener('click', () => document.getElementById('ap-photo-file').click());
   document.getElementById('ap-photo-clear').addEventListener('click', () => { setApPhoto(''); document.getElementById('ap-photo-file').value = ''; });
-  document.getElementById('ap-photo-file').addEventListener('change', async (e) => {
-    const file = e.target.files && e.target.files[0];
+  async function handlePhotoFile(file) {
     if (!file) return;
     const btn = document.getElementById('ap-photo-btn'); const orig = btn.textContent;
     btn.textContent = '처리 중…'; btn.disabled = true;
     try { setApPhoto(await compressImage(file)); }
     catch (err) { alert('사진을 불러오지 못했어요. 다른 이미지를 시도해 주세요.'); }
     finally { btn.textContent = orig; btn.disabled = false; }
+  }
+  document.getElementById('ap-photo-file').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) handlePhotoFile(file);
   });
+  // 캡처 후 붙여넣기(Ctrl+V) — 모달 열려있을 때
+  document.addEventListener('paste', (e) => {
+    if (!appModal.classList.contains('open')) return;
+    const items = (e.clipboardData && e.clipboardData.items) || [];
+    for (const it of items) {
+      if (it.type && it.type.indexOf('image') === 0) {
+        const file = it.getAsFile();
+        if (file) { e.preventDefault(); handlePhotoFile(file); break; }
+      }
+    }
+  });
+  // 끌어다 놓기
+  const apPhotoRow = document.querySelector('.ap-photo-row');
+  if (apPhotoRow) {
+    ['dragover', 'dragenter'].forEach(ev => apPhotoRow.addEventListener(ev, (e) => { e.preventDefault(); apPhotoRow.style.opacity = '0.6'; }));
+    ['dragleave', 'drop'].forEach(ev => apPhotoRow.addEventListener(ev, () => { apPhotoRow.style.opacity = ''; }));
+    apPhotoRow.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file && file.type.indexOf('image') === 0) handlePhotoFile(file);
+    });
+  }
   document.getElementById('appSaveBtn').addEventListener('click', async () => {
     const nameEl = document.getElementById('ap-name');
     const name = nameEl.value.trim();

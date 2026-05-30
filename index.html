@@ -2287,23 +2287,24 @@
     const goal = document.createElement('div'); goal.className = 'rs-goal'; goal.textContent = r.goal || '(목표 없음)';
     card.appendChild(goal);
     const months = document.createElement('div'); months.className = 'rs-months';
-    [['m4', '4월'], ['m5', '5월'], ['m6', '6월']].forEach(([field, label]) => {
+    const list = r.months || [];
+    months.style.gridTemplateColumns = `repeat(${Math.min(Math.max(list.length, 1), 4)}, 1fr)`;
+    list.forEach(m => {
       const col = document.createElement('div'); col.className = 'rs-month';
       const lab = document.createElement('div'); lab.className = 'rs-month-label';
       const dot = document.createElement('span'); dot.className = 'rs-dot';
-      lab.appendChild(dot); lab.appendChild(document.createTextNode(label));
+      lab.appendChild(dot); lab.appendChild(document.createTextNode(m.label));
       const box = document.createElement('div');
       box.className = 'rs-month-edit'; box.setAttribute('contenteditable', 'true');
-      box.dataset.placeholder = label + ' 내용 입력';
-      const html = r[field + 'Html'];
-      if (html) box.innerHTML = html;                  // 시트 서식(색상) 그대로 표시
-      else if (r[field]) box.textContent = r[field];
+      box.dataset.placeholder = m.label + ' 내용 입력';
+      if (m.html) box.innerHTML = m.html;              // 시트 서식(색상) 그대로 표시
+      else if (m.text) box.textContent = m.text;
       const save = debounce(async () => {
         dot.className = 'rs-dot saving';
         const text = box.innerText.replace(/ /g, ' ');
-        const ok = await postResultUpdate(r.row, field, text);
+        const ok = await postResultUpdate(r.row, m.col, text);
         dot.className = 'rs-dot ' + (ok ? 'ok' : 'err');
-        if (ok) { r[field] = text; r[field + 'Html'] = ''; }
+        if (ok) { m.text = text; m.html = ''; }
         setTimeout(() => { dot.className = 'rs-dot'; }, 1500);
       }, 800);
       box.addEventListener('input', save);
@@ -2312,14 +2313,14 @@
     card.appendChild(months);
     return card;
   }
-  async function postResultUpdate(row, field, value) {
+  async function postResultUpdate(row, col, value) {
     const url = await getResultUrl();
     if (!url) return false;
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'update', row, field, value })
+        body: JSON.stringify({ action: 'update', row, col, value })
       });
       const json = await res.json().catch(() => null);
       return !!(json && json.ok);

@@ -45,36 +45,46 @@ function readGoals_() {
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_NAME);
   if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다: ' + TAB_NAME };
   var last = sh.getLastRow();
-  var rows = [];
-  if (last >= START_ROW) {
-    var n = last - START_ROW + 1;
-    var values = sh.getRange(START_ROW, 1, n, 13).getValues();
-    var rich = sh.getRange(START_ROW, 1, n, 13).getRichTextValues(); // 글자색 등 서식 읽기
-    var lastGubun = ''; // 병합셀: 구분이 비면 위 값 이어받기
-    values.forEach(function (r, i) {
-      var gubun = String(r[COL.gubun - 1] || '').trim();
-      var goal = String(r[COL.goal - 1] || '').trim();
-      // 머리글/제목 행 건너뜀 ('구분','목표','2026년 2분기', 월 머리글 등)
-      if (gubun === '구분' || goal === '목표' || goal === '구분') return;
-      if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goal)) return;
-      var m4v = String(r[COL.m4 - 1] || '').trim();
-      var m5v = String(r[COL.m5 - 1] || '').trim();
-      var m6v = String(r[COL.m6 - 1] || '').trim();
-      if (m4v === '4월' || m5v === '5월' || m6v === '6월') return; // 월 머리글 행
-      if (gubun) lastGubun = gubun;
-      if (goal === '') return; // 목표 없는 행(구분만/빈행)은 표시 안 함
-      var rr = rich[i];
-      rows.push({
-        row: START_ROW + i,
-        gubun: gubun || lastGubun, // 병합된 아래 행은 위 구분 사용
-        goal: goal,
-        m4: String(r[COL.m4 - 1] || ''), m4Html: cellHtml_(rr[COL.m4 - 1]),
-        m5: String(r[COL.m5 - 1] || ''), m5Html: cellHtml_(rr[COL.m5 - 1]),
-        m6: String(r[COL.m6 - 1] || ''), m6Html: cellHtml_(rr[COL.m6 - 1])
-      });
-    });
+  if (last < START_ROW) return { ok: true, months: [], rows: [] };
+  var n = last - START_ROW + 1;
+  var lastCol = Math.max(13, sh.getLastColumn());
+  var values = sh.getRange(START_ROW, 1, n, lastCol).getValues();
+  var rich = sh.getRange(START_ROW, 1, n, lastCol).getRichTextValues();
+
+  // 1) 월 머리글 행 자동 탐지 ('4월','5월'… 또는 '7월','8월'… 분기 바뀌어도 자동 인식)
+  var monthCols = [];
+  for (var h = 0; h < n; h++) {
+    var found = [];
+    for (var c = 0; c < lastCol; c++) {
+      var hv = String(values[h][c] || '').trim();
+      if (/^\d{1,2}\s*월$/.test(hv)) found.push({ col: c + 1, label: hv.replace(/\s/g, '') });
+    }
+    if (found.length >= 2) { monthCols = found; break; }
   }
-  return { ok: true, rows: rows };
+  if (!monthCols.length) monthCols = [{ col: 11, label: '4월' }, { col: 12, label: '5월' }, { col: 13, label: '6월' }];
+
+  // 2) 데이터 행
+  var rows = [];
+  var lastGubun = '';
+  for (var i = 0; i < n; i++) {
+    var gubun = String(values[i][COL.gubun - 1] || '').trim();
+    var goal = String(values[i][COL.goal - 1] || '').trim();
+    if (gubun === '구분' || goal === '목표' || goal === '구분') continue;
+    if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goal)) continue;
+    var isMonthHeader = monthCols.some(function (mc) { return String(values[i][mc.col - 1] || '').trim() === mc.label; });
+    if (isMonthHeader) continue;
+    if (gubun) lastGubun = gubun;
+    if (goal === '') continue;
+    var months = monthCols.map(function (mc) {
+      return {
+        col: mc.col, label: mc.label,
+        text: String(values[i][mc.col - 1] || ''),
+        html: cellHtml_(rich[i][mc.col - 1])
+      };
+    });
+    rows.push({ row: START_ROW + i, gubun: gubun || lastGubun, goal: goal, months: months });
+  }
+  return { ok: true, months: monthCols.map(function (m) { return m.label; }), rows: rows };
 }
 
 // A(구분)를 J열에도 같게 채움 (병합셀은 위 값 이어받아 내려 채움)
@@ -100,9 +110,8 @@ function doPost(e) {
     if (!sh) return json_({ ok: false, error: '탭 없음: ' + TAB_NAME });
 
     if (b.action === 'update') {
-      // 한 셀(특정 행의 4/5/6월) 수정
-      var colMap = { m4: COL.m4, m5: COL.m5, m6: COL.m6 };
-      var col = colMap[b.field];
+      // 한 셀(특정 행/열) 수정 — 열 번호로 지정(월 컬럼 자동대응)
+      var col = Number(b.col) || ({ m4: COL.m4, m5: COL.m5, m6: COL.m6 })[b.field];
       if (!col || !b.row) return json_({ ok: false, error: 'bad params' });
       sh.getRange(Number(b.row), col).setValue(b.value == null ? '' : b.value);
       return json_({ ok: true });

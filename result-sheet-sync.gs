@@ -33,11 +33,7 @@ var COL = {
 
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || 'goals';
-  if (action === 'goals') {
-    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TAB_NAME);
-    if (sh) { try { fillJfromA_(sh); } catch (x) {} } // J = A 자동 채움
-    return json_(readGoals_());
-  }
+  if (action === 'goals') return json_(readGoals_());
   return json_({ ok: true, msg: '결과표 연동 정상 작동 중' });
 }
 
@@ -69,38 +65,25 @@ function readGoals_() {
   for (var i = 0; i < n; i++) {
     var gubun = String(values[i][COL.gubun - 1] || '').trim();
     var goal = String(values[i][COL.goal - 1] || '').trim();
-    if (gubun === '구분' || goal === '목표' || goal === '구분') continue;
-    if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goal)) continue;
+    var gN = gubun.replace(/\s/g, ''), goN = goal.replace(/\s/g, ''); // '구 분','목 표' 등 띄어쓰기 무시
+    if (gN === '구분' || goN === '목표' || goN === '구분') continue;
+    if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goN)) continue;
     var isMonthHeader = monthCols.some(function (mc) { return String(values[i][mc.col - 1] || '').trim() === mc.label; });
     if (isMonthHeader) continue;
     if (gubun) lastGubun = gubun;
     if (goal === '') continue;
     var months = monthCols.map(function (mc) {
-      return {
-        col: mc.col, label: mc.label,
-        text: String(values[i][mc.col - 1] || ''),
-        html: cellHtml_(rich[i][mc.col - 1])
-      };
+      return { col: mc.col, label: mc.label, text: String(values[i][mc.col - 1] || '') }; // 월칸은 그냥 텍스트(검정)
     });
-    rows.push({ row: START_ROW + i, gubun: gubun || lastGubun, goal: goal, months: months });
+    rows.push({
+      row: START_ROW + i,
+      gubun: gubun || lastGubun,
+      goal: goal,
+      goalHtml: cellHtml_(rich[i][COL.goal - 1]), // 목표(B): 줄바꿈+색상 유지
+      months: months
+    });
   }
   return { ok: true, months: monthCols.map(function (m) { return m.label; }), rows: rows };
-}
-
-// A(구분)를 J열에도 같게 채움 (병합셀은 위 값 이어받아 내려 채움)
-function fillJfromA_(sh) {
-  var last = sh.getLastRow();
-  if (last < START_ROW) return;
-  var n = last - START_ROW + 1;
-  var aVals = sh.getRange(START_ROW, COL.gubun, n, 1).getValues();
-  var out = [];
-  var lastG = '';
-  for (var i = 0; i < n; i++) {
-    var v = String(aVals[i][0] || '').trim();
-    if (v) lastG = v;
-    out.push([lastG]);
-  }
-  sh.getRange(START_ROW, COL.j, n, 1).setValues(out);
 }
 
 function doPost(e) {

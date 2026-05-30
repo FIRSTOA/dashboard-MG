@@ -47,7 +47,9 @@ function readGoals_() {
   var last = sh.getLastRow();
   var rows = [];
   if (last >= START_ROW) {
-    var values = sh.getRange(START_ROW, 1, last - START_ROW + 1, 13).getValues();
+    var n = last - START_ROW + 1;
+    var values = sh.getRange(START_ROW, 1, n, 13).getValues();
+    var rich = sh.getRange(START_ROW, 1, n, 13).getRichTextValues(); // 글자색 등 서식 읽기
     var lastGubun = ''; // 병합셀: 구분이 비면 위 값 이어받기
     values.forEach(function (r, i) {
       var gubun = String(r[COL.gubun - 1] || '').trim();
@@ -57,13 +59,14 @@ function readGoals_() {
       if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goal)) return;
       if (gubun) lastGubun = gubun;
       if (goal === '') return; // 목표 없는 행(구분만/빈행)은 표시 안 함
+      var rr = rich[i];
       rows.push({
         row: START_ROW + i,
         gubun: gubun || lastGubun, // 병합된 아래 행은 위 구분 사용
         goal: goal,
-        m4: String(r[COL.m4 - 1] || ''),
-        m5: String(r[COL.m5 - 1] || ''),
-        m6: String(r[COL.m6 - 1] || '')
+        m4: String(r[COL.m4 - 1] || ''), m4Html: cellHtml_(rr[COL.m4 - 1]),
+        m5: String(r[COL.m5 - 1] || ''), m5Html: cellHtml_(rr[COL.m5 - 1]),
+        m6: String(r[COL.m6 - 1] || ''), m6Html: cellHtml_(rr[COL.m6 - 1])
       });
     });
   }
@@ -104,6 +107,27 @@ function doPost(e) {
   } catch (err) {
     return json_({ ok: false, error: String(err) });
   }
+}
+
+// 셀의 서식(글자색)을 HTML로 변환 (줄바꿈은 <br>)
+function cellHtml_(rt) {
+  if (!rt) return '';
+  var runs;
+  try { runs = rt.getRuns(); } catch (e) { return esc_(String(rt.getText ? rt.getText() : '')).replace(/\n/g, '<br>'); }
+  var html = '';
+  runs.forEach(function (run) {
+    var t = run.getText();
+    if (t === '') return;
+    var color = null;
+    try { color = run.getTextStyle().getForegroundColor(); } catch (e) {}
+    var safe = esc_(t).replace(/\n/g, '<br>');
+    if (color && color.toLowerCase() !== '#000000') html += '<span style="color:' + color + '">' + safe + '</span>';
+    else html += safe;
+  });
+  return html;
+}
+function esc_(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function json_(o) {

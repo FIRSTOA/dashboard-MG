@@ -21,7 +21,8 @@
 // ===================== 골든카드 AI 자동작성 설치 (1회) =====================
 //  Apps Script → 프로젝트 설정(⚙️) → '스크립트 속성'에 아래 추가:
 //    OPENAI_API_KEY = sk-... (본인 OpenAI 키)
-//    OPENAI_MODEL   = gpt-5  (선택, 기본 gpt-5)
+//    OPENAI_MODEL   = gpt-5.5  (선택, 기본 gpt-5.5)
+//    OPENAI_REASONING_EFFORT = high  (선택, 기본 high=정확도 우선 / minimal=빠름)
 //  ※ 키는 시트/대시보드에 노출되지 않고 GAS 내부에만 보관됩니다.
 // ==========================================================================
 
@@ -304,8 +305,8 @@ function buildCardPrompt_(quarter, resultText, missionText, exampleText) {
 
 function callOpenAI_(apiKey, prompt) {
   var props = PropertiesService.getScriptProperties();
-  var model = props.getProperty('OPENAI_MODEL') || 'gpt-5';
-  var effort = props.getProperty('OPENAI_REASONING_EFFORT') || 'low'; // minimal|low|medium|high
+  var model = props.getProperty('OPENAI_MODEL') || 'gpt-5.5';
+  var effort = props.getProperty('OPENAI_REASONING_EFFORT') || 'high'; // minimal|low|medium|high (정확도 우선=high)
   var payload = {
     model: model,
     messages: [
@@ -317,7 +318,7 @@ function callOpenAI_(apiKey, prompt) {
   // GPT-5/o계열(추론 모델): reasoning_effort로 속도 확보 + max_completion_tokens 사용
   var isReasoning = /^(gpt-5|o\d|o-)/i.test(model);
   if (isReasoning) {
-    payload.max_completion_tokens = 6000;
+    payload.max_completion_tokens = 16000; // high 추론 시 잘림 방지
     payload.reasoning_effort = effort;
   } else {
     payload.max_tokens = 4000;

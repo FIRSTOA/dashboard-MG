@@ -2606,14 +2606,15 @@
     if (!confirm(`${cardQuarter}분기 골든미팅카드를 AI로 자동작성할까요?\n결과표·미션결과표를 분석해 이 분기 24칸을 채웁니다.\n(기존 ${cardQuarter}분기 내용은 덮어쓰여요)`)) return;
     btn.disabled = true; const orig = btn.textContent; btn.textContent = '⏳ 작성 중…';
     status.className = 'gm-ai-status busy';
-    // 경과 시간 표시 + 무한대기 방지 타임아웃(180초)
+    // 경과 시간 표시 + 무한대기 방지 타임아웃(10분)
     const t0 = Date.now();
     const tick = setInterval(() => {
       const s = Math.round((Date.now() - t0) / 1000);
-      status.textContent = `🤖 AI가 결과표·미션표를 분석해 작성 중… (${s}초 경과, 최대 약 1~2분)`;
+      const mm = s >= 60 ? `${Math.floor(s / 60)}분 ${s % 60}초` : `${s}초`;
+      status.textContent = `🤖 AI가 정확도 우선(high)으로 작성 중… (${mm} 경과) · 몇 분 걸릴 수 있어요. 창을 닫지 말고 기다려 주세요.`;
     }, 1000);
     const ctrl = new AbortController();
-    const killer = setTimeout(() => ctrl.abort(), 180000);
+    const killer = setTimeout(() => ctrl.abort(), 600000); // 10분
     try {
       // 결과표/미션표 gid 확보(탭 목록 자동 해석)
       const resultGid = await resolveGid(RESULT_TABS.find(t => t.key === 'quarter'));

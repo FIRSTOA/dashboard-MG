@@ -2605,8 +2605,15 @@
     if (!btn || !status) return;
     if (!confirm(`${cardQuarter}분기 골든미팅카드를 AI로 자동작성할까요?\n결과표·미션결과표를 분석해 이 분기 24칸을 채웁니다.\n(기존 ${cardQuarter}분기 내용은 덮어쓰여요)`)) return;
     btn.disabled = true; const orig = btn.textContent; btn.textContent = '⏳ 작성 중…';
-    status.textContent = '결과표·미션표 분석 후 AI가 작성 중입니다. 30초~1분 걸릴 수 있어요…';
     status.className = 'gm-ai-status busy';
+    // 경과 시간 표시 + 무한대기 방지 타임아웃(180초)
+    const t0 = Date.now();
+    const tick = setInterval(() => {
+      const s = Math.round((Date.now() - t0) / 1000);
+      status.textContent = `🤖 AI가 결과표·미션표를 분석해 작성 중… (${s}초 경과, 최대 약 1~2분)`;
+    }, 1000);
+    const ctrl = new AbortController();
+    const killer = setTimeout(() => ctrl.abort(), 180000);
     try {
       // 결과표/미션표 gid 확보(탭 목록 자동 해석)
       const resultGid = await resolveGid(RESULT_TABS.find(t => t.key === 'quarter'));
@@ -2615,8 +2622,10 @@
       const url = await getResultUrl();
       const res = await fetch(url, {
         method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'aiCard', quarter: cardQuarter, resultGid, missionGid, cardGid })
+        body: JSON.stringify({ action: 'aiCard', quarter: cardQuarter, resultGid, missionGid, cardGid }),
+        signal: ctrl.signal
       });
+      clearInterval(tick); clearTimeout(killer);
       const json = await res.json().catch(() => null);
       if (json && json.ok) {
         status.textContent = `✅ 작성 완료! (${json.written || 0}칸 입력됨) 확인하세요.`;
@@ -2628,7 +2637,11 @@
         btn.disabled = false; btn.textContent = orig;
       }
     } catch (e) {
-      status.textContent = '❌ 오류: ' + (e.message || e);
+      clearInterval(tick); clearTimeout(killer);
+      const aborted = (e && e.name === 'AbortError');
+      status.textContent = aborted
+        ? '⌛ 응답이 너무 오래 걸려 중단했어요. 잠시 후 다시 시도하거나, GPT 추론을 줄여보세요(스크립트 속성 OPENAI_REASONING_EFFORT=minimal).'
+        : '❌ 오류: ' + (e.message || e);
       status.className = 'gm-ai-status err';
       btn.disabled = false; btn.textContent = orig;
     }

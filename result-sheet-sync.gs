@@ -303,7 +303,9 @@ function buildCardPrompt_(quarter, resultText, missionText, exampleText) {
 }
 
 function callOpenAI_(apiKey, prompt) {
-  var model = PropertiesService.getScriptProperties().getProperty('OPENAI_MODEL') || 'gpt-5';
+  var props = PropertiesService.getScriptProperties();
+  var model = props.getProperty('OPENAI_MODEL') || 'gpt-5';
+  var effort = props.getProperty('OPENAI_REASONING_EFFORT') || 'low'; // minimal|low|medium|high
   var payload = {
     model: model,
     messages: [
@@ -312,6 +314,15 @@ function callOpenAI_(apiKey, prompt) {
     ],
     response_format: { type: 'json_object' }
   };
+  // GPT-5/o계열(추론 모델): reasoning_effort로 속도 확보 + max_completion_tokens 사용
+  var isReasoning = /^(gpt-5|o\d|o-)/i.test(model);
+  if (isReasoning) {
+    payload.max_completion_tokens = 6000;
+    payload.reasoning_effort = effort;
+  } else {
+    payload.max_tokens = 4000;
+    payload.temperature = 0.7;
+  }
   var res = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
     method: 'post', contentType: 'application/json',
     headers: { Authorization: 'Bearer ' + apiKey },
@@ -322,8 +333,13 @@ function callOpenAI_(apiKey, prompt) {
   if (code !== 200) return { ok: false, error: 'OpenAI 오류(' + code + '): ' + body.slice(0, 300) };
   var j;
   try { j = JSON.parse(body); } catch (e) { return { ok: false, error: '응답 파싱 실패' }; }
-  var content = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
-  if (!content) return { ok: false, error: '빈 응답' };
+  var choice = j.choices && j.choices[0];
+  var content = choice && choice.message && choice.message.content;
+  if (!content) {
+    var fin = choice && choice.finish_reason;
+    if (fin === 'length') return { ok: false, error: '응답이 토큰 한도에서 잘렸습니다. OPENAI_REASONING_EFFORT를 minimal로 낮추거나 모델을 바꿔보세요.' };
+    return { ok: false, error: '빈 응답 (finish_reason: ' + fin + ')' };
+  }
   var data;
   try { data = JSON.parse(content); } catch (e) { return { ok: false, error: 'AI가 JSON 형식을 지키지 않음: ' + String(content).slice(0, 200) }; }
   return { ok: true, data: data };

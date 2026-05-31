@@ -203,6 +203,14 @@
     border-radius: 10px; padding: 7px 18px; font-size: 13.5px; font-weight: 800; cursor: pointer; }
   .gm-qbtn:hover { background: rgba(255,255,255,0.22); }
   .gm-qbtn.active { background: white; color: var(--bg); border-color: white; }
+  .gm-ai-btn { margin-left: auto; border: none; background: linear-gradient(135deg, #7C3AED, #2563EB); color: white;
+    border-radius: 10px; padding: 7px 16px; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 10px rgba(80,40,200,0.3); }
+  .gm-ai-btn:hover { filter: brightness(1.08); }
+  .gm-ai-btn:disabled { opacity: 0.6; cursor: default; }
+  .gm-ai-status { font-size: 13px; margin-bottom: 12px; color: rgba(255,255,255,0.9); }
+  .gm-ai-status.busy { color: #FCD34D; }
+  .gm-ai-status.done { color: #6EE7B7; font-weight: 700; }
+  .gm-ai-status.err { color: #FCA5A5; font-weight: 700; }
   .gm-q-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 12px;
     padding-bottom: 9px; border-bottom: 2px solid var(--divider); }
   .gm-cells { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -2354,8 +2362,8 @@
   // type: 'goals'=결과표형(구분/목표/월별), 'card'=골든미팅카드(분기×질문×카테고리)
   // gid 비우고 nameKw 주면 시트 탭 이름으로 자동 인식
   const RESULT_TABS = [
-    { key: 'quarter', label: '📊 분기결과표', type: 'goals', gid: '' },
-    { key: 'mission', label: '🎯 미션결과표', type: 'goals', gid: '1053550780' },
+    { key: 'quarter', label: '📊 분기결과표', type: 'goals', gid: '', nameKw: ['결과표'], nameExclude: ['미션'] },
+    { key: 'mission', label: '🎯 미션결과표', type: 'goals', gid: '1053550780', nameKw: ['미션결과', '미션 결과'] },
     { key: 'plan',    label: '📝 계획표',     type: 'plan',  gid: '', nameKw: ['계획표', '레벨업계획', '계획'] },
     { key: 'card',    label: '🃏 골든미팅카드', type: 'card', gid: '', nameKw: ['골든', '미팅', '카드'] }
   ];
@@ -2378,7 +2386,8 @@
         const j = await res.json(); tabGidCache = (j && j.tabs) || [];
       } catch { tabGidCache = []; }
     }
-    const hit = tabGidCache.find(x => t.nameKw.some(k => x.name.includes(k)));
+    const ex = t.nameExclude || [];
+    const hit = tabGidCache.find(x => t.nameKw.some(k => x.name.includes(k)) && !ex.some(k => x.name.includes(k)));
     return hit ? hit.gid : '';
   }
   function currentResultGid() { return activeGid || curTab().gid; } // 로드 시 resolveGid로 갱신됨
@@ -2548,7 +2557,15 @@
       b.addEventListener('click', () => { if (cardQuarter === q) return; cardQuarter = q; loadResultGoals(); });
       qbar.appendChild(b);
     });
+    // AI 자동작성 버튼
+    const aiBtn = document.createElement('button'); aiBtn.className = 'gm-ai-btn'; aiBtn.id = 'gmAiBtn';
+    aiBtn.textContent = '🤖 AI 자동작성';
+    aiBtn.title = '결과표·미션결과표를 분석해 이 분기 칸을 자동으로 작성';
+    aiBtn.addEventListener('click', () => runAiCard());
+    qbar.appendChild(aiBtn);
     root.appendChild(qbar);
+    const aiStatus = document.createElement('div'); aiStatus.id = 'gmAiStatus'; aiStatus.className = 'gm-ai-status';
+    root.appendChild(aiStatus);
     const qs = data.questions || [];
     if (!qs.length) { const e = document.createElement('div'); e.className = 'rs-empty'; e.innerHTML = `${cardQuarter}분기 골든미팅카드 데이터를 찾지 못했어요.<br><small>시트에 해당 분기 칸이 있는지 확인하세요.</small>`; root.appendChild(e); return; }
     qs.forEach((q, qi) => {
@@ -2579,6 +2596,42 @@
       card.appendChild(grid);
       root.appendChild(card);
     });
+  }
+
+  // 골든카드 AI 자동작성 실행
+  async function runAiCard() {
+    const btn = document.getElementById('gmAiBtn');
+    const status = document.getElementById('gmAiStatus');
+    if (!btn || !status) return;
+    if (!confirm(`${cardQuarter}분기 골든미팅카드를 AI로 자동작성할까요?\n결과표·미션결과표를 분석해 이 분기 24칸을 채웁니다.\n(기존 ${cardQuarter}분기 내용은 덮어쓰여요)`)) return;
+    btn.disabled = true; const orig = btn.textContent; btn.textContent = '⏳ 작성 중…';
+    status.textContent = '결과표·미션표 분석 후 AI가 작성 중입니다. 30초~1분 걸릴 수 있어요…';
+    status.className = 'gm-ai-status busy';
+    try {
+      // 결과표/미션표 gid 확보(탭 목록 자동 해석)
+      const resultGid = await resolveGid(RESULT_TABS.find(t => t.key === 'quarter'));
+      const missionGid = await resolveGid(RESULT_TABS.find(t => t.key === 'mission'));
+      const cardGid = await resolveGid(curTab());
+      const url = await getResultUrl();
+      const res = await fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'aiCard', quarter: cardQuarter, resultGid, missionGid, cardGid })
+      });
+      const json = await res.json().catch(() => null);
+      if (json && json.ok) {
+        status.textContent = `✅ 작성 완료! (${json.written || 0}칸 입력됨) 확인하세요.`;
+        status.className = 'gm-ai-status done';
+        await loadResultGoals();
+      } else {
+        status.textContent = '❌ 작성 실패: ' + ((json && json.error) || 'API 키 설정·GAS 재배포를 확인하세요.');
+        status.className = 'gm-ai-status err';
+        btn.disabled = false; btn.textContent = orig;
+      }
+    } catch (e) {
+      status.textContent = '❌ 오류: ' + (e.message || e);
+      status.className = 'gm-ai-status err';
+      btn.disabled = false; btn.textContent = orig;
+    }
   }
 
   // ===================== 계획표 렌더 (기본업무 / 미션업무 토글 + 목표 편집) =====================

@@ -18,6 +18,13 @@
  * ※ 테스트: 브라우저에서  <exec주소>?action=goals  를 열면 읽어온 JSON이 보입니다.
  */
 
+// ===================== 골든카드 AI 자동작성 설치 (1회) =====================
+//  Apps Script → 프로젝트 설정(⚙️) → '스크립트 속성'에 아래 추가:
+//    OPENAI_API_KEY = sk-... (본인 OpenAI 키)
+//    OPENAI_MODEL   = gpt-5  (선택, 기본 gpt-5)
+//  ※ 키는 시트/대시보드에 노출되지 않고 GAS 내부에만 보관됩니다.
+// ==========================================================================
+
 // ===================== CONFIG =====================
 var TAB_NAME = '결과표';     // 탭(시트) 이름
 var START_ROW = 1;          // 1부터 읽되 머리글/제목 행은 자동으로 건너뜀
@@ -171,10 +178,161 @@ function doPost(e) {
       sh.deleteRow(dr);
       return json_({ ok: true });
     }
+    if (b.action === 'aiCard') {
+      return json_(aiFillCard_(b));
+    }
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
   }
+}
+
+// ===================== 골든미팅카드 AI 자동작성 (ChatGPT) =====================
+// b: { resultGid, missionGid, cardGid, quarter, dryRun }
+function aiFillCard_(b) {
+  var quarter = String(b.quarter || '').replace(/[^1-4]/g, '');
+  if (!quarter) return { ok: false, error: '분기를 알 수 없습니다.' };
+  var apiKey = PropertiesService.getScriptProperties().getProperty('OPENAI_API_KEY');
+  if (!apiKey) return { ok: false, error: 'OPENAI_API_KEY가 설정되지 않았습니다. (Apps Script → 프로젝트 설정 → 스크립트 속성)' };
+
+  // 1) 입력 자료 수집: 결과표(구분/목표/월별), 미션표(구분/목표/월별)
+  var resultData = readGoals_(b.resultGid, null, null);
+  var missionData = readGoals_(b.missionGid, null, null);
+  var resultText = goalsToText_(resultData, '기본업무 결과표');
+  var missionText = goalsToText_(missionData, '미션 결과표');
+
+  // 2) 골든카드에서 참고용 예시(작성된 다른 분기) 추출
+  var exampleText = cardExampleText_(b.cardGid, quarter);
+
+  // 3) GPT 호출
+  var prompt = buildCardPrompt_(quarter, resultText, missionText, exampleText);
+  var aiJson = callOpenAI_(apiKey, prompt);
+  if (!aiJson.ok) return aiJson;
+  var card = aiJson.data;
+
+  if (b.dryRun) return { ok: true, preview: card, quarter: quarter };
+
+  // 4) 골든카드 해당 분기 24칸에 입력
+  var written = writeCard_(b.cardGid, quarter, card);
+  return { ok: true, written: written, quarter: quarter, preview: card };
+}
+
+// 결과표 데이터를 텍스트로 직렬화 (GPT 입력용)
+function goalsToText_(data, title) {
+  if (!data || !data.rows || !data.rows.length) return '[' + title + '] (데이터 없음)';
+  var months = (data.months || []).join(' / ');
+  var lines = ['[' + title + '] (월: ' + months + ')'];
+  data.rows.forEach(function (r) {
+    lines.push('■ 구분: ' + r.gubun + ' | 목표: ' + r.goal);
+    (r.months || []).forEach(function (m) {
+      if (m.text && String(m.text).trim()) lines.push('   - ' + m.label + ': ' + m.text);
+    });
+  });
+  return lines.join('\n');
+}
+
+// 골든카드에서 quarter 외 다른 분기의 작성된 내용을 예시로 추출
+function cardExampleText_(gid, quarter) {
+  var ex = '';
+  for (var q = 1; q <= 4; q++) {
+    var qs = String(q);
+    if (qs === quarter) continue;
+    var c = readCard_(gid, qs);
+    if (!c.ok || !c.questions) continue;
+    var has = c.questions.some(function (qq) { return (qq.cells || []).some(function (cl) { return cl.text && cl.text.trim(); }); });
+    if (!has) continue;
+    var lines = ['[참고: ' + qs + '분기 작성 예시]'];
+    c.questions.forEach(function (qq) {
+      lines.push('● ' + qq.label);
+      (qq.cells || []).forEach(function (cl) { if (cl.text && cl.text.trim()) lines.push('   [' + cl.cat + '] ' + cl.text); });
+    });
+    return lines.join('\n');
+  }
+  return '(참고 예시 없음)';
+}
+
+function buildCardPrompt_(quarter, resultText, missionText, exampleText) {
+  var cats = '매출증대·안정, 효율성, 비용절감, 자기개발, 소통, AI';
+  return [
+    '너는 퍼스트전산 분기 골든미팅카드 작성 담당자야.',
+    '아래 결과표/미션표를 분석해서, 기존 골든미팅카드와 같은 형식·문체로 ' + quarter + '분기 골든미팅카드를 작성해줘.',
+    '',
+    '[출력 구조 — 매우 중요]',
+    '질문 4개 × 카테고리 6개 = 총 24칸을 JSON으로만 출력해줘. 설명·코드블록 없이 순수 JSON만.',
+    '카테고리 키: "매출", "효율", "비용", "자기", "소통", "AI"',
+    '질문 키: q1(지난기간 나의 성과는?), q2(타인의 성과에 내가 기여한 것은?), q3(성장을 위한 학습 & 발견한 지식), q4(다음 도전을 위한 지원 요청)',
+    '형식: {"q1":{"매출":"...","효율":"...","비용":"...","자기":"...","소통":"...","AI":"..."}, "q2":{...}, "q3":{...}, "q4":{...}}',
+    '해당 카테고리에 근거 자료가 없으면 그 칸은 빈 문자열("")로 둬. 억지로 만들지 마.',
+    '',
+    '[작성 원칙]',
+    '1. 결과표의 수치·건수·달성률·완료여부를 반드시 반영. 근거 없는 성과는 만들지 마. 수치 임의변경 금지.',
+    '2. 미달성도 숨기지 말고 "10/12회, 83%"처럼 정확히 쓰고 개선방향을 함께. 초과달성은 "52/12건, 433%"처럼.',
+    '3. 문체: "~했습니다/완료했습니다/기여했습니다/깨달았습니다/향상시켰습니다". 성실하고 진정성 있게.',
+    '4. q1 성과: 항목 번호 사용. q2 기여: "[○○을 하며 기여한 점]" 대괄호 제목 + 겸손한 "~에 기여했습니다".',
+    '5. q3 학습: 각 항목 "✅[○○을 통해 배운점]" 형식 + 성찰형 문장. q4: 짧고 부담없이, 성장·회사기여 관점.',
+    '6. AI/자동화는 반복업무 감소·병목제거·표준화·전사확산 관점으로. 소통은 분위기·동기부여·학습분위기 관점으로.',
+    '',
+    '[분기] ' + quarter + 'Q',
+    '',
+    '[기본업무/목표/결과표 입력]',
+    resultText,
+    '',
+    '[미션/상세 실행 결과표 입력]',
+    missionText,
+    '',
+    '[참고용 기존 골든미팅카드 결과 예시]',
+    exampleText,
+    '',
+    '다시 강조: 순수 JSON 객체 하나만 출력해. 다른 텍스트 절대 금지.'
+  ].join('\n');
+}
+
+function callOpenAI_(apiKey, prompt) {
+  var model = PropertiesService.getScriptProperties().getProperty('OPENAI_MODEL') || 'gpt-5';
+  var payload = {
+    model: model,
+    messages: [
+      { role: 'system', content: '너는 한국어 인사평가 문서 작성 전문가다. 항상 유효한 JSON만 출력한다.' },
+      { role: 'user', content: prompt }
+    ],
+    response_format: { type: 'json_object' }
+  };
+  var res = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'post', contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + apiKey },
+    payload: JSON.stringify(payload), muteHttpExceptions: true
+  });
+  var code = res.getResponseCode();
+  var body = res.getContentText();
+  if (code !== 200) return { ok: false, error: 'OpenAI 오류(' + code + '): ' + body.slice(0, 300) };
+  var j;
+  try { j = JSON.parse(body); } catch (e) { return { ok: false, error: '응답 파싱 실패' }; }
+  var content = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+  if (!content) return { ok: false, error: '빈 응답' };
+  var data;
+  try { data = JSON.parse(content); } catch (e) { return { ok: false, error: 'AI가 JSON 형식을 지키지 않음: ' + String(content).slice(0, 200) }; }
+  return { ok: true, data: data };
+}
+
+// 카테고리 키 → readCard_의 catCols 키 매핑
+var AI_CAT_KEYS = ['매출', '효율', '비용', '자기', '소통', 'AI'];
+function writeCard_(gid, quarter, card) {
+  var c = readCard_(gid, quarter);
+  if (!c.ok) throw new Error(c.error || '카드 읽기 실패');
+  var sh = getSheet_(gid);
+  var qKeyMap = { q1: '성과', q2: '기여', q3: '학습', q4: '지원' }; // 라벨 매칭 보조
+  var written = 0;
+  c.questions.forEach(function (q) {
+    var qData = card[q.key];
+    if (!qData) return;
+    (q.cells || []).forEach(function (cell, idx) {
+      var catKey = AI_CAT_KEYS[idx]; // cells는 CARD_CATS 순서(매출,효율,비용,자기,소통,AI)
+      var val = qData[catKey];
+      if (val == null || String(val).trim() === '') return;
+      if (cell.col) { sh.getRange(q.row, cell.col).setValue(String(val)); written++; }
+    });
+  });
+  return written;
 }
 
 // 셀의 서식(글자색)을 HTML로 변환 (줄바꿈은 <br>)

@@ -187,6 +187,21 @@ function doPost(e) {
   }
 }
 
+// ▶▶ 권한 승인용: 에디터에서 이 함수를 한 번 '실행'하세요.
+//    - 외부요청(UrlFetchApp) 권한 동의 창이 뜨면 허용 → AI 자동작성 활성화
+//    - OPENAI_API_KEY가 설정돼 있으면 실제로 GPT 호출까지 테스트합니다.
+function 권한승인_및_AI테스트() {
+  var props = PropertiesService.getScriptProperties();
+  var key = props.getProperty('OPENAI_API_KEY');
+  if (!key) {
+    Logger.log('⚠ OPENAI_API_KEY 미설정. 프로젝트 설정 → 스크립트 속성에 추가하세요. (권한 승인은 완료됨)');
+    UrlFetchApp.fetch('https://api.openai.com/v1/models', { muteHttpExceptions: true }); // 권한 트리거
+    return;
+  }
+  var r = callOpenAI_(key, '한국어로 {"ok":"테스트 성공"} 형식의 JSON만 출력해.');
+  Logger.log(JSON.stringify(r));
+}
+
 // ===================== 골든미팅카드 AI 자동작성 (ChatGPT) =====================
 // b: { resultGid, missionGid, cardGid, quarter, dryRun }
 function aiFillCard_(b) {

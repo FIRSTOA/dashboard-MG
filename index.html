@@ -915,7 +915,17 @@
   }
   .cal-cell:hover { background: #EDEAF8; }
   .cal-cell.empty { background: transparent; cursor: default; }
-  .cal-cell.today { outline: 2px solid var(--bg); outline-offset: -2px; }
+  .cal-cell.today {
+    background: linear-gradient(180deg, #FFF7E6, #FFE9BD);
+    outline: 2px solid #F59E0B; outline-offset: -2px;
+    box-shadow: 0 0 0 4px rgba(245,158,11,0.18);
+  }
+  .cal-cell.today:hover { background: #FFE9BD; }
+  .cal-cell.today .cal-daynum {
+    align-self: flex-start; display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 20px; padding: 0 6px; border-radius: 100px;
+    background: #F59E0B; color: #fff !important; font-weight: 800;
+  }
   .cal-daynum { font-size: 12.5px; font-weight: 700; }
   .cal-cell.sun .cal-daynum, .cal-cell.holiday .cal-daynum { color: var(--danger); }
   .cal-cell.sat .cal-daynum { color: #3B82F6; }
@@ -935,6 +945,7 @@
   /* mini calendar (board widget) */
   .mini-cal .cal-cell { min-height: 58px; padding: 3px; }
   .mini-cal .cal-daynum { font-size: 11px; }
+  .mini-cal .cal-cell.today .cal-daynum { min-width: 16px; height: 16px; padding: 0 4px; }
   .mini-ev { font-size: 8.5px; font-weight: 700; color: white; border-radius: 3px; padding: 0 3px; margin-top: 2px;
     line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .mini-ev.holiday { background: var(--danger); }

@@ -46,7 +46,10 @@ var COL = {
 // 2) Apps Script에서 setupQuarterToggles()를 1회 실행하면 해당 시트들의 A1에 1Q~4Q 드롭다운이 생깁니다.
 // 3) 이후 A1에서 분기를 선택하면 같은 업무명의 해당 분기 시트로 이동합니다.
 var QUARTER_TOGGLE_CELL = 'A1';
+var MEMBER_TOGGLE_CELL = 'B1';
+var MEMBER_BASE_LABEL = '기본양식';
 var QUARTER_TOGGLE_VALUES = ['1Q', '2Q', '3Q', '4Q'];
+var DEFAULT_MEMBER_TOGGLE_NAMES = ['이민구', '이홍진', '한왕주', '박영현'];
 // 중요: '미션결과표' 안에는 '결과표'가 포함되므로 반드시 '결과표'보다 먼저 판별해야 합니다.
 var QUARTER_SHEET_TYPES = ['미션결과표', '계획표', '결과표'];
 
@@ -56,51 +59,90 @@ function normalizeQuarterValue_(value) {
   return m ? (m[1] + 'Q') : '';
 }
 
-function parseQuarterSheetName_(sheetName) {
-  var name = String(sheetName || '').trim();
-  var m = name.match(/^([1-4])\s*Q\s*(.+)$/i) || name.match(/^([1-4])\s*분기\s*(.+)$/);
-  if (!m) return null;
-  var q = m[1] + 'Q';
-  var type = String(m[2] || '').trim();
+function detectQuarterType_(typeText) {
+  var type = String(typeText || '').trim();
 
   // 1차: 정확히 일치하는 이름을 먼저 판별합니다.
   for (var i = 0; i < QUARTER_SHEET_TYPES.length; i++) {
-    if (type === QUARTER_SHEET_TYPES[i]) {
-      return { quarter: q, type: QUARTER_SHEET_TYPES[i] };
-    }
+    if (type === QUARTER_SHEET_TYPES[i]) return QUARTER_SHEET_TYPES[i];
   }
 
   // 2차: 포함 판별은 긴 이름 우선 순서로만 수행합니다.
   for (var j = 0; j < QUARTER_SHEET_TYPES.length; j++) {
-    if (type.indexOf(QUARTER_SHEET_TYPES[j]) >= 0) {
-      return { quarter: q, type: QUARTER_SHEET_TYPES[j] };
-    }
+    if (type.indexOf(QUARTER_SHEET_TYPES[j]) >= 0) return QUARTER_SHEET_TYPES[j];
   }
-  return null;
+  return '';
 }
 
-function hideQuarterSiblingSheets_(ss, activeSheet, type) {
+function parseQuarterSheetName_(sheetName) {
+  var name = String(sheetName || '').trim();
+  var m = name.match(/^([1-4])\s*Q\s*(.+)$/i) || name.match(/^([1-4])\s*분기\s*(.+)$/);
+  var member = '';
+
+  // 개인 탭 권장 형식: 이름_1Q 계획표 / 이름_2Q 결과표 / 이름_3Q 미션결과표
+  if (!m) {
+    var pm = name.match(/^(.+?)_([1-4])\s*Q\s*(.+)$/i) || name.match(/^(.+?)_([1-4])\s*분기\s*(.+)$/);
+    if (pm) {
+      member = String(pm[1] || '').trim();
+      m = [pm[0], pm[2], pm[3]];
+    }
+  }
+
+  // 이전 배포 호환 형식: 이름_결과표_1분기
+  if (!m) {
+    var lm = name.match(/^(.+?)_(.+?)_([1-4])\s*분기$/);
+    if (lm) {
+      member = String(lm[1] || '').trim();
+      m = [lm[0], lm[3], lm[2]];
+    }
+  }
+
+  if (!m) return null;
+  var q = m[1] + 'Q';
+  var type = detectQuarterType_(m[2]);
+  if (!type) return null;
+  return { quarter: q, type: type, member: member };
+}
+
+function hideQuarterSiblingSheets_(ss, activeSheet, type, member) {
+  var activeInfo = parseQuarterSheetName_(activeSheet.getName()) || {};
+  var targetMember = member != null ? String(member || '').trim() : String(activeInfo.member || '').trim();
   var sheets = ss.getSheets();
   for (var i = 0; i < sheets.length; i++) {
     var sh = sheets[i];
     if (sh.getSheetId() === activeSheet.getSheetId()) continue;
     var info = parseQuarterSheetName_(sh.getName());
-    if (info && info.type === type) {
-      try { sh.hideSheet(); } catch (err) {}
+    if (!info || info.type !== type) continue;
+    if (targetMember) {
+      if (info.member === targetMember) {
+        try { sh.hideSheet(); } catch (err) {}
+      }
+    } else if (!info.member) {
+      try { sh.hideSheet(); } catch (err2) {}
     }
   }
 }
 
-function findQuarterSheet_(ss, quarter, type) {
+function findQuarterSheet_(ss, quarter, type, member) {
   var qNum = String(quarter || '').replace(/[^1-4]/g, '');
-  var candidates = [
-    qNum + 'Q ' + type,
-    qNum + 'Q' + type,
-    qNum + '분기 ' + type,
-    qNum + '분기' + type,
-    type + ' ' + qNum + 'Q',
-    type + '_' + qNum + '분기'
-  ];
+  var m = cleanMember_(member);
+  var candidates = [];
+  if (m) {
+    candidates = candidates.concat([
+      safeSheetName_(m + '_' + qNum + 'Q ' + type),
+      safeSheetName_(m + '_' + qNum + 'Q' + type),
+      safeSheetName_(m + '_' + type + '_' + qNum + '분기')
+    ]);
+  } else {
+    candidates = candidates.concat([
+      qNum + 'Q ' + type,
+      qNum + 'Q' + type,
+      qNum + '분기 ' + type,
+      qNum + '분기' + type,
+      type + ' ' + qNum + 'Q',
+      type + '_' + qNum + '분기'
+    ]);
+  }
   for (var i = 0; i < candidates.length; i++) {
     var exact = ss.getSheetByName(candidates[i]);
     if (exact) return exact;
@@ -108,35 +150,61 @@ function findQuarterSheet_(ss, quarter, type) {
   var shs = ss.getSheets();
   for (var s = 0; s < shs.length; s++) {
     var info = parseQuarterSheetName_(shs[s].getName());
-    if (info && info.quarter === (qNum + 'Q') && info.type === type) return shs[s];
+    if (!info) continue;
+    if (info.quarter === (qNum + 'Q') && info.type === type && String(info.member || '') === m) return shs[s];
   }
   return null;
 }
 
+function getMemberNamesFromSheets_(ss) {
+  var map = {};
+  DEFAULT_MEMBER_TOGGLE_NAMES.forEach(function (name) {
+    if (name) map[String(name).trim()] = true;
+  });
+  ss.getSheets().forEach(function (sh) {
+    var qInfo = parseQuarterSheetName_(sh.getName());
+    if (qInfo && qInfo.member) map[qInfo.member] = true;
+    var cm = String(sh.getName() || '').match(/^(.+?)_골든미팅카드$/);
+    if (cm && cm[1]) map[String(cm[1]).trim()] = true;
+  });
+  return Object.keys(map).filter(function (name) { return !!name; }).sort();
+}
+
 function setupQuarterToggles() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var rule = SpreadsheetApp.newDataValidation()
+  var quarterRule = SpreadsheetApp.newDataValidation()
     .requireValueInList(QUARTER_TOGGLE_VALUES, true)
+    .setAllowInvalid(false)
+    .build();
+  var memberValues = [MEMBER_BASE_LABEL].concat(getMemberNamesFromSheets_(ss));
+  var memberRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(memberValues, true)
     .setAllowInvalid(false)
     .build();
   var count = 0;
   ss.getSheets().forEach(function (sh) {
     var info = parseQuarterSheetName_(sh.getName());
     if (!info) return;
-    var cell = sh.getRange(QUARTER_TOGGLE_CELL);
-    cell.setDataValidation(rule);
-    cell.setValue(info.quarter);
-    cell.setNote('분기를 선택하면 같은 종류의 해당 분기 시트로 이동합니다.');
+    var qCell = sh.getRange(QUARTER_TOGGLE_CELL);
+    qCell.setDataValidation(quarterRule);
+    qCell.setValue(info.quarter);
+    qCell.setNote('분기를 선택하면 같은 종류의 해당 분기 시트로 이동합니다.');
+
+    var mCell = sh.getRange(MEMBER_TOGGLE_CELL);
+    mCell.setDataValidation(memberRule);
+    mCell.setValue(info.member || MEMBER_BASE_LABEL);
+    mCell.setNote('이름을 선택하면 같은 분기·같은 종류의 개인 탭으로 이동합니다.');
     count++;
   });
-  SpreadsheetApp.getUi().alert('A1 분기 토글 설정 완료: ' + count + '개 시트');
+  try { SpreadsheetApp.getUi().alert('A1/B1 토글 설정 완료: ' + count + '개 시트'); } catch (err) {}
+  return { ok: true, count: count, members: memberValues };
 }
 
 function onOpen(e) {
   try {
     SpreadsheetApp.getUi()
-      .createMenu('분기 이동')
-      .addItem('A1 분기 토글 설치/갱신', 'setupQuarterToggles')
+      .createMenu('관리자 설정')
+      .addItem('A1/B1 토글 설치/갱신', 'setupQuarterToggles')
       .addToUi();
   } catch (err) {}
 }
@@ -145,28 +213,50 @@ function onEdit(e) {
   try {
     if (!e || !e.range) return;
     var range = e.range;
-    if (range.getA1Notation() !== QUARTER_TOGGLE_CELL) return;
+    var cell = range.getA1Notation();
+    if (cell !== QUARTER_TOGGLE_CELL && cell !== MEMBER_TOGGLE_CELL) return;
     var sh = range.getSheet();
     var info = parseQuarterSheetName_(sh.getName());
     if (!info) return;
-    var targetQuarter = normalizeQuarterValue_(e.value || range.getValue());
-    if (!targetQuarter || targetQuarter === info.quarter) return;
     var ss = sh.getParent();
-    var target = findQuarterSheet_(ss, targetQuarter, info.type);
-    if (!target) {
-      range.setValue(info.quarter);
-      SpreadsheetApp.getActive().toast(targetQuarter + ' ' + info.type + ' 시트를 찾지 못했습니다.', '분기 이동', 5);
+
+    if (cell === QUARTER_TOGGLE_CELL) {
+      var targetQuarter = normalizeQuarterValue_(e.value || range.getValue());
+      if (!targetQuarter || targetQuarter === info.quarter) return;
+      var targetByQuarter = findQuarterSheet_(ss, targetQuarter, info.type, info.member);
+      if (!targetByQuarter) {
+        range.setValue(info.quarter);
+        SpreadsheetApp.getActive().toast(targetQuarter + ' ' + (info.member ? info.member + ' ' : '') + info.type + ' 시트를 찾지 못했습니다.', '분기 이동', 5);
+        return;
+      }
+      targetByQuarter.showSheet();
+      targetByQuarter.getRange(QUARTER_TOGGLE_CELL).setValue(targetQuarter);
+      targetByQuarter.getRange(MEMBER_TOGGLE_CELL).setValue(info.member || MEMBER_BASE_LABEL);
+      ss.setActiveSheet(targetByQuarter);
+      hideQuarterSiblingSheets_(ss, targetByQuarter, info.type, info.member);
+      SpreadsheetApp.flush();
       return;
     }
-    // 숨겨진 시트는 활성화 순간 다시 표시될 수밖에 없으므로,
-    // 이동 후 같은 종류의 다른 분기 탭을 다시 숨겨서 탭 목록이 풀리지 않게 유지합니다.
-    target.showSheet();
-    target.getRange(QUARTER_TOGGLE_CELL).setValue(targetQuarter);
-    ss.setActiveSheet(target);
-    hideQuarterSiblingSheets_(ss, target, info.type);
-    SpreadsheetApp.flush();
+
+    if (cell === MEMBER_TOGGLE_CELL) {
+      var rawMember = String(e.value || range.getValue() || '').trim();
+      var targetMember = (rawMember === MEMBER_BASE_LABEL) ? '' : rawMember;
+      if (targetMember === String(info.member || '').trim()) return;
+      var targetByMember = findQuarterSheet_(ss, info.quarter, info.type, targetMember);
+      if (!targetByMember) {
+        range.setValue(info.member || MEMBER_BASE_LABEL);
+        SpreadsheetApp.getActive().toast((targetMember || MEMBER_BASE_LABEL) + ' ' + info.quarter + ' ' + info.type + ' 시트를 찾지 못했습니다.', '이름 이동', 5);
+        return;
+      }
+      targetByMember.showSheet();
+      targetByMember.getRange(QUARTER_TOGGLE_CELL).setValue(info.quarter);
+      targetByMember.getRange(MEMBER_TOGGLE_CELL).setValue(targetMember || MEMBER_BASE_LABEL);
+      ss.setActiveSheet(targetByMember);
+      hideQuarterSiblingSheets_(ss, targetByMember, info.type, targetMember);
+      SpreadsheetApp.flush();
+    }
   } catch (err) {
-    SpreadsheetApp.getActive().toast('분기 이동 오류: ' + err.message, '분기 이동', 5);
+    SpreadsheetApp.getActive().toast('토글 이동 오류: ' + err.message, '시트 이동', 5);
   }
 }
 // ================================================================
@@ -240,10 +330,15 @@ function isQuarterSplitBase_(baseName) {
 }
 function memberTabName_(baseName, member, quarter) {
   var q = normalizeQuarter_(quarter);
-  var suffix = (q && isQuarterSplitBase_(baseName)) ? '_' + q + '분기' : '';
-  return safeSheetName_(cleanMember_(member) + '_' + baseName + suffix);
+  if (q && isQuarterSplitBase_(baseName)) return safeSheetName_(cleanMember_(member) + '_' + q + 'Q ' + baseName);
+  return safeSheetName_(cleanMember_(member) + '_' + baseName);
 }
-function findMainSheet_(ss, baseName) {
+function findMainSheet_(ss, baseName, quarter) {
+  var q = normalizeQuarter_(quarter);
+  if (q && isQuarterSplitBase_(baseName)) {
+    var qs = findQuarterSheet_(ss, q + 'Q', baseName, '');
+    if (qs) return qs;
+  }
   var exact = ss.getSheetByName(baseName);
   if (exact) return exact;
   var aliases = [];
@@ -265,6 +360,9 @@ function findMemberSheet_(ss, baseName, member, quarter) {
   var q = normalizeQuarter_(quarter);
   var primary = memberTabName_(baseName, m, q);
   var candidates = [primary];
+  if (q && isQuarterSplitBase_(baseName)) {
+    candidates.push(safeSheetName_(m + '_' + baseName + '_' + q + '분기'));
+  }
   if (!q || !isQuarterSplitBase_(baseName)) {
     candidates = candidates.concat([
       safeSheetName_(baseName + '_' + m),
@@ -289,7 +387,7 @@ function getSheet_(gid, member, quarter) {
   var q = isQuarterSplitBase_(baseName) ? (normalizeQuarter_(quarter) || '1') : '';
   var existing = findMemberSheet_(ss, baseName, m, q);
   if (existing) return existing;
-  var main = findMainSheet_(ss, baseName) || base;
+  var main = findMainSheet_(ss, baseName, q) || base;
   if (!main) {
     throw new Error('메인 양식 탭을 찾을 수 없습니다: ' + baseName + ' 탭을 먼저 만들어 주세요.');
   }
@@ -300,6 +398,64 @@ function getSheet_(gid, member, quarter) {
   ss.moveActiveSheet(ss.getNumSheets());
   try { ss.setActiveSheet(main); copied.hideSheet(); } catch (hideErr) {}
   return copied;
+}
+
+function applyMemberSheetDefaults_(sheet, baseName, member, team) {
+  var m = cleanMember_(member);
+  var t = String(team || '').trim();
+  if (!sheet || !m) return;
+  if (baseName === '골든미팅카드') {
+    sheet.getRange('D1').setValue('파트: ' + t);
+    sheet.getRange('F1').setValue('이름: ' + m);
+    return;
+  }
+  if (baseName === '계획표') {
+    sheet.getRange('A4').setValue(m);
+    return;
+  }
+  if (baseName === '미션결과표') {
+    sheet.getRange('A3').setValue('※ 1년차 cs ' + t + ' ' + m + '프로');
+    return;
+  }
+  if (baseName === '결과표') {
+    sheet.getRange('A4').setValue('※ 1년차 cs ' + t + ' ' + m + '프로');
+  }
+}
+
+function createMemberSheets_(team, member) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var m = cleanMember_(member);
+  var t = String(team || '').trim();
+  if (!m) return { ok: false, error: 'member 값이 비어 있습니다.' };
+  if (!t) return { ok: false, error: 'team 값이 비어 있습니다.' };
+
+  var created = [];
+  var reused = [];
+  var touched = [];
+  ['계획표', '결과표', '미션결과표'].forEach(function (baseName) {
+    for (var q = 1; q <= 4; q++) {
+      var before = findMemberSheet_(ss, baseName, m, String(q));
+      var template = findMainSheet_(ss, baseName, String(q));
+      if (!template) throw new Error(q + 'Q ' + baseName + ' 기본 양식 탭을 찾지 못했습니다.');
+      var sheet = before || getSheet_(String(template.getSheetId()), m, String(q));
+      applyMemberSheetDefaults_(sheet, baseName, m, t);
+      if (before) reused.push(sheet.getName()); else created.push(sheet.getName());
+      touched.push(sheet.getName());
+      try { sheet.hideSheet(); } catch (err) {}
+    }
+  });
+
+  var cardBase = findMainSheet_(ss, '골든미팅카드') || ss.getSheetByName('골든미팅카드');
+  if (!cardBase) throw new Error('골든미팅카드 기본 양식 탭을 찾지 못했습니다.');
+  var beforeCard = findMemberSheet_(ss, '골든미팅카드', m, '');
+  var card = beforeCard || getSheet_(String(cardBase.getSheetId()), m, '');
+  applyMemberSheetDefaults_(card, '골든미팅카드', m, t);
+  if (beforeCard) reused.push(card.getName()); else created.push(card.getName());
+  touched.push(card.getName());
+  try { card.hideSheet(); } catch (cardErr) {}
+
+  setupQuarterToggles();
+  return { ok: true, team: t, member: m, created: created, reused: reused, touched: touched, count: touched.length };
 }
 
 function readGoals_(gid, goalColParam, noMonths, member, quarter) {
@@ -375,6 +531,9 @@ function doPost(e) {
     var b = JSON.parse(e.postData.contents || '{}');
     if (b.action === 'aiCard') {
       return json_(aiFillCard_(b));
+    }
+    if (b.action === 'createMemberSheets') {
+      return json_(createMemberSheets_(b.team, b.member));
     }
     var sh = getSheet_(b.gid, b.member, b.quarter);
     if (!sh) return json_({ ok: false, error: '탭 없음 (gid: ' + (b.gid || TAB_NAME) + ')' });

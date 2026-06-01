@@ -1876,30 +1876,10 @@
     return 'priv';
   }
   function cacheFor(scope) { return scope === 'team' ? TEAM : scope === 'share' ? SHARE : PRIV; }
-  function scopedTeamName(team) {
-    const name = String(team || '').trim();
-    return name || '_none';
-  }
-  function shareScopeUserName(user) {
-    return String(user || shareScopeUser || MY.username || '').trim();
-  }
-  function legacyShareScopeKey(user) {
-    return 'share:' + shareScopeUserName(user);
-  }
   function scopeKeyStr(scope, user) {
-    if (scope === 'team') return 'team:' + scopedTeamName(MY.team);
-    if (scope === 'share') return 'share:' + scopedTeamName(MY.team) + ':' + shareScopeUserName(user);
+    if (scope === 'team') return 'team:' + (MY.team || '_none');
+    if (scope === 'share') return 'share:' + (user || shareScopeUser || MY.username);
     return 'priv:' + MY.username;
-  }
-  async function loadScopeData(scopeKey) {
-    const r = await supaRpc('app_load', { p_token: TOKEN, p_scope: scopeKey });
-    return (r && r.ok && r.data && typeof r.data === 'object') ? r.data : {};
-  }
-  async function saveScopeData(scopeKey, data) {
-    return supaRpc('app_save', { p_token: TOKEN, p_scope: scopeKey, p_data: data });
-  }
-  function hasScopeData(obj) {
-    return !!obj && typeof obj === 'object' && !Array.isArray(obj) && Object.keys(obj).length > 0;
   }
   function scheduleScopeSave(scope) {
     if (scope === 'share' && shareReadOnly) return; // 보기 전용
@@ -1907,29 +1887,15 @@
     clearTimeout(saveTimers[scope]);
     saveTimers[scope] = setTimeout(async () => {
       try {
-        const r = await saveScopeData(scopeKeyStr(scope), cacheFor(scope));
+        const r = await supaRpc('app_save', { p_token: TOKEN, p_scope: scopeKeyStr(scope), p_data: cacheFor(scope) });
         setSyncState(r && r.ok ? 'ok' : 'error');
       } catch (e) { console.error('save', scope, e); setSyncState('error'); }
     }, 700);
   }
   async function loadScopeInto(scope, user) {
     try {
-      const targetUser = shareScopeUserName(user);
-      const scopeKey = scopeKeyStr(scope, user);
-      let obj = await loadScopeData(scopeKey);
-      if (scope === 'share' && !hasScopeData(obj)) {
-        const legacyKey = legacyShareScopeKey(user);
-        if (legacyKey !== scopeKey) {
-          const legacyObj = await loadScopeData(legacyKey);
-          if (hasScopeData(legacyObj)) {
-            obj = legacyObj;
-            if (targetUser === MY.username) {
-              await saveScopeData(scopeKey, legacyObj);
-              await saveScopeData(legacyKey, {});
-            }
-          }
-        }
-      }
+      const r = await supaRpc('app_load', { p_token: TOKEN, p_scope: scopeKeyStr(scope, user) });
+      const obj = (r && r.ok && r.data && typeof r.data === 'object') ? r.data : {};
       if (scope === 'team') TEAM = obj; else if (scope === 'share') SHARE = obj; else PRIV = obj;
       setSyncState('ok');
     } catch (e) { console.error('load', scope, e); setSyncState('error'); }

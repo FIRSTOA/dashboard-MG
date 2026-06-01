@@ -30,7 +30,7 @@ create table if not exists sessions (
 );
 
 create table if not exists kv (
-  scope      text primary key,               -- 'priv:<username>' | 'share:<TEAM>:<username>' | 'team:<TEAM>'
+  scope      text primary key,               -- 'priv:<username>' | 'share:<username>' | 'team:<TEAM>'
   data       jsonb not null default '{}',
   updated_at timestamptz default now()
 );
@@ -101,7 +101,7 @@ end $$;
 -- ---------- 데이터 로드/저장 (스코프 + 권한) ----------
 create or replace function app_load(p_token uuid, p_scope text)
 returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
-declare me accounts; kind text; who text; ok boolean := false; d jsonb; team_part text; user_part text;
+declare me accounts; kind text; who text; ok boolean := false; d jsonb;
 begin
   select * into me from _acct(p_token);
   if me.id is null then return json_build_object('ok', false, 'error', 'auth'); end if;
@@ -112,18 +112,8 @@ begin
   elsif kind = 'team' then
     ok := (me.role = 'admin' or (me.team <> '' and me.team = who));
   elsif kind = 'share' then
-    team_part := split_part(who, ':', 1);
-    user_part := split_part(who, ':', 2);
-    if user_part = '' then
-      user_part := who;
-      team_part := '';
-    end if;
-    if me.role = 'admin' or lower(user_part) = lower(me.username) then
-      ok := (team_part = '' or team_part = '_none' or (me.team <> '' and team_part = me.team));
-    else
-      ok := me.team <> '' and team_part = me.team and exists(
-        select 1 from accounts o where lower(o.username) = lower(user_part) and o.team = me.team
-      );
+    if me.role = 'admin' or lower(who) = lower(me.username) then ok := true;
+    else ok := exists(select 1 from accounts o where lower(o.username) = lower(who) and o.team = me.team and me.team <> '');
     end if;
   end if;
   if not ok then return json_build_object('ok', false, 'error', 'forbidden'); end if;
@@ -133,7 +123,7 @@ end $$;
 
 create or replace function app_save(p_token uuid, p_scope text, p_data jsonb)
 returns json language plpgsql security definer set search_path = public, extensions, pg_temp as $$
-declare me accounts; kind text; who text; ok boolean := false; team_part text; user_part text;
+declare me accounts; kind text; who text; ok boolean := false;
 begin
   select * into me from _acct(p_token);
   if me.id is null then return json_build_object('ok', false, 'error', 'auth'); end if;
@@ -142,20 +132,9 @@ begin
   if kind = 'priv' then
     ok := (lower(who) = lower(me.username));
   elsif kind = 'team' then
-    ok := (me.team <> '' and me.team = who);
+    ok := (me.team <> '' and me.team = who);     -- 팀원 누구나 팀 보드 수정
   elsif kind = 'share' then
-    team_part := split_part(who, ':', 1);
-    user_part := split_part(who, ':', 2);
-    if user_part = '' then
-      user_part := who;
-      team_part := '';
-    end if;
-    ok := lower(user_part) = lower(me.username)
-      and (
-        team_part = ''
-        or (team_part = '_none' and me.team = '')
-        or (me.team <> '' and team_part = me.team)
-      );
+    ok := (lower(who) = lower(me.username));      -- 공유 데이터는 본인만 수정
   end if;
   if not ok then return json_build_object('ok', false, 'error', 'forbidden'); end if;
   insert into kv(scope, data, updated_at) values (p_scope, p_data, now())

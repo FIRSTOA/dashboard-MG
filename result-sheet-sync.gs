@@ -46,10 +46,8 @@ var COL = {
 // 2) Apps Script에서 setupQuarterToggles()를 1회 실행하면 해당 시트들의 A1에 1Q~4Q 드롭다운이 생깁니다.
 // 3) 이후 A1에서 분기를 선택하면 같은 업무명의 해당 분기 시트로 이동합니다.
 var QUARTER_TOGGLE_CELL = 'A1';
-var MEMBER_TOGGLE_CELL = 'B1';
-var MEMBER_BASE_LABEL = '기본양식';
+// 개인 복사본 방식에서는 B1 이름 토글을 사용하지 않습니다.
 var QUARTER_TOGGLE_VALUES = ['1Q', '2Q', '3Q', '4Q'];
-var DEFAULT_MEMBER_TOGGLE_NAMES = ['이민구', '이홍진', '한왕주', '박영현'];
 // 중요: '미션결과표' 안에는 '결과표'가 포함되므로 반드시 '결과표'보다 먼저 판별해야 합니다.
 var QUARTER_SHEET_TYPES = ['미션결과표', '계획표', '결과표'];
 
@@ -165,107 +163,56 @@ function findQuarterSheet_(ss, quarter, type, member) {
   return null;
 }
 
-function getMemberNamesFromSheets_(ss) {
-  var map = {};
-  DEFAULT_MEMBER_TOGGLE_NAMES.forEach(function (name) {
-    if (name) map[String(name).trim()] = true;
-  });
-  ss.getSheets().forEach(function (sh) {
-    var qInfo = parseQuarterSheetName_(sh.getName());
-    if (qInfo && qInfo.member) map[qInfo.member] = true;
-    var cm = String(sh.getName() || '').match(/^(.+?)_골든미팅카드$/);
-    if (cm && cm[1]) map[String(cm[1]).trim()] = true;
-  });
-  return Object.keys(map).filter(function (name) { return !!name; }).sort();
-}
-
 function setupQuarterToggles() {
+  // 개인 복사본 방식에서는 관리자 메뉴와 B1 이름 토글을 사용하지 않습니다.
+  // 필요 시 A1 분기 드롭다운만 수동 실행으로 설치할 수 있게 남겨둡니다.
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var quarterRule = SpreadsheetApp.newDataValidation()
     .requireValueInList(QUARTER_TOGGLE_VALUES, true)
     .setAllowInvalid(false)
     .build();
-  var memberValues = [MEMBER_BASE_LABEL].concat(getMemberNamesFromSheets_(ss));
-  var memberRule = SpreadsheetApp.newDataValidation()
-    .requireValueInList(memberValues, true)
-    .setAllowInvalid(false)
-    .build();
   var count = 0;
   ss.getSheets().forEach(function (sh) {
     var info = parseQuarterSheetName_(sh.getName());
-    if (!info) return;
+    if (!info || info.member) return;
     var qCell = sh.getRange(QUARTER_TOGGLE_CELL);
     qCell.setDataValidation(quarterRule);
     qCell.setValue(info.quarter);
     qCell.setNote('분기를 선택하면 같은 종류의 해당 분기 시트로 이동합니다.');
-
-    var mCell = sh.getRange(MEMBER_TOGGLE_CELL);
-    mCell.setDataValidation(memberRule);
-    mCell.setValue(info.member || MEMBER_BASE_LABEL);
-    mCell.setNote('이름을 선택하면 같은 분기·같은 종류의 개인 탭으로 이동합니다.');
     count++;
   });
-  try { SpreadsheetApp.getUi().alert('A1/B1 토글 설정 완료: ' + count + '개 시트'); } catch (err) {}
-  return { ok: true, count: count, members: memberValues };
+  try { SpreadsheetApp.getUi().alert('A1 분기 토글 설정 완료: ' + count + '개 시트'); } catch (err) {}
+  return { ok: true, count: count };
 }
 
 function onOpen(e) {
-  try {
-    SpreadsheetApp.getUi()
-      .createMenu('관리자 설정')
-      .addItem('A1/B1 토글 설치/갱신', 'setupQuarterToggles')
-      .addToUi();
-  } catch (err) {}
+  // 개인 복사본 방식에서는 관리자 설정 메뉴를 만들지 않습니다.
 }
 
 function onEdit(e) {
   try {
     if (!e || !e.range) return;
     var range = e.range;
-    var cell = range.getA1Notation();
-    if (cell !== QUARTER_TOGGLE_CELL && cell !== MEMBER_TOGGLE_CELL) return;
+    if (range.getA1Notation() !== QUARTER_TOGGLE_CELL) return;
     var sh = range.getSheet();
     var info = parseQuarterSheetName_(sh.getName());
-    if (!info) return;
+    if (!info || info.member) return;
+    var targetQuarter = normalizeQuarterValue_(e.value || range.getValue());
+    if (!targetQuarter || targetQuarter === info.quarter) return;
     var ss = sh.getParent();
-
-    if (cell === QUARTER_TOGGLE_CELL) {
-      var targetQuarter = normalizeQuarterValue_(e.value || range.getValue());
-      if (!targetQuarter || targetQuarter === info.quarter) return;
-      var targetByQuarter = findQuarterSheet_(ss, targetQuarter, info.type, info.member);
-      if (!targetByQuarter) {
-        range.setValue(info.quarter);
-        SpreadsheetApp.getActive().toast(targetQuarter + ' ' + (info.member ? info.member + ' ' : '') + info.type + ' 시트를 찾지 못했습니다.', '분기 이동', 5);
-        return;
-      }
-      targetByQuarter.showSheet();
-      targetByQuarter.getRange(QUARTER_TOGGLE_CELL).setValue(targetQuarter);
-      targetByQuarter.getRange(MEMBER_TOGGLE_CELL).setValue(info.member || MEMBER_BASE_LABEL);
-      ss.setActiveSheet(targetByQuarter);
-      hideQuarterSiblingSheets_(ss, targetByQuarter, info.type, info.member);
-      SpreadsheetApp.flush();
+    var targetByQuarter = findQuarterSheet_(ss, targetQuarter, info.type, '');
+    if (!targetByQuarter) {
+      range.setValue(info.quarter);
+      SpreadsheetApp.getActive().toast(targetQuarter + ' ' + info.type + ' 시트를 찾지 못했습니다.', '분기 이동', 5);
       return;
     }
-
-    if (cell === MEMBER_TOGGLE_CELL) {
-      var rawMember = String(e.value || range.getValue() || '').trim();
-      var targetMember = (rawMember === MEMBER_BASE_LABEL) ? '' : rawMember;
-      if (targetMember === String(info.member || '').trim()) return;
-      var targetByMember = findQuarterSheet_(ss, info.quarter, info.type, targetMember);
-      if (!targetByMember) {
-        range.setValue(info.member || MEMBER_BASE_LABEL);
-        SpreadsheetApp.getActive().toast((targetMember || MEMBER_BASE_LABEL) + ' ' + info.quarter + ' ' + info.type + ' 시트를 찾지 못했습니다.', '이름 이동', 5);
-        return;
-      }
-      targetByMember.showSheet();
-      targetByMember.getRange(QUARTER_TOGGLE_CELL).setValue(info.quarter);
-      targetByMember.getRange(MEMBER_TOGGLE_CELL).setValue(targetMember || MEMBER_BASE_LABEL);
-      ss.setActiveSheet(targetByMember);
-      hideQuarterSiblingSheets_(ss, targetByMember, info.type, targetMember);
-      SpreadsheetApp.flush();
-    }
+    targetByQuarter.showSheet();
+    targetByQuarter.getRange(QUARTER_TOGGLE_CELL).setValue(targetQuarter);
+    ss.setActiveSheet(targetByQuarter);
+    hideQuarterSiblingSheets_(ss, targetByQuarter, info.type, '');
+    SpreadsheetApp.flush();
   } catch (err) {
-    SpreadsheetApp.getActive().toast('토글 이동 오류: ' + err.message, '시트 이동', 5);
+    SpreadsheetApp.getActive().toast('분기 이동 오류: ' + err.message, '시트 이동', 5);
   }
 }
 // ================================================================
@@ -290,8 +237,7 @@ function listTabs_() {
   return { ok: true, tabs: shs.map(function (s) { return { name: s.getName(), gid: String(s.getSheetId()) }; }) };
 }
 
-// gid(시트ID)로 기준 탭을 찾고, member가 있으면 팀원별 탭을 자동 생성/선택한다.
-// 중요: 사용자가 비워 둔 메인 탭(결과표/미션결과표/계획표/골든미팅카드)을 원본 양식으로 복제한다.
+// 개인 복사본 안의 기본 탭을 찾는다. 사용자별 탭 자동 생성은 사용하지 않는다.
 var BASE_TAB_ALIASES = [
   { base: '미션결과표', kw: ['미션결과', '미션 결과'] },
   { base: '골든미팅카드', kw: ['골든미팅카드', '골든', '미팅', '카드'] },

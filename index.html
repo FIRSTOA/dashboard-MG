@@ -1870,7 +1870,9 @@
   const saveTimers = {};
 
   function scopeOf(key) {
-    if (key === 'calendar-events') return 'team';
+    // 캘린더와 분기 목표의 Google Sheet 연동 URL은 팀 전체가 같은 값을 사용한다.
+    // 기존에는 URL이 개인(priv) 범위라서 다른 계정으로 로그인하면 시트 연동 화면이 아닌 카드형 목표가 보였다.
+    if (key === 'calendar-events' || key === 'settings:resultSheetUrl' || key === 'settings:goalSheetUrl') return 'team';
     if (key.indexOf('quarter-goals') === 0 || key.indexOf('quarter-missions') === 0
         || key === 'automation-apps' || key.indexOf('ai-project') === 0) return 'share';
     return 'priv';
@@ -2077,12 +2079,29 @@
     delete CACHE[key]; schedulePush();
   }
 
+  async function migrateTeamSheetSettings() {
+    if (!SUPA_MODE || !MY) return;
+    const keys = ['settings:resultSheetUrl', 'settings:goalSheetUrl'];
+    let changed = false;
+    keys.forEach(k => {
+      // 이번 버전부터는 팀 공용 설정으로 사용한다. 과거 개인/공유 범위에 있던 값은 팀 설정이 비어 있을 때만 승격한다.
+      const teamVal = TEAM[k];
+      const oldVal = PRIV[k] || SHARE[k];
+      if (storedValueLooksEmpty(teamVal) && storedValueLooksNonEmpty(oldVal)) {
+        TEAM[k] = oldVal;
+        changed = true;
+      }
+    });
+    if (changed) await saveScopeData(scopeKeyStr('team'), TEAM);
+  }
+
   async function initStore() {
     if (SUPA_MODE) {
       shareScopeUser = null; shareReadOnly = false;
       await loadScopeInto('priv');
       await loadScopeInto('share');
       await loadScopeInto('team');
+      await migrateTeamSheetSettings();
       return;
     }
     try { const raw = localStorage.getItem(blobKey()); if (raw) CACHE = JSON.parse(raw) || {}; }
@@ -4804,11 +4823,11 @@
     shareScopeUser = target;
     shareReadOnly = !!target;
     currentFilter = 'all';
-    if (shareReadOnly) resultModeOn(false);
     await loadScopeInto('share', target || MY.username);
     await loadGoals(); await loadMissions(); await loadProjectIndex(); await loadApps();
     renderFilters(); renderGoals(); renderMissions(); await renderGallery(); renderApps();
-    if (!shareReadOnly && typeof loadResultGoals === "function") await loadResultGoals();
+    // 결과표/구글시트 연동은 팀 공용 설정이다. 다른 팀원을 선택해도 시트 연동 화면을 강제로 끄지 않는다.
+    if (typeof loadResultGoals === "function") await loadResultGoals();
     renderMemberBars(); applyShareReadOnly();
   }
 

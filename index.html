@@ -2465,7 +2465,9 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS preflight 회피
         body: JSON.stringify({
           quarter: QUARTER, title: goal.title, category: goal.category,
-          grade: goal.grade, purpose: goal.purpose, method: goal.method, done: !!goal.done
+          grade: goal.grade, purpose: goal.purpose, method: goal.method, done: !!goal.done,
+          member: (SUPA_MODE && MY && MY.username) ? (shareScopeUser || MY.username) : '',
+          team: (SUPA_MODE && MY && MY.team) ? MY.team : ''
         })
       });
     } catch (e) { console.error('시트 푸시 실패', e); }
@@ -2553,24 +2555,26 @@
     const root = document.getElementById('resultSection');
     root.innerHTML = '<div class="rs-loading">불러오는 중…</div>';
     const t = curTab();
+    const sheetMember = (SUPA_MODE && MY && MY.username) ? (shareScopeUser || MY.username) : '';
+    const sheetMemberQS = sheetMember ? '&member=' + encodeURIComponent(sheetMember) : '';
     try {
       activeGid = await resolveGid(t);
       if (t.type === 'card') {
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=card&quarter=' + cardQuarter + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=card&quarter=' + cardQuarter + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         renderCardTable(json);
       } else if (t.type === 'plan') {
         const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&goalCol=' + mode.goalCol + '&noMonths=1' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&goalCol=' + mode.goalCol + '&noMonths=1' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
         renderPlanTable();
       } else {
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
@@ -2753,7 +2757,7 @@
       const url = await getResultUrl();
       const res = await fetch(url, {
         method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'aiCard', quarter: cardQuarter, resultGid, missionGid, cardGid }),
+        body: JSON.stringify({ action: 'aiCard', quarter: cardQuarter, resultGid, missionGid, cardGid, member: (SUPA_MODE && MY && MY.username) ? (shareScopeUser || MY.username) : '', team: (SUPA_MODE && MY && MY.team) ? MY.team : '' }),
         signal: ctrl.signal
       });
       clearInterval(tick); clearTimeout(killer);
@@ -2844,6 +2848,8 @@
     const url = await getResultUrl();
     if (!url) return false;
     const gid = currentResultGid();
+    const sheetMemberForPost = (SUPA_MODE && MY && MY.username) ? (shareScopeUser || MY.username) : '';
+    if (sheetMemberForPost && !payload.member) payload = Object.assign({ member: sheetMemberForPost }, payload);
     if (gid) payload = Object.assign({ gid }, payload);
     try {
       const res = await fetch(url, {

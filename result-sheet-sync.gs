@@ -42,9 +42,10 @@ var COL = {
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || 'goals';
   var gid = (e && e.parameter && e.parameter.gid) || '';
-  if (action === 'goals') return json_(readGoals_(gid, e.parameter.goalCol, e.parameter.noMonths));
+  var member = (e && e.parameter && e.parameter.member) || '';
+  if (action === 'goals') return json_(readGoals_(gid, e.parameter.goalCol, e.parameter.noMonths, member));
   if (action === 'tabs') return json_(listTabs_());
-  if (action === 'card') return json_(readCard_(gid, e.parameter.quarter));
+  if (action === 'card') return json_(readCard_(gid, e.parameter.quarter, member));
   return json_({ ok: true, msg: '결과표 연동 정상 작동 중' });
 }
 
@@ -54,8 +55,8 @@ function listTabs_() {
   return { ok: true, tabs: shs.map(function (s) { return { name: s.getName(), gid: String(s.getSheetId()) }; }) };
 }
 
-// gid(시트ID)로 탭 찾기. 없으면 기본 TAB_NAME 사용
-function getSheet_(gid) {
+// gid(시트ID)로 기준 탭을 찾고, member가 있으면 팀원별 탭을 자동 생성/선택한다.
+function getBaseSheet_(gid) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (gid) {
     var shs = ss.getSheets();
@@ -65,9 +66,50 @@ function getSheet_(gid) {
   }
   return ss.getSheetByName(TAB_NAME);
 }
+function cleanMember_(member) {
+  return String(member || '').trim();
+}
+function safeSheetName_(name) {
+  var s = String(name || '').replace(/[\\\/\?\*\[\]\:]/g, '-').replace(/\s+/g, ' ').trim();
+  if (!s) s = '이름없음';
+  return s.length > 95 ? s.slice(0, 95) : s;
+}
+function memberTabName_(baseName, member) {
+  return safeSheetName_(cleanMember_(member) + '_' + baseName);
+}
+function findMemberSheet_(ss, baseName, member) {
+  var m = cleanMember_(member);
+  var candidates = [
+    memberTabName_(baseName, m),
+    safeSheetName_(baseName + '_' + m),
+    safeSheetName_(m + ' - ' + baseName),
+    safeSheetName_(baseName + ' - ' + m),
+    safeSheetName_(baseName + '(' + m + ')')
+  ];
+  for (var i = 0; i < candidates.length; i++) {
+    var sh = ss.getSheetByName(candidates[i]);
+    if (sh) return sh;
+  }
+  return null;
+}
+function getSheet_(gid, member) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var base = getBaseSheet_(gid);
+  if (!base) return null;
+  var m = cleanMember_(member);
+  if (!m) return base;
+  var existing = findMemberSheet_(ss, base.getName(), m);
+  if (existing) return existing;
+  var targetName = memberTabName_(base.getName(), m);
+  var copied = base.copyTo(ss);
+  copied.setName(targetName);
+  ss.setActiveSheet(copied);
+  ss.moveActiveSheet(ss.getNumSheets());
+  return copied;
+}
 
-function readGoals_(gid, goalColParam, noMonths) {
-  var sh = getSheet_(gid);
+function readGoals_(gid, goalColParam, noMonths, member) {
+  var sh = getSheet_(gid, member);
   if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다 (gid: ' + (gid || TAB_NAME) + ')' };
   var goalCol = Number(goalColParam) || COL.goal; // 계획표: C(3)=기본업무, I(9)=미션업무
   var skipMonths = String(noMonths || '') === '1';
@@ -137,7 +179,7 @@ function readGoals_(gid, goalColParam, noMonths) {
 function doPost(e) {
   try {
     var b = JSON.parse(e.postData.contents || '{}');
-    var sh = getSheet_(b.gid);
+    var sh = getSheet_(b.gid, b.member);
     if (!sh) return json_({ ok: false, error: '탭 없음 (gid: ' + (b.gid || TAB_NAME) + ')' });
 
     if (b.action === 'update') {
@@ -212,13 +254,13 @@ function aiFillCard_(b) {
   if (!apiKey) return { ok: false, error: 'OPENAI_API_KEY가 설정되지 않았습니다. (Apps Script → 프로젝트 설정 → 스크립트 속성)' };
 
   // 1) 입력 자료 수집: 결과표(구분/목표/월별), 미션표(구분/목표/월별)
-  var resultData = readGoals_(b.resultGid, null, null);
-  var missionData = readGoals_(b.missionGid, null, null);
+  var resultData = readGoals_(b.resultGid, null, null, b.member);
+  var missionData = readGoals_(b.missionGid, null, null, b.member);
   var resultText = goalsToText_(resultData, '기본업무 결과표');
   var missionText = goalsToText_(missionData, '미션 결과표');
 
   // 2) 골든카드에서 참고용 예시(작성된 다른 분기) 추출
-  var exampleText = cardExampleText_(b.cardGid, quarter);
+  var exampleText = cardExampleText_(b.cardGid, quarter, b.member);
 
   // 3) GPT 호출
   var prompt = buildCardPrompt_(quarter, resultText, missionText, exampleText);
@@ -229,7 +271,7 @@ function aiFillCard_(b) {
   if (b.dryRun) return { ok: true, preview: card, quarter: quarter };
 
   // 4) 골든카드 해당 분기 24칸에 입력
-  var written = writeCard_(b.cardGid, quarter, card);
+  var written = writeCard_(b.cardGid, quarter, card, b.member);
   return { ok: true, written: written, quarter: quarter, preview: card };
 }
 
@@ -248,12 +290,12 @@ function goalsToText_(data, title) {
 }
 
 // 골든카드에서 quarter 외 다른 분기의 작성된 내용을 예시로 추출
-function cardExampleText_(gid, quarter) {
+function cardExampleText_(gid, quarter, member) {
   var ex = '';
   for (var q = 1; q <= 4; q++) {
     var qs = String(q);
     if (qs === quarter) continue;
-    var c = readCard_(gid, qs);
+    var c = readCard_(gid, qs, member);
     if (!c.ok || !c.questions) continue;
     var has = c.questions.some(function (qq) { return (qq.cells || []).some(function (cl) { return cl.text && cl.text.trim(); }); });
     if (!has) continue;
@@ -348,10 +390,10 @@ function callOpenAI_(apiKey, prompt) {
 
 // 카테고리 키 → readCard_의 catCols 키 매핑
 var AI_CAT_KEYS = ['매출', '효율', '비용', '자기', '소통', 'AI'];
-function writeCard_(gid, quarter, card) {
-  var c = readCard_(gid, quarter);
+function writeCard_(gid, quarter, card, member) {
+  var c = readCard_(gid, quarter, member);
   if (!c.ok) throw new Error(c.error || '카드 읽기 실패');
-  var sh = getSheet_(gid);
+  var sh = getSheet_(gid, member);
   var qKeyMap = { q1: '성과', q2: '기여', q3: '학습', q4: '지원' }; // 라벨 매칭 보조
   var written = 0;
   c.questions.forEach(function (q) {
@@ -425,8 +467,8 @@ function quarterOf_(text) {
   return m ? m[1] : '';
 }
 
-function readCard_(gid, quarter) {
-  var sh = getSheet_(gid);
+function readCard_(gid, quarter, member) {
+  var sh = getSheet_(gid, member);
   if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다 (gid: ' + gid + ')' };
   quarter = String(quarter || '').replace(/[^1-4]/g, '') || '2';
   var lastRow = sh.getLastRow(), lastCol = Math.max(10, sh.getLastColumn());

@@ -2506,8 +2506,10 @@
   ];
   let planMode = 'basic';
   let resultTab = 'quarter';
+  let resultQuarter = Math.floor((new Date().getMonth()) / 3) + 1; // 결과표·미션결과표·계획표 현재 분기 자동
   let tabGidCache = null; // [{name,gid}]
   function curTab() { return RESULT_TABS.find(x => x.key === resultTab) || RESULT_TABS[0]; }
+  function currentSheetQuarter() { return (curTab().type === 'card') ? cardQuarter : resultQuarter; }
   async function resolveGid(t) {
     if (t.gid) return t.gid;
     if (!t.nameKw) return '';
@@ -2567,14 +2569,14 @@
         renderCardTable(json);
       } else if (t.type === 'plan') {
         const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&goalCol=' + mode.goalCol + '&noMonths=1' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&quarter=' + resultQuarter + '&goalCol=' + mode.goalCol + '&noMonths=1' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
         renderPlanTable();
       } else {
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&quarter=' + resultQuarter + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
@@ -2586,10 +2588,22 @@
     }
   }
   function autoGrowTextarea(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(60, ta.scrollHeight + 2) + 'px'; }
+  function appendResultQuarterBar(root) {
+    const qbar = document.createElement('div'); qbar.className = 'gm-qbar';
+    [1, 2, 3, 4].forEach(q => {
+      const b = document.createElement('button');
+      b.className = 'gm-qbtn' + (q === resultQuarter ? ' active' : '');
+      b.textContent = q + '분기';
+      b.addEventListener('click', () => { if (resultQuarter === q) return; resultQuarter = q; loadResultGoals(); });
+      qbar.appendChild(b);
+    });
+    root.appendChild(qbar);
+  }
   function renderResultTable() {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
-    if (!resultRows.length) { root.innerHTML = '<div class="rs-empty">결과표에 데이터가 없습니다.</div>'; return; }
+    appendResultQuarterBar(root);
+    if (!resultRows.length) { const e = document.createElement('div'); e.className = 'rs-empty'; e.innerHTML = resultQuarter + '분기 결과표에 데이터가 없습니다.<br><small>필요 시 시트의 ' + resultQuarter + '분기 팀원 탭을 확인하세요.</small>'; root.appendChild(e); return; }
     // 구분(A)별로 그룹화
     const groups = {};
     const order = [];
@@ -2786,6 +2800,7 @@
   function renderPlanTable() {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
+    appendResultQuarterBar(root);
     // 기본/미션 토글
     const bar = document.createElement('div'); bar.className = 'gm-qbar';
     PLAN_MODES.forEach(m => {
@@ -2850,6 +2865,7 @@
     const gid = currentResultGid();
     const sheetMemberForPost = (SUPA_MODE && MY && MY.username) ? (shareScopeUser || MY.username) : '';
     if (sheetMemberForPost && !payload.member) payload = Object.assign({ member: sheetMemberForPost }, payload);
+    if (!payload.quarter) payload = Object.assign({ quarter: currentSheetQuarter() }, payload);
     if (gid) payload = Object.assign({ gid }, payload);
     try {
       const res = await fetch(url, {

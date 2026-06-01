@@ -4732,11 +4732,9 @@
     shareScopeUser = target;
     shareReadOnly = !!target;
     currentFilter = 'all';
-    if (shareReadOnly) resultModeOn(false);
     await loadScopeInto('share', target || MY.username);
     await loadGoals(); await loadMissions(); await loadProjectIndex(); await loadApps();
     renderFilters(); renderGoals(); renderMissions(); await renderGallery(); renderApps();
-    if (!shareReadOnly && typeof loadResultGoals === "function") await loadResultGoals();
     renderMemberBars(); applyShareReadOnly();
   }
 

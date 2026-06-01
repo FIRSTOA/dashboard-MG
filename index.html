@@ -2358,7 +2358,15 @@
   let currentFilter = 'all';
 
   async function loadGoals() {
-    const raw = await storeGet(`quarter-goals:${QUARTER}`);
+    let raw = await storeGet(`quarter-goals:${QUARTER}`);
+    if (!raw && SUPA_MODE) {
+      const shareCache = cacheFor('share') || {};
+      const fallbackKey = Object.keys(shareCache)
+        .filter(k => k.indexOf('quarter-goals:') === 0)
+        .sort()
+        .reverse()[0];
+      if (fallbackKey) raw = shareCache[fallbackKey];
+    }
     if (raw) {
       try {
         goals = JSON.parse(raw);
@@ -2366,6 +2374,7 @@
       } catch { goals = []; }
     }
     else goals = [];
+    if (currentFilter !== 'all' && !goals.some(g => g.category === currentFilter)) currentFilter = 'all';
   }
   async function saveGoals() { await storeSet(`quarter-goals:${QUARTER}`, JSON.stringify(goals)); }
 
@@ -4722,6 +4731,7 @@
     const target = (username && username !== MY.username) ? username : null;
     shareScopeUser = target;
     shareReadOnly = !!target;
+    currentFilter = 'all';
     await loadScopeInto('share', target || MY.username);
     await loadGoals(); await loadMissions(); await loadProjectIndex(); await loadApps();
     renderFilters(); renderGoals(); renderMissions(); await renderGallery(); renderApps();

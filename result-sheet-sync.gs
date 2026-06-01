@@ -60,14 +60,13 @@ function listTabs_() {
 }
 
 // gid(시트ID)로 기준 탭을 찾고, member가 있으면 팀원별 탭을 자동 생성/선택한다.
-// 중요: 새 팀원 탭은 기존 원본 탭을 복제하지 않고, 보호·공백 템플릿 탭만 복제한다.
+// 중요: 사용자가 비워 둔 메인 탭(결과표/미션결과표/계획표/골든미팅카드)을 원본 양식으로 복제한다.
 var BASE_TAB_ALIASES = [
   { base: '미션결과표', kw: ['미션결과', '미션 결과'] },
   { base: '골든미팅카드', kw: ['골든미팅카드', '골든', '미팅', '카드'] },
   { base: '계획표', kw: ['계획표', '레벨업계획', '계획'] },
   { base: '결과표', kw: ['결과표'] }
 ];
-var TEMPLATE_PREFIX = '_템플릿_';
 function getBaseSheet_(gid) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (gid) {
@@ -79,7 +78,11 @@ function getBaseSheet_(gid) {
   return ss.getSheetByName(TAB_NAME);
 }
 function canonicalBaseName_(name) {
-  var n = String(name || '').replace(/^_?템플릿[_\s-]*/, '').replace(/_[1-4]분기$/, '').trim();
+  var n = String(name || '')
+    .replace(/^_?템플릿[_\s-]*/, '')
+    .replace(/_[1-4]분기$/, '')
+    .replace(/^.+?_/, '')
+    .trim();
   for (var i = 0; i < BASE_TAB_ALIASES.length; i++) {
     var a = BASE_TAB_ALIASES[i];
     for (var k = 0; k < a.kw.length; k++) {
@@ -108,19 +111,20 @@ function memberTabName_(baseName, member, quarter) {
   var suffix = (q && isQuarterSplitBase_(baseName)) ? '_' + q + '분기' : '';
   return safeSheetName_(cleanMember_(member) + '_' + baseName + suffix);
 }
-function templateTabName_(baseName) {
-  return TEMPLATE_PREFIX + baseName;
-}
-function findTemplateSheet_(ss, baseName) {
-  var candidates = [
-    templateTabName_(baseName),
-    safeSheetName_(baseName + '_템플릿'),
-    safeSheetName_('템플릿_' + baseName),
-    safeSheetName_(baseName + ' 템플릿')
-  ];
-  for (var i = 0; i < candidates.length; i++) {
-    var sh = ss.getSheetByName(candidates[i]);
-    if (sh) return sh;
+function findMainSheet_(ss, baseName) {
+  var exact = ss.getSheetByName(baseName);
+  if (exact) return exact;
+  var aliases = [];
+  for (var i = 0; i < BASE_TAB_ALIASES.length; i++) {
+    if (BASE_TAB_ALIASES[i].base === baseName) aliases = BASE_TAB_ALIASES[i].kw;
+  }
+  var shs = ss.getSheets();
+  for (var s = 0; s < shs.length; s++) {
+    var name = shs[s].getName();
+    if (name.indexOf('_') >= 0 || name.indexOf('템플릿') >= 0 || name.indexOf('원본') >= 0) continue;
+    for (var k = 0; k < aliases.length; k++) {
+      if (name.indexOf(aliases[k]) >= 0) return shs[s];
+    }
   }
   return null;
 }
@@ -153,15 +157,16 @@ function getSheet_(gid, member, quarter) {
   var q = isQuarterSplitBase_(baseName) ? (normalizeQuarter_(quarter) || '1') : '';
   var existing = findMemberSheet_(ss, baseName, m, q);
   if (existing) return existing;
-  var template = findTemplateSheet_(ss, baseName);
-  if (!template) {
-    throw new Error('공백 템플릿 탭이 없습니다: ' + templateTabName_(baseName) + ' 를 먼저 만들어 주세요. 기존 원본 탭은 복제하지 않습니다.');
+  var main = findMainSheet_(ss, baseName) || base;
+  if (!main) {
+    throw new Error('메인 양식 탭을 찾을 수 없습니다: ' + baseName + ' 탭을 먼저 만들어 주세요.');
   }
   var targetName = memberTabName_(baseName, m, q);
-  var copied = template.copyTo(ss);
+  var copied = main.copyTo(ss);
   copied.setName(targetName);
   ss.setActiveSheet(copied);
   ss.moveActiveSheet(ss.getNumSheets());
+  try { ss.setActiveSheet(main); copied.hideSheet(); } catch (hideErr) {}
   return copied;
 }
 

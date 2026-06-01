@@ -1874,9 +1874,9 @@
 
   function scopeOf(key) {
     // 캘린더와 분기 목표의 Google Sheet 연동 URL은 팀 전체가 같은 값을 사용한다.
-    // 기존에는 URL이 개인(priv) 범위라서 다른 계정으로 로그인하면 시트 연동 화면이 아닌 카드형 목표가 보였다.
+    // 결과표 연동 URL은 개인별 Google Sheet 복사본 방식이므로 반드시 개인(priv) 범위에 저장한다.
     if (key === 'calendar-events' || key === 'settings:goalSheetUrl') return 'team';
-    if (key === 'settings:resultSheetUrl' || key.indexOf('settings:resultSheetUrl:') === 0) return 'global';
+    if (key === 'settings:resultSheetUrl' || key.indexOf('settings:resultSheetUrl:') === 0) return 'priv';
     if (key.indexOf('quarter-goals') === 0 || key.indexOf('quarter-missions') === 0
         || key === 'automation-apps' || key.indexOf('ai-project') === 0) return 'share';
     return 'priv';
@@ -2103,16 +2103,10 @@
       teamChanged = true;
     }
 
-    // resultSheetUrl은 팀별 4개 URL 구조로 전환한다. 기존 단일 URL은 현재 로그인 팀의 URL로 1회 승격한다.
-    const legacyResultVal = TEAM['settings:resultSheetUrl'] || PRIV['settings:resultSheetUrl'] || SHARE['settings:resultSheetUrl'] || GLOBAL['settings:resultSheetUrl'];
-    const teamResultKey = resultTeamUrlKey(MY.team);
-    if (storedValueLooksEmpty(GLOBAL[teamResultKey]) && storedValueLooksNonEmpty(legacyResultVal)) {
-      GLOBAL[teamResultKey] = legacyResultVal;
-      globalChanged = true;
-    }
+    // 개인별 복사본 1URL 방식에서는 resultSheetUrl을 팀/global로 승격하지 않는다.
+    // 사용자가 각자 결과표 연동에 입력한 URL은 PRIV['settings:resultSheetUrl']에만 저장한다.
 
     if (teamChanged) await saveScopeData(scopeKeyStr('team'), TEAM);
-    if (globalChanged) await saveScopeData(scopeKeyStr('global'), GLOBAL);
   }
 
   async function initStore() {
@@ -2121,7 +2115,8 @@
       await loadScopeInto('priv');
       await loadScopeInto('share');
       await loadScopeInto('team');
-      await loadScopeInto('global');
+      // 개인별 복사본 1URL 방식에서는 global 설정을 읽지 않는다.
+      // 기존 Supabase SQL에 global 권한이 없어도 동기화 오류가 나지 않게 하기 위함이다.
       await migrateTeamSheetSettings();
       return;
     }
@@ -2936,11 +2931,10 @@
   const resultLinkBtn = document.getElementById('resultLinkBtn');
   if (resultLinkBtn) resultLinkBtn.addEventListener('click', async () => {
     const cur = await getResultUrl();
-    const v = prompt('현재 로그인 팀(' + ((MY && MY.team) ? MY.team + '팀' : '팀 미지정') + ')의 결과표 GAS 웹앱 URL(…/exec)을 입력하세요.\n전체 A/B/C/D팀 URL은 관리자 패널에서 저장할 수 있습니다.\n\n비우고 확인하면 현재 팀 연동이 해제됩니다.', cur);
+    const v = prompt('본인이 복사한 Google Sheet의 GAS 웹앱 URL(…/exec)을 입력하세요.\n각자 본인 복사본 URL만 저장합니다.\n\n비우고 확인하면 결과표 연동이 해제됩니다.', cur);
     if (v === null) return;
     const url = v.trim();
-    const saveKey = (MY && MY.team) ? resultTeamUrlKey(MY.team) : 'settings:resultSheetUrl';
-    await storeSet(saveKey, url);
+    await storeSet('settings:resultSheetUrl', url);
     if (url) await loadResultGoals(); else resultModeOn(false);
   });
   const resultRefreshBtn = document.getElementById('resultRefreshBtn');

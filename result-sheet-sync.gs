@@ -390,26 +390,15 @@ function findMemberSheet_(ss, baseName, member, quarter) {
   return null;
 }
 function getSheet_(gid, member, quarter) {
+  // 개인별 복사본 1파일 1URL 방식에서는 사용자별 탭을 만들지 않습니다.
+  // 대시보드가 member 값을 보내더라도, 이 사용자의 복사본 안에 있는 기본 탭만 읽고 씁니다.
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var base = getBaseSheet_(gid);
   if (!base) return null;
   var baseName = canonicalBaseName_(base.getName());
-  var m = cleanMember_(member);
-  if (!m) return base;
   var q = isQuarterSplitBase_(baseName) ? (normalizeQuarter_(quarter) || '1') : '';
-  var existing = findMemberSheet_(ss, baseName, m, q);
-  if (existing) return existing;
   var main = findMainSheet_(ss, baseName, q) || base;
-  if (!main) {
-    throw new Error('메인 양식 탭을 찾을 수 없습니다: ' + baseName + ' 탭을 먼저 만들어 주세요.');
-  }
-  var targetName = memberTabName_(baseName, m, q);
-  var copied = main.copyTo(ss);
-  copied.setName(targetName);
-  ss.setActiveSheet(copied);
-  ss.moveActiveSheet(ss.getNumSheets());
-  try { ss.setActiveSheet(main); copied.hideSheet(); } catch (hideErr) {}
-  return copied;
+  return main;
 }
 
 function applyMemberSheetDefaults_(sheet, baseName, member, team) {
@@ -435,107 +424,9 @@ function applyMemberSheetDefaults_(sheet, baseName, member, team) {
 }
 
 function createMemberSheets_(team, member) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var m = cleanMember_(member);
-  var t = String(team || '').trim();
-  if (!m) return { ok: false, error: 'member 값이 비어 있습니다.' };
-  if (!t) return { ok: false, error: 'team 값이 비어 있습니다.' };
-
-  var created = [];
-  var reused = [];
-  var touched = [];
-  ['계획표', '결과표', '미션결과표'].forEach(function (baseName) {
-    for (var q = 1; q <= 4; q++) {
-      var before = findMemberSheet_(ss, baseName, m, String(q));
-      var template = findMainSheet_(ss, baseName, String(q));
-      if (!template) throw new Error(q + 'Q ' + baseName + ' 기본 양식 탭을 찾지 못했습니다.');
-      var sheet = before || getSheet_(String(template.getSheetId()), m, String(q));
-      applyMemberSheetDefaults_(sheet, baseName, m, t);
-      if (before) reused.push(sheet.getName()); else created.push(sheet.getName());
-      touched.push(sheet.getName());
-      try { sheet.hideSheet(); } catch (err) {}
-    }
-  });
-
-  var cardBase = findMainSheet_(ss, '골든미팅카드') || ss.getSheetByName('골든미팅카드');
-  if (!cardBase) throw new Error('골든미팅카드 기본 양식 탭을 찾지 못했습니다.');
-  var beforeCard = findMemberSheet_(ss, '골든미팅카드', m, '');
-  var card = beforeCard || getSheet_(String(cardBase.getSheetId()), m, '');
-  applyMemberSheetDefaults_(card, '골든미팅카드', m, t);
-  if (beforeCard) reused.push(card.getName()); else created.push(card.getName());
-  touched.push(card.getName());
-  try { card.hideSheet(); } catch (cardErr) {}
-
-  setupQuarterToggles();
-  return { ok: true, team: t, member: m, created: created, reused: reused, touched: touched, count: touched.length };
-}
-
-function readGoals_(gid, goalColParam, noMonths, member, quarter) {
-  var sh = getSheet_(gid, member, quarter);
-  if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다 (gid: ' + (gid || TAB_NAME) + ')' };
-  var goalCol = Number(goalColParam) || COL.goal; // 계획표: C(3)=기본업무, I(9)=미션업무
-  var skipMonths = String(noMonths || '') === '1';
-  var last = sh.getLastRow();
-  if (last < START_ROW) return { ok: true, months: [], rows: [] };
-  var n = last - START_ROW + 1;
-  var lastCol = Math.max(13, sh.getLastColumn());
-  var values = sh.getRange(START_ROW, 1, n, lastCol).getValues();
-  var rich = sh.getRange(START_ROW, 1, n, lastCol).getRichTextValues();
-
-  // 1) 월 머리글 행 자동 탐지 ('4월','5월'… 또는 '7월','8월'… 분기 바뀌어도 자동 인식)
-  var monthCols = [];
-  if (!skipMonths) {
-    for (var h = 0; h < n; h++) {
-      var found = [];
-      for (var c = 0; c < lastCol; c++) {
-        var hv = String(values[h][c] || '').trim();
-        if (/^\d{1,2}\s*월$/.test(hv)) found.push({ col: c + 1, label: hv.replace(/\s/g, '') });
-      }
-      if (found.length >= 2) { monthCols = found; break; }
-    }
-    if (!monthCols.length) monthCols = [{ col: 11, label: '4월' }, { col: 12, label: '5월' }, { col: 13, label: '6월' }];
-  }
-
-  // 1.5) 월 컬럼이 가로로 병합된 행 탐지(통합 표시용)
-  var mergedRows = {};
-  if (monthCols.length >= 2) {
-    var firstC = monthCols[0].col, cnt = monthCols.length;
-    try {
-      sh.getRange(START_ROW, firstC, n, cnt).getMergedRanges().forEach(function (rng) {
-        if (rng.getNumColumns() >= cnt) {
-          for (var rr = rng.getRow(); rr < rng.getRow() + rng.getNumRows(); rr++) mergedRows[rr] = true;
-        }
-      });
-    } catch (e) {}
-  }
-
-  // 2) 데이터 행
-  var rows = [];
-  var lastGubun = '';
-  for (var i = 0; i < n; i++) {
-    var gubun = String(values[i][COL.gubun - 1] || '').trim();
-    var goal = String(values[i][goalCol - 1] || '').trim();
-    var gN = gubun.replace(/\s/g, ''), goN = goal.replace(/\s/g, ''); // '구 분','목 표' 등 띄어쓰기 무시
-    if (gN === '구분' || goN === '목표' || goN === '구분' || goN === '목 표') continue;
-    if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goN)) continue;
-    var isMonthHeader = monthCols.some(function (mc) { return String(values[i][mc.col - 1] || '').trim() === mc.label; });
-    if (isMonthHeader) continue;
-    if (gubun) lastGubun = gubun;
-    if (goal === '') continue;
-    var months = monthCols.map(function (mc) {
-      return { col: mc.col, label: mc.label, text: String(values[i][mc.col - 1] || '') }; // 월칸은 그냥 텍스트(검정)
-    });
-    rows.push({
-      row: START_ROW + i,
-      gubun: gubun || lastGubun,
-      goal: goal,
-      goalCol: goalCol,
-      goalHtml: cellHtml_(rich[i][goalCol - 1]), // 목표: 줄바꿈+색상 유지
-      months: months,
-      merged: !!mergedRows[START_ROW + i]         // 월 셀 통합(병합) 여부
-    });
-  }
-  return { ok: true, months: monthCols.map(function (m) { return m.label; }), rows: rows };
+  // 개인별 복사본 1파일 1URL 방식에서는 서버가 개인 탭을 자동 생성하지 않습니다.
+  // 예전 대시보드/캐시에서 이 액션이 호출되더라도 안전하게 건너뜁니다.
+  return { ok: true, skipped: true, count: 0, message: 'personal-copy-url-mode' };
 }
 
 function doPost(e) {

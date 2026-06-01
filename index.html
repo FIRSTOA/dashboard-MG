@@ -1636,19 +1636,6 @@
         <button class="btn btn-primary" id="newAcc-add">+ 생성</button>
       </div>
       <div id="newAcc-msg" style="font-size:12.5px; min-height:16px; margin:4px 2px 10px;"></div>
-      <div class="help-note"><strong>팀별 결과표 GAS URL</strong> — A/B/C/D팀 Google Sheet 파일에 각각 배포한 <code>result-sheet-sync.gs</code> 웹앱 URL을 저장하세요. 계정 생성 시 선택한 팀 URL로 개인 탭이 자동 생성됩니다.</div>
-      <div class="admin-sheet-urls" id="adminSheetUrls">
-        <label><span>A팀</span><input type="text" class="input" id="teamGas-A" placeholder="A팀 /exec URL"></label>
-        <label><span>B팀</span><input type="text" class="input" id="teamGas-B" placeholder="B팀 /exec URL"></label>
-        <label><span>C팀</span><input type="text" class="input" id="teamGas-C" placeholder="C팀 /exec URL"></label>
-        <label><span>D팀</span><input type="text" class="input" id="teamGas-D" placeholder="D팀 /exec URL"></label>
-      </div>
-      <div class="admin-sheet-actions">
-        <button class="btn" id="teamGas-save">팀별 URL 저장</button>
-        <button class="btn" id="teamSheets-createAll">기존 계정 시트 만들기</button>
-        <span id="teamGas-msg" style="font-size:12.5px; color:var(--text-grey);"></span>
-      </div>
-      <div id="teamSheets-msg" style="font-size:12.5px; min-height:16px; margin:0 2px 10px; color:var(--text-grey);"></div>
       <div id="adminUserList"><div class="notes-empty">불러오는 중…</div></div>
     </div>
     <div class="modal-foot">
@@ -2606,11 +2593,7 @@
   }
   let cardQuarter = Math.floor((new Date().getMonth()) / 3) + 1; // 현재 분기 자동
   async function getResultUrl(team) {
-    const t = normalizeTeamCode(team || (MY && MY.team) || '');
-    if (t) {
-      const teamUrl = await storeGet(resultTeamUrlKey(t));
-      if (teamUrl) return teamUrl;
-    }
+    // 개인별 구글시트 복사본 1개 URL 방식: 팀 공용 URL을 사용하지 않고, 현재 로그인 사용자가 저장한 URL만 사용합니다.
     return (await storeGet('settings:resultSheetUrl')) || '';
   }
   function resultModeOn(active) {
@@ -4931,87 +4914,13 @@
   function fillTeamSelect(sel, val) {
     sel.innerHTML = '<option value="">팀 없음</option>' + TEAM_LIST.map(t => `<option value="${t}" ${val === t ? 'selected' : ''}>${t}팀</option>`).join('');
   }
-  function openAdmin() { adminModal.classList.add('open'); fillTeamSelect(document.getElementById('newAcc-team'), ''); loadAdminUsers(); loadAdminSheetUrls(); }
+  function openAdmin() { adminModal.classList.add('open'); fillTeamSelect(document.getElementById('newAcc-team'), ''); loadAdminUsers(); }
   function closeAdmin() { adminModal.classList.remove('open'); }
   document.getElementById('adminBtn').addEventListener('click', openAdmin);
   document.getElementById('adminCloseBtn').addEventListener('click', closeAdmin);
   document.getElementById('adminDoneBtn').addEventListener('click', closeAdmin);
   document.getElementById('adminReloadBtn').addEventListener('click', loadAdminUsers);
   adminModal.addEventListener('click', (e) => { if (e.target === adminModal) closeAdmin(); });
-  async function loadAdminSheetUrls() {
-    if (!SUPA_MODE) return;
-    await Promise.all(TEAM_LIST.map(async t => {
-      const input = document.getElementById('teamGas-' + t);
-      if (input) input.value = await getResultUrl(t);
-    }));
-  }
-  async function saveAdminSheetUrls() {
-    const msg = document.getElementById('teamGas-msg');
-    if (msg) { msg.style.color = 'var(--text-grey)'; msg.textContent = '저장 중…'; }
-    try {
-      for (const t of TEAM_LIST) {
-        const input = document.getElementById('teamGas-' + t);
-        if (input) await storeSet(resultTeamUrlKey(t), input.value.trim());
-      }
-      if (msg) { msg.style.color = 'var(--success)'; msg.textContent = '저장 완료'; }
-    } catch (e) {
-      if (msg) { msg.style.color = 'var(--danger)'; msg.textContent = '저장 실패: ' + (e.message || e); }
-    }
-  }
-  async function requestCreateMemberSheets(team, member) {
-    const url = await getResultUrl(team);
-    if (!url) return { ok: false, skipped: true, error: (team || '선택 팀') + '팀 결과표 GAS URL이 설정되지 않았습니다.' };
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'createMemberSheets', team: team ? team + '팀' : '', member })
-      });
-      const json = await res.json().catch(() => null);
-      return json || { ok: false, error: '응답 파싱 실패' };
-    } catch (e) {
-      return { ok: false, error: e.message || String(e) };
-    }
-  }
-  const teamGasSaveBtn = document.getElementById('teamGas-save');
-  if (teamGasSaveBtn) teamGasSaveBtn.addEventListener('click', saveAdminSheetUrls);
-
-  async function createSheetsForExistingAccounts() {
-    const msg = document.getElementById('teamSheets-msg');
-    if (msg) { msg.style.color = 'var(--text-grey)'; msg.textContent = '계정 목록 확인 중…'; }
-    let res;
-    try { res = await supaRpc('app_admin_list', { p_token: TOKEN }); }
-    catch (e) {
-      if (msg) { msg.style.color = 'var(--danger)'; msg.textContent = '계정 목록 불러오기 실패: ' + (e.message || e); }
-      return;
-    }
-    if (!res || !res.ok || !Array.isArray(res.users)) {
-      if (msg) { msg.style.color = 'var(--danger)'; msg.textContent = '계정 목록을 불러오지 못했습니다.'; }
-      return;
-    }
-    const targets = res.users.filter(u => u && u.username && u.team);
-    if (!targets.length) {
-      if (msg) { msg.style.color = 'var(--text-grey)'; msg.textContent = '팀이 지정된 기존 계정이 없습니다.'; }
-      return;
-    }
-    const okToRun = confirm('팀이 지정된 기존 계정 ' + targets.length + '명의 개인 시트 탭을 생성/보정할까요?\n이미 있는 탭은 재사용하고 없는 탭만 만듭니다.');
-    if (!okToRun) return;
-    let ok = 0, fail = 0;
-    const errors = [];
-    for (const u of targets) {
-      if (msg) msg.textContent = '개인 시트 생성 중… ' + (ok + fail + 1) + '/' + targets.length + ' (' + u.username + ')';
-      const r = await requestCreateMemberSheets(u.team, u.username);
-      if (r && r.ok) ok++;
-      else { fail++; errors.push(u.username + ': ' + ((r && r.error) || '알 수 없는 오류')); }
-    }
-    if (msg) {
-      msg.style.color = fail ? 'var(--warning)' : 'var(--success)';
-      msg.textContent = '완료: 성공 ' + ok + '명, 실패 ' + fail + '명' + (errors.length ? ' / ' + errors.slice(0, 3).join(' | ') : '');
-    }
-  }
-  const createAllSheetsBtn = document.getElementById('teamSheets-createAll');
-  if (createAllSheetsBtn) createAllSheetsBtn.addEventListener('click', createSheetsForExistingAccounts);
-
   document.getElementById('newAcc-add').addEventListener('click', async () => {
     const msg = document.getElementById('newAcc-msg');
     const id = document.getElementById('newAcc-id').value.trim();
@@ -5023,19 +4932,12 @@
     try {
       const r = await supaRpc('app_admin_create', { p_token: TOKEN, p_username: id, p_pw: pw, p_team: team, p_role: role });
       if (r && r.ok) {
-        msg.style.color = 'var(--text-grey)'; msg.textContent = `계정 생성 완료. ${team || '선택'}팀 시트 탭 생성 중…`;
-        const sheetResult = team ? await requestCreateMemberSheets(team, id) : { ok: false, skipped: true, error: '팀이 지정되지 않아 시트 자동 생성을 건너뛰었습니다.' };
+        msg.style.color = 'var(--success)';
+        msg.textContent = `계정 생성 완료 (초기 비번: ${pw}). 직원은 기본 시트 복사본을 만든 뒤 본인 URL을 결과표 연동에 입력하면 됩니다.`;
         if (MY && MY.team === team) {
           MY.members = MY.members || [];
           if (!MY.members.some(m => m.username === id)) MY.members.push({ username: id, team, role });
           renderMemberBars();
-        }
-        if (sheetResult && sheetResult.ok) {
-          msg.style.color = 'var(--success)';
-          msg.textContent = `계정 생성 및 개인 시트 ${sheetResult.count || 13}개 준비 완료 (초기 비번: ${pw})`;
-        } else {
-          msg.style.color = sheetResult && sheetResult.skipped ? 'var(--text-grey)' : 'var(--danger)';
-          msg.textContent = `계정은 생성됨 (초기 비번: ${pw}). 시트 자동 생성 확인 필요: ` + ((sheetResult && sheetResult.error) || '알 수 없는 오류');
         }
         document.getElementById('newAcc-id').value = ''; document.getElementById('newAcc-pw').value = ''; loadAdminUsers();
       }

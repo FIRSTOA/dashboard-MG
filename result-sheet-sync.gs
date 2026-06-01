@@ -39,6 +39,112 @@ var COL = {
 };
 // ==================================================
 
+
+// ===================== A1 분기 토글 시트 전환 =====================
+// 사용 방식:
+// 1) 시트 이름을 "1Q 계획표", "2Q 계획표"처럼 1~4Q + 업무명으로 둡니다.
+// 2) Apps Script에서 setupQuarterToggles()를 1회 실행하면 해당 시트들의 A1에 1Q~4Q 드롭다운이 생깁니다.
+// 3) 이후 A1에서 분기를 선택하면 같은 업무명의 해당 분기 시트로 이동합니다.
+var QUARTER_TOGGLE_CELL = 'A1';
+var QUARTER_TOGGLE_VALUES = ['1Q', '2Q', '3Q', '4Q'];
+var QUARTER_SHEET_TYPES = ['계획표', '결과표', '미션결과표'];
+
+function normalizeQuarterValue_(value) {
+  var s = String(value || '').toUpperCase().replace(/\s+/g, '');
+  var m = s.match(/([1-4])(?:Q|분기)?/);
+  return m ? (m[1] + 'Q') : '';
+}
+
+function parseQuarterSheetName_(sheetName) {
+  var name = String(sheetName || '').trim();
+  var m = name.match(/^([1-4])\s*Q\s*(.+)$/i) || name.match(/^([1-4])\s*분기\s*(.+)$/);
+  if (!m) return null;
+  var q = m[1] + 'Q';
+  var type = String(m[2] || '').trim();
+  for (var i = 0; i < QUARTER_SHEET_TYPES.length; i++) {
+    if (type === QUARTER_SHEET_TYPES[i] || type.indexOf(QUARTER_SHEET_TYPES[i]) >= 0) {
+      return { quarter: q, type: QUARTER_SHEET_TYPES[i] };
+    }
+  }
+  return null;
+}
+
+function findQuarterSheet_(ss, quarter, type) {
+  var qNum = String(quarter || '').replace(/[^1-4]/g, '');
+  var candidates = [
+    qNum + 'Q ' + type,
+    qNum + 'Q' + type,
+    qNum + '분기 ' + type,
+    qNum + '분기' + type,
+    type + ' ' + qNum + 'Q',
+    type + '_' + qNum + '분기'
+  ];
+  for (var i = 0; i < candidates.length; i++) {
+    var exact = ss.getSheetByName(candidates[i]);
+    if (exact) return exact;
+  }
+  var shs = ss.getSheets();
+  for (var s = 0; s < shs.length; s++) {
+    var info = parseQuarterSheetName_(shs[s].getName());
+    if (info && info.quarter === (qNum + 'Q') && info.type === type) return shs[s];
+  }
+  return null;
+}
+
+function setupQuarterToggles() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(QUARTER_TOGGLE_VALUES, true)
+    .setAllowInvalid(false)
+    .build();
+  var count = 0;
+  ss.getSheets().forEach(function (sh) {
+    var info = parseQuarterSheetName_(sh.getName());
+    if (!info) return;
+    var cell = sh.getRange(QUARTER_TOGGLE_CELL);
+    cell.setDataValidation(rule);
+    cell.setValue(info.quarter);
+    cell.setNote('분기를 선택하면 같은 종류의 해당 분기 시트로 이동합니다.');
+    count++;
+  });
+  SpreadsheetApp.getUi().alert('A1 분기 토글 설정 완료: ' + count + '개 시트');
+}
+
+function onOpen(e) {
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu('분기 이동')
+      .addItem('A1 분기 토글 설치/갱신', 'setupQuarterToggles')
+      .addToUi();
+  } catch (err) {}
+}
+
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    var range = e.range;
+    if (range.getA1Notation() !== QUARTER_TOGGLE_CELL) return;
+    var sh = range.getSheet();
+    var info = parseQuarterSheetName_(sh.getName());
+    if (!info) return;
+    var targetQuarter = normalizeQuarterValue_(e.value || range.getValue());
+    if (!targetQuarter || targetQuarter === info.quarter) return;
+    var ss = sh.getParent();
+    var target = findQuarterSheet_(ss, targetQuarter, info.type);
+    if (!target) {
+      range.setValue(info.quarter);
+      SpreadsheetApp.getActive().toast(targetQuarter + ' ' + info.type + ' 시트를 찾지 못했습니다.', '분기 이동', 5);
+      return;
+    }
+    target.getRange(QUARTER_TOGGLE_CELL).setValue(targetQuarter);
+    ss.setActiveSheet(target);
+    SpreadsheetApp.flush();
+  } catch (err) {
+    SpreadsheetApp.getActive().toast('분기 이동 오류: ' + err.message, '분기 이동', 5);
+  }
+}
+// ================================================================
+
 function doGet(e) {
   var params = (e && e.parameter) ? e.parameter : {};
   var action = params.action || 'goals';

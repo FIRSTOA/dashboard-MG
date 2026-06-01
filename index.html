@@ -2544,10 +2544,17 @@
       } catch { tabGidCache = []; }
     }
     const ex = t.nameExclude || [];
+    const q = currentSheetQuarter();
+    if (t.type !== 'card' && t.sheetName) {
+      const quarterNames = [`${q}Q ${t.sheetName}`, `${q}Q${t.sheetName}`, `${q}분기 ${t.sheetName}`, `${q}분기${t.sheetName}`];
+      const qExact = tabGidCache.find(x => quarterNames.includes(x.name));
+      if (qExact) return qExact.gid;
+    }
     const exact = t.sheetName ? tabGidCache.find(x => x.name === t.sheetName) : null;
     if (exact) return exact.gid;
     const isMainCandidate = (name) => !name.includes('_') && !name.includes('템플릿') && !name.includes('원본');
-    const hit = tabGidCache.find(x => isMainCandidate(x.name) && t.nameKw.some(k => x.name.includes(k)) && !ex.some(k => x.name.includes(k)));
+    const quarterPrefix = t.type !== 'card' ? String(q) + 'Q' : '';
+    const hit = tabGidCache.find(x => isMainCandidate(x.name) && (!quarterPrefix || x.name.replace(/\s+/g, '').startsWith(quarterPrefix)) && t.nameKw.some(k => x.name.includes(k)) && !ex.some(k => x.name.includes(k)));
     return hit ? hit.gid : '';
   }
   function currentResultGid() { return activeGid || curTab().gid; } // 로드 시 resolveGid로 갱신됨

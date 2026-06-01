@@ -40,14 +40,17 @@ var COL = {
 // ==================================================
 
 function doGet(e) {
-  var action = (e && e.parameter && e.parameter.action) || 'goals';
-  var gid = (e && e.parameter && e.parameter.gid) || '';
-  var member = (e && e.parameter && e.parameter.member) || '';
-  var quarter = (e && e.parameter && e.parameter.quarter) || '';
-  if (action === 'goals') return json_(readGoals_(gid, e.parameter.goalCol, e.parameter.noMonths, member, quarter));
-  if (action === 'tabs') return json_(listTabs_());
-  if (action === 'card') return json_(readCard_(gid, quarter, member));
-  return json_({ ok: true, msg: '결과표 연동 정상 작동 중' });
+  var params = (e && e.parameter) ? e.parameter : {};
+  var action = params.action || 'goals';
+  var gid = params.gid || '';
+  var member = params.member || '';
+  var quarter = params.quarter || '';
+  var out;
+  if (action === 'goals') out = readGoals_(gid, params.goalCol, params.noMonths, member, quarter);
+  else if (action === 'tabs') out = listTabs_();
+  else if (action === 'card') out = readCard_(gid, quarter, member);
+  else out = { ok: true, msg: '결과표 연동 정상 작동 중' };
+  return respond_(out, params.callback);
 }
 
 // 모든 탭(시트) 이름·gid 목록 — 계획표 등 탭 자동 인식용
@@ -486,6 +489,17 @@ function esc_(s) {
 
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function respond_(o, callback) {
+  if (callback) {
+    var safe = String(callback).replace(/[^A-Za-z0-9_$\.]/g, '');
+    if (safe) {
+      return ContentService.createTextOutput(safe + '(' + JSON.stringify(o) + ');')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+  }
+  return json_(o);
 }
 
 // ===================== 골든미팅카드 (분기 × 질문4 × 카테고리6) =====================

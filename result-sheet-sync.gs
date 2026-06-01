@@ -47,7 +47,8 @@ var COL = {
 // 3) 이후 A1에서 분기를 선택하면 같은 업무명의 해당 분기 시트로 이동합니다.
 var QUARTER_TOGGLE_CELL = 'A1';
 var QUARTER_TOGGLE_VALUES = ['1Q', '2Q', '3Q', '4Q'];
-var QUARTER_SHEET_TYPES = ['계획표', '결과표', '미션결과표'];
+// 중요: '미션결과표' 안에는 '결과표'가 포함되므로 반드시 '결과표'보다 먼저 판별해야 합니다.
+var QUARTER_SHEET_TYPES = ['미션결과표', '계획표', '결과표'];
 
 function normalizeQuarterValue_(value) {
   var s = String(value || '').toUpperCase().replace(/\s+/g, '');
@@ -61,12 +62,33 @@ function parseQuarterSheetName_(sheetName) {
   if (!m) return null;
   var q = m[1] + 'Q';
   var type = String(m[2] || '').trim();
+
+  // 1차: 정확히 일치하는 이름을 먼저 판별합니다.
   for (var i = 0; i < QUARTER_SHEET_TYPES.length; i++) {
-    if (type === QUARTER_SHEET_TYPES[i] || type.indexOf(QUARTER_SHEET_TYPES[i]) >= 0) {
+    if (type === QUARTER_SHEET_TYPES[i]) {
       return { quarter: q, type: QUARTER_SHEET_TYPES[i] };
     }
   }
+
+  // 2차: 포함 판별은 긴 이름 우선 순서로만 수행합니다.
+  for (var j = 0; j < QUARTER_SHEET_TYPES.length; j++) {
+    if (type.indexOf(QUARTER_SHEET_TYPES[j]) >= 0) {
+      return { quarter: q, type: QUARTER_SHEET_TYPES[j] };
+    }
+  }
   return null;
+}
+
+function hideQuarterSiblingSheets_(ss, activeSheet, type) {
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    var sh = sheets[i];
+    if (sh.getSheetId() === activeSheet.getSheetId()) continue;
+    var info = parseQuarterSheetName_(sh.getName());
+    if (info && info.type === type) {
+      try { sh.hideSheet(); } catch (err) {}
+    }
+  }
 }
 
 function findQuarterSheet_(ss, quarter, type) {
@@ -136,8 +158,12 @@ function onEdit(e) {
       SpreadsheetApp.getActive().toast(targetQuarter + ' ' + info.type + ' 시트를 찾지 못했습니다.', '분기 이동', 5);
       return;
     }
+    // 숨겨진 시트는 활성화 순간 다시 표시될 수밖에 없으므로,
+    // 이동 후 같은 종류의 다른 분기 탭을 다시 숨겨서 탭 목록이 풀리지 않게 유지합니다.
+    target.showSheet();
     target.getRange(QUARTER_TOGGLE_CELL).setValue(targetQuarter);
     ss.setActiveSheet(target);
+    hideQuarterSiblingSheets_(ss, target, info.type);
     SpreadsheetApp.flush();
   } catch (err) {
     SpreadsheetApp.getActive().toast('분기 이동 오류: ' + err.message, '분기 이동', 5);

@@ -15,13 +15,13 @@
  * ※ 첫 행에 헤더가 없으면 자동으로 만들어 줍니다.
  */
 
-var SHEET_NAME = '분기목표';  // 기준 시트(탭) 이름. 팀원명이 오면 '팀원_분기목표' 탭에 기록합니다.
+var SHEET_NAME = '분기목표';  // 기록할 시트(탭) 이름. 없으면 자동 생성.
 var HEADERS = ['입력일시', '분기', '제목', '분류', '등급', '목적', '방법', '완료'];
 
 function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents || '{}');
-    var sh = getSheet_(body.member);
+    var sh = getSheet_();
     sh.appendRow([
       new Date(),
       body.quarter || '',
@@ -40,24 +40,11 @@ function doPost(e) {
 
 function doGet() { return json_({ ok: true, msg: '분기목표 시트연동 정상 작동 중' }); }
 
-function cleanMember_(member) {
-  return String(member || '').trim();
-}
-function safeSheetName_(name) {
-  var s = String(name || '').replace(/[\\\/\?\*\[\]\:]/g, '-').replace(/\s+/g, ' ').trim();
-  if (!s) s = SHEET_NAME;
-  return s.length > 95 ? s.slice(0, 95) : s;
-}
-function getSheet_(member) {
+function getSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var m = cleanMember_(member);
-  var name = m ? safeSheetName_(m + '_' + SHEET_NAME) : SHEET_NAME;
-  var sh = ss.getSheetByName(name);
-  if (!sh) {
-    var base = ss.getSheetByName(SHEET_NAME);
-    sh = base ? base.copyTo(ss).setName(name) : ss.insertSheet(name);
-    if (sh.getLastRow() === 0) sh.appendRow(HEADERS);
-  } else if (sh.getLastRow() === 0) { sh.appendRow(HEADERS); }
+  var sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) { sh = ss.insertSheet(SHEET_NAME); sh.appendRow(HEADERS); }
+  else if (sh.getLastRow() === 0) { sh.appendRow(HEADERS); }
   return sh;
 }
 

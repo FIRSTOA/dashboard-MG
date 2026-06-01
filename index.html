@@ -1048,10 +1048,7 @@
   .user-menu button:hover { background: var(--card-soft); }
   .admin-create { display: grid; grid-template-columns: 1.3fr 1.3fr 0.9fr 0.9fr auto; gap: 8px; align-items: center; margin-bottom: 4px; }
   .admin-create .input, .admin-create .select { padding: 8px 10px; font-size: 13px; }
-  .admin-sheet-urls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 8px; }
-  .admin-sheet-urls label { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 6px; align-items: center; font-size: 12.5px; color: var(--text-grey); }
-  .admin-sheet-actions { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; }
-  @media (max-width: 640px) { .admin-create { grid-template-columns: 1fr 1fr; } .admin-sheet-urls { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .admin-create { grid-template-columns: 1fr 1fr; } }
 
   @media (max-width: 960px) {
     .apps-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1866,22 +1863,19 @@
     return data;
   }
 
-  // 스코프별 캐시: priv(개인) / share(분기목표·자동화앱·AI작업) / team(캘린더) / global(관리자 공통 설정)
-  let PRIV = {}, SHARE = {}, TEAM = {}, GLOBAL = {};
+  // 스코프별 캐시: priv(개인) / share(분기목표·자동화앱·AI작업) / team(캘린더)
+  let PRIV = {}, SHARE = {}, TEAM = {};
   let shareReadOnly = false;    // 다른 팀원의 공유 데이터를 보는 중인지
   let shareScopeUser = null;    // 현재 SHARE 캐시 주인 (null = 나)
   const saveTimers = {};
 
   function scopeOf(key) {
-    // 캘린더와 분기 목표의 Google Sheet 연동 URL은 팀 전체가 같은 값을 사용한다.
-    // 결과표 연동 URL은 개인별 Google Sheet 복사본 방식이므로 반드시 개인(priv) 범위에 저장한다.
-    if (key === 'calendar-events' || key === 'settings:goalSheetUrl') return 'team';
-    if (key === 'settings:resultSheetUrl' || key.indexOf('settings:resultSheetUrl:') === 0) return 'priv';
+    if (key === 'calendar-events') return 'team';
     if (key.indexOf('quarter-goals') === 0 || key.indexOf('quarter-missions') === 0
         || key === 'automation-apps' || key.indexOf('ai-project') === 0) return 'share';
     return 'priv';
   }
-  function cacheFor(scope) { return scope === 'global' ? GLOBAL : scope === 'team' ? TEAM : scope === 'share' ? SHARE : PRIV; }
+  function cacheFor(scope) { return scope === 'team' ? TEAM : scope === 'share' ? SHARE : PRIV; }
   function scopedTeamName(team) {
     const name = String(team || '').trim();
     return name || '_none';
@@ -1893,7 +1887,6 @@
     return 'share:' + shareScopeUserName(user);
   }
   function scopeKeyStr(scope, user) {
-    if (scope === 'global') return 'global:dashboard-settings';
     if (scope === 'team') return 'team:' + scopedTeamName(MY.team);
     if (scope === 'share') return 'share:' + scopedTeamName(MY.team) + ':' + shareScopeUserName(user);
     return 'priv:' + MY.username;
@@ -1908,29 +1901,13 @@
   function hasScopeData(obj) {
     return !!obj && typeof obj === 'object' && !Array.isArray(obj) && Object.keys(obj).length > 0;
   }
-  function cloneScopeData(obj) {
-    try { return JSON.parse(JSON.stringify(obj || {})); }
-    catch (e) { return Object.assign({}, obj || {}); }
-  }
-  function storedValueLooksEmpty(v) {
-    if (v == null || v === '') return true;
-    try {
-      const parsed = JSON.parse(v);
-      if (Array.isArray(parsed)) return parsed.length === 0;
-      if (parsed && typeof parsed === 'object') return Object.keys(parsed).length === 0;
-    } catch (e) {}
-    return false;
-  }
-  function storedValueLooksNonEmpty(v) { return !storedValueLooksEmpty(v); }
   function scheduleScopeSave(scope) {
     if (scope === 'share' && shareReadOnly) return; // 보기 전용
-    const saveKey = scopeKeyStr(scope);
-    const saveData = cloneScopeData(cacheFor(scope));
     setSyncState('saving');
     clearTimeout(saveTimers[scope]);
     saveTimers[scope] = setTimeout(async () => {
       try {
-        const r = await saveScopeData(saveKey, saveData);
+        const r = await saveScopeData(scopeKeyStr(scope), cacheFor(scope));
         setSyncState(r && r.ok ? 'ok' : 'error');
       } catch (e) { console.error('save', scope, e); setSyncState('error'); }
     }, 700);
@@ -1953,11 +1930,7 @@
           }
         }
       }
-      if (scope === 'share' && targetUser === MY.username) {
-        const migrated = importLocalShareInto(obj);
-        if (migrated) await saveScopeData(scopeKey, obj);
-      }
-      if (scope === 'global') GLOBAL = obj; else if (scope === 'team') TEAM = obj; else if (scope === 'share') SHARE = obj; else PRIV = obj;
+      if (scope === 'team') TEAM = obj; else if (scope === 'share') SHARE = obj; else PRIV = obj;
       setSyncState('ok');
     } catch (e) { console.error('load', scope, e); setSyncState('error'); }
   }
@@ -1976,52 +1949,15 @@
 
   // 기존 raw localStorage 데이터를 캐시로 가져오기 (최초 1회 마이그레이션)
   function importLegacy() {
-    const prefixes = ['check:', 'goal:', 'quarter-goals:', 'quarter-missions:', 'ai-projects:', 'ai-project:', 'automation-apps'];
+    const prefixes = ['check:', 'goal:', 'quarter-goals:', 'quarter-missions:', 'ai-projects:', 'ai-project:'];
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && prefixes.some(p => k === p || k.startsWith(p)) && !(k in CACHE)) {
+        if (k && prefixes.some(p => k.startsWith(p)) && !(k in CACHE)) {
           CACHE[k] = localStorage.getItem(k);
         }
       }
     } catch (e) {}
-  }
-
-  // Supabase 전환 후 기존 브라우저 localStorage에 남아 있던 공유 탭 데이터를 복구한다.
-  // 원격 값이 없거나 빈 배열/객체일 때만 가져와서, 이미 저장된 팀 공유 데이터는 덮어쓰지 않는다.
-  function importLocalShareInto(target) {
-    if (!SUPA_MODE || !MY) return false;
-    const marker = 'dashboard:migrated:share:' + scopedTeamName(MY.team) + ':' + MY.username;
-    let changed = false;
-    const isShareImportKey = (k) => k === 'automation-apps' || k === 'ai-projects:index'
-      || k.indexOf('quarter-goals:') === 0 || k.indexOf('quarter-missions:') === 0 || k.indexOf('ai-project:') === 0;
-    const copyIfUseful = (key, raw) => {
-      try {
-        if (storedValueLooksNonEmpty(raw) && (!(key in target) || storedValueLooksEmpty(target[key]))) {
-          target[key] = raw;
-          changed = true;
-        }
-      } catch (e) {}
-    };
-    try {
-      // 1) 아주 오래된 버전처럼 개별 localStorage 키로 남아 있는 데이터
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || !isShareImportKey(k)) continue;
-        copyIfUseful(k, localStorage.getItem(k));
-      }
-      // 2) 최근 레거시/로컬 모드처럼 dashboard:blob:* 안의 CACHE 객체로 저장된 데이터
-      for (let i = 0; i < localStorage.length; i++) {
-        const blobKey = localStorage.key(i);
-        if (!blobKey || blobKey.indexOf('dashboard:blob:') !== 0) continue;
-        let blob = null;
-        try { blob = JSON.parse(localStorage.getItem(blobKey) || '{}'); } catch (e) { blob = null; }
-        if (!blob || typeof blob !== 'object') continue;
-        Object.keys(blob).forEach(k => { if (isShareImportKey(k)) copyIfUseful(k, blob[k]); });
-      }
-      if (changed) localStorage.setItem(marker, new Date().toISOString());
-    } catch (e) {}
-    return changed;
   }
 
   async function remoteLoad() {
@@ -2084,40 +2020,12 @@
     delete CACHE[key]; schedulePush();
   }
 
-  function normalizeTeamCode(team) {
-    const raw = String(team || '').trim().replace(/팀$/g, '').toUpperCase();
-    return TEAM_LIST.indexOf(raw) >= 0 ? raw : raw;
-  }
-  function resultTeamUrlKey(team) { return 'settings:resultSheetUrl:' + normalizeTeamCode(team || (MY && MY.team) || ''); }
-
-  async function migrateTeamSheetSettings() {
-    if (!SUPA_MODE || !MY) return;
-    let teamChanged = false;
-    let globalChanged = false;
-
-    // goalSheetUrl은 팀 공용 설정으로 유지한다. 과거 개인/공유 범위에 있던 값은 팀 설정이 비어 있을 때만 승격한다.
-    const goalKey = 'settings:goalSheetUrl';
-    const oldGoalVal = PRIV[goalKey] || SHARE[goalKey];
-    if (storedValueLooksEmpty(TEAM[goalKey]) && storedValueLooksNonEmpty(oldGoalVal)) {
-      TEAM[goalKey] = oldGoalVal;
-      teamChanged = true;
-    }
-
-    // 개인별 복사본 1URL 방식에서는 resultSheetUrl을 팀/global로 승격하지 않는다.
-    // 사용자가 각자 결과표 연동에 입력한 URL은 PRIV['settings:resultSheetUrl']에만 저장한다.
-
-    if (teamChanged) await saveScopeData(scopeKeyStr('team'), TEAM);
-  }
-
   async function initStore() {
     if (SUPA_MODE) {
       shareScopeUser = null; shareReadOnly = false;
       await loadScopeInto('priv');
       await loadScopeInto('share');
       await loadScopeInto('team');
-      // 개인별 복사본 1URL 방식에서는 global 설정을 읽지 않는다.
-      // 기존 Supabase SQL에 global 권한이 없어도 동기화 오류가 나지 않게 하기 위함이다.
-      await migrateTeamSheetSettings();
       return;
     }
     try { const raw = localStorage.getItem(blobKey()); if (raw) CACHE = JSON.parse(raw) || {}; }
@@ -2481,9 +2389,7 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS preflight 회피
         body: JSON.stringify({
           quarter: QUARTER, title: goal.title, category: goal.category,
-          grade: goal.grade, purpose: goal.purpose, method: goal.method, done: !!goal.done,
-          member: (SUPA_MODE && MY && MY.username) ? (shareScopeUser || MY.username) : '',
-          team: (SUPA_MODE && MY && MY.team) ? MY.team : ''
+          grade: goal.grade, purpose: goal.purpose, method: goal.method, done: !!goal.done
         })
       });
     } catch (e) { console.error('시트 푸시 실패', e); }
@@ -2491,7 +2397,7 @@
   const goalSheetBtn = document.getElementById('goalSheetBtn');
   if (goalSheetBtn) goalSheetBtn.addEventListener('click', async () => {
     const cur = await getGoalSheetUrl();
-    const v = prompt('분기목표를 자동 기록할 구글시트 웹앱(GAS) URL을 입력하세요.\n반드시 result-sheet-sync.gs가 아니라 goal-sheet-sync.gs를 별도 배포한 …/exec 주소를 넣어야 합니다.\n\n비우고 확인하면 연동 해제됩니다.', cur);
+    const v = prompt('분기목표를 자동 기록할 구글시트 웹앱(GAS) URL을 입력하세요.\n(goal-sheet-sync.gs 배포 후 받은 …/exec 주소)\n\n비우고 확인하면 연동 해제됩니다.', cur);
     if (v === null) return;
     const url = v.trim();
     await storeSet('settings:goalSheetUrl', url);
@@ -2510,10 +2416,10 @@
   // type: 'goals'=결과표형(구분/목표/월별), 'card'=골든미팅카드(분기×질문×카테고리)
   // gid 비우고 nameKw 주면 시트 탭 이름으로 자동 인식
   const RESULT_TABS = [
-    { key: 'quarter', label: '📊 분기결과표', type: 'goals', gid: '', sheetName: '결과표', nameKw: ['결과표'], nameExclude: ['미션'] },
-    { key: 'mission', label: '🎯 미션결과표', type: 'goals', gid: '', sheetName: '미션결과표', nameKw: ['미션결과', '미션 결과'] },
-    { key: 'plan',    label: '📝 계획표',     type: 'plan',  gid: '', sheetName: '계획표', nameKw: ['계획표', '레벨업계획', '계획'] },
-    { key: 'card',    label: '🃏 골든미팅카드', type: 'card', gid: '', sheetName: '골든미팅카드', nameKw: ['골든', '미팅', '카드'] }
+    { key: 'quarter', label: '📊 분기결과표', type: 'goals', gid: '', nameKw: ['결과표'], nameExclude: ['미션'] },
+    { key: 'mission', label: '🎯 미션결과표', type: 'goals', gid: '1053550780', nameKw: ['미션결과', '미션 결과'] },
+    { key: 'plan',    label: '📝 계획표',     type: 'plan',  gid: '', nameKw: ['계획표', '레벨업계획', '계획'] },
+    { key: 'card',    label: '🃏 골든미팅카드', type: 'card', gid: '', nameKw: ['골든', '미팅', '카드'] }
   ];
   // 계획표 하위 모드: 기본업무(C=3) / 미션업무(I=9), 월칸 없음
   const PLAN_MODES = [
@@ -2522,73 +2428,20 @@
   ];
   let planMode = 'basic';
   let resultTab = 'quarter';
-  let resultQuarter = Math.floor((new Date().getMonth()) / 3) + 1; // 결과표·미션결과표·계획표 현재 분기 자동
   let tabGidCache = null; // [{name,gid}]
   function curTab() { return RESULT_TABS.find(x => x.key === resultTab) || RESULT_TABS[0]; }
-  function currentSheetQuarter() { return (curTab().type === 'card') ? cardQuarter : resultQuarter; }
-  function normalizeGasExecUrl(raw) {
-    let url = String(raw || '').trim();
-    if (!url) return '';
-    url = url.replace(/\s+/g, '');
-    // 사용자가 Apps Script 편집 URL이나 /dev URL을 넣었을 때는 웹앱 /exec URL이 아니므로 명확히 안내한다.
-    if (url.includes('/edit') || url.includes('/home/projects/')) return url;
-    url = url.replace(/\?.*$/, '');
-    if (url.endsWith('/dev')) url = url.slice(0, -4) + '/exec';
-    return url;
-  }
-  function assertGasExecUrl(url) {
-    const u = normalizeGasExecUrl(url);
-    if (!u) throw new Error('결과표 연동 URL이 비어 있습니다.');
-    if (!/\/exec$/.test(u)) throw new Error('웹앱 URL은 반드시 /exec 로 끝나야 합니다. Apps Script 편집 주소가 아니라 배포된 웹앱 URL을 넣어주세요.');
-    return u;
-  }
-  function resultJsonp(url, timeoutMs = 12000) {
-    url = assertGasExecUrl(url);
-    return new Promise((resolve, reject) => {
-      const cb = '__rs_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-      const sep = url.includes('?') ? '&' : '?';
-      const script = document.createElement('script');
-      let done = false;
-      const cleanup = () => { try { delete window[cb]; } catch (e) { window[cb] = undefined; } if (script.parentNode) script.parentNode.removeChild(script); };
-      const timer = setTimeout(() => { if (done) return; done = true; cleanup(); reject(new Error('GAS 응답 시간 초과입니다. 배포 권한을 "모든 사용자"로 했는지, 새 버전 배포를 했는지 확인하세요.')); }, timeoutMs);
-      window[cb] = (data) => { if (done) return; done = true; clearTimeout(timer); cleanup(); resolve(data); };
-      script.onerror = () => { if (done) return; done = true; clearTimeout(timer); cleanup(); reject(new Error('GAS 웹앱을 열 수 없습니다. /exec URL, 배포 권한 "모든 사용자", 새 버전 배포를 확인하세요.')); };
-      script.src = url + sep + 'callback=' + encodeURIComponent(cb);
-      document.head.appendChild(script);
-    });
-  }
-  async function resultGetJson(url) {
-    url = assertGasExecUrl(url);
-    try {
-      const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-      return await res.json();
-    } catch (e) {
-      console.warn('결과표 fetch 실패, JSONP로 재시도:', e);
-      return await resultJsonp(url);
-    }
-  }
   async function resolveGid(t) {
     if (t.gid) return t.gid;
     if (!t.nameKw) return '';
     if (!tabGidCache) {
       try {
         const url = await getResultUrl();
-        const j = await resultGetJson(url + (url.includes('?') ? '&' : '?') + 'action=tabs&t=' + Date.now());
-        tabGidCache = (j && j.tabs) || [];
+        const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'action=tabs&t=' + Date.now());
+        const j = await res.json(); tabGidCache = (j && j.tabs) || [];
       } catch { tabGidCache = []; }
     }
     const ex = t.nameExclude || [];
-    const q = currentSheetQuarter();
-    if (t.type !== 'card' && t.sheetName) {
-      const quarterNames = [`${q}Q ${t.sheetName}`, `${q}Q${t.sheetName}`, `${q}분기 ${t.sheetName}`, `${q}분기${t.sheetName}`];
-      const qExact = tabGidCache.find(x => quarterNames.includes(x.name));
-      if (qExact) return qExact.gid;
-    }
-    const exact = t.sheetName ? tabGidCache.find(x => x.name === t.sheetName) : null;
-    if (exact) return exact.gid;
-    const isMainCandidate = (name) => !name.includes('_') && !name.includes('템플릿') && !name.includes('원본');
-    const quarterPrefix = t.type !== 'card' ? String(q) + 'Q' : '';
-    const hit = tabGidCache.find(x => isMainCandidate(x.name) && (!quarterPrefix || x.name.replace(/\s+/g, '').startsWith(quarterPrefix)) && t.nameKw.some(k => x.name.includes(k)) && !ex.some(k => x.name.includes(k)));
+    const hit = tabGidCache.find(x => t.nameKw.some(k => x.name.includes(k)) && !ex.some(k => x.name.includes(k)));
     return hit ? hit.gid : '';
   }
   function currentResultGid() { return activeGid || curTab().gid; } // 로드 시 resolveGid로 갱신됨
@@ -2605,10 +2458,7 @@
     });
   }
   let cardQuarter = Math.floor((new Date().getMonth()) / 3) + 1; // 현재 분기 자동
-  async function getResultUrl(team) {
-    // 개인별 구글시트 복사본 1개 URL 방식: 팀 공용 URL을 사용하지 않고, 현재 로그인 사용자가 저장한 URL만 사용합니다.
-    return normalizeGasExecUrl(await storeGet('settings:resultSheetUrl'));
-  }
+  async function getResultUrl() { return (await storeGet('settings:resultSheetUrl')) || ''; }
   function resultModeOn(active) {
     // 시트 표 모드 ↔ 기존 카드 모드 전환
     ['filterRow', 'goalGrid', 'syncBtn', 'goalSheetBtn', 'addGoalBtn', 'goalsMemberBar', 'goalsRoBanner'].forEach(id => {
@@ -2627,51 +2477,39 @@
     const root = document.getElementById('resultSection');
     root.innerHTML = '<div class="rs-loading">불러오는 중…</div>';
     const t = curTab();
-    // 개인 복사본 방식에서는 이름/member 파라미터를 보내지 않습니다.
-    const sheetMemberQS = '';
     try {
       activeGid = await resolveGid(t);
       if (t.type === 'card') {
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=card&quarter=' + cardQuarter + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
-        const json = await resultGetJson(q);
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=card&quarter=' + cardQuarter + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
+        const res = await fetch(q);
+        const json = await res.json();
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         renderCardTable(json);
       } else if (t.type === 'plan') {
         const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&quarter=' + resultQuarter + '&goalCol=' + mode.goalCol + '&noMonths=1' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
-        const json = await resultGetJson(q);
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&goalCol=' + mode.goalCol + '&noMonths=1' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
+        const res = await fetch(q);
+        const json = await res.json();
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
         renderPlanTable();
       } else {
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&quarter=' + resultQuarter + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + sheetMemberQS + '&t=' + Date.now();
-        const json = await resultGetJson(q);
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
+        const res = await fetch(q);
+        const json = await res.json();
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
         renderResultTable();
       }
     } catch (e) {
-      const msg = (e && e.message) ? e.message : String(e || '알 수 없는 오류');
-      root.innerHTML = '<div class="rs-empty">불러오기 실패: ' + msg + '<br><small>개인 복사본 방식입니다. 1) Apps Script 배포 URL이 /exec 로 끝나는지 확인하세요. 2) 배포 액세스 권한은 "모든 사용자"로 설정하세요. 3) 코드를 수정했다면 반드시 "새 버전"으로 재배포하세요. 4) 시트 탭 이름은 1Q 결과표, 1Q 미션결과표, 1Q 계획표, 골든미팅카드처럼 기본 탭만 사용하면 됩니다.</small></div>';
+      root.innerHTML = '<div class="rs-empty">불러오기 실패: ' + (e.message || e) + '<br><small>연동 URL과 GAS 배포(액세스: 모든 사용자)를 확인하세요. 탭을 못 찾으면 시트 탭 이름을 확인하세요.</small></div>';
     }
   }
   function autoGrowTextarea(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(60, ta.scrollHeight + 2) + 'px'; }
-  function appendResultQuarterBar(root) {
-    const qbar = document.createElement('div'); qbar.className = 'gm-qbar';
-    [1, 2, 3, 4].forEach(q => {
-      const b = document.createElement('button');
-      b.className = 'gm-qbtn' + (q === resultQuarter ? ' active' : '');
-      b.textContent = q + '분기';
-      b.addEventListener('click', () => { if (resultQuarter === q) return; resultQuarter = q; loadResultGoals(); });
-      qbar.appendChild(b);
-    });
-    root.appendChild(qbar);
-  }
   function renderResultTable() {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
-    appendResultQuarterBar(root);
-    if (!resultRows.length) { const e = document.createElement('div'); e.className = 'rs-empty'; e.innerHTML = resultQuarter + '분기 결과표에 데이터가 없습니다.<br><small>필요 시 시트의 ' + resultQuarter + '분기 팀원 탭을 확인하세요.</small>'; root.appendChild(e); return; }
+    if (!resultRows.length) { root.innerHTML = '<div class="rs-empty">결과표에 데이터가 없습니다.</div>'; return; }
     // 구분(A)별로 그룹화
     const groups = {};
     const order = [];
@@ -2839,7 +2677,7 @@
       const url = await getResultUrl();
       const res = await fetch(url, {
         method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'aiCard', quarter: cardQuarter, resultGid, missionGid, cardGid, member: (SUPA_MODE && MY && MY.username) ? (shareScopeUser || MY.username) : '', team: (SUPA_MODE && MY && MY.team) ? MY.team : '' }),
+        body: JSON.stringify({ action: 'aiCard', quarter: cardQuarter, resultGid, missionGid, cardGid }),
         signal: ctrl.signal
       });
       clearInterval(tick); clearTimeout(killer);
@@ -2868,7 +2706,6 @@
   function renderPlanTable() {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
-    appendResultQuarterBar(root);
     // 기본/미션 토글
     const bar = document.createElement('div'); bar.className = 'gm-qbar';
     PLAN_MODES.forEach(m => {
@@ -2931,9 +2768,6 @@
     const url = await getResultUrl();
     if (!url) return false;
     const gid = currentResultGid();
-    const sheetMemberForPost = (SUPA_MODE && MY && MY.username) ? (shareScopeUser || MY.username) : '';
-    if (sheetMemberForPost && !payload.member) payload = Object.assign({ member: sheetMemberForPost }, payload);
-    if (!payload.quarter) payload = Object.assign({ quarter: currentSheetQuarter() }, payload);
     if (gid) payload = Object.assign({ gid }, payload);
     try {
       const res = await fetch(url, {
@@ -2949,10 +2783,9 @@
   const resultLinkBtn = document.getElementById('resultLinkBtn');
   if (resultLinkBtn) resultLinkBtn.addEventListener('click', async () => {
     const cur = await getResultUrl();
-    const v = prompt('본인이 복사한 Google Sheet의 GAS 웹앱 URL(…/exec)을 입력하세요.\n각자 본인 복사본 URL만 저장합니다.\n\n비우고 확인하면 결과표 연동이 해제됩니다.', cur);
+    const v = prompt('결과표 시트와 연동할 GAS 웹앱 URL(…/exec)을 입력하세요.\n(result-sheet-sync.gs 배포 후 받은 주소)\n\n비우고 확인하면 연동 해제됩니다.', cur);
     if (v === null) return;
-    const url = normalizeGasExecUrl(v);
-    if (url && !/\/exec$/.test(url)) { alert('웹앱 URL은 반드시 /exec 로 끝나야 합니다. Apps Script 편집 주소가 아니라 배포된 웹앱 URL을 넣어주세요.'); return; }
+    const url = v.trim();
     await storeSet('settings:resultSheetUrl', url);
     if (url) await loadResultGoals(); else resultModeOn(false);
   });
@@ -2960,15 +2793,7 @@
   if (resultRefreshBtn) resultRefreshBtn.addEventListener('click', loadResultGoals);
 
   async function loadMissions() {
-    let raw = await storeGet(`quarter-missions:${QUARTER}`);
-    if (!raw && SUPA_MODE) {
-      const shareCache = cacheFor('share') || {};
-      const fallbackKey = Object.keys(shareCache)
-        .filter(k => k.indexOf('quarter-missions:') === 0)
-        .sort()
-        .reverse()[0];
-      if (fallbackKey) raw = shareCache[fallbackKey];
-    }
+    const raw = await storeGet(`quarter-missions:${QUARTER}`);
     if (raw) {
       try {
         missions = JSON.parse(raw);
@@ -3029,7 +2854,6 @@
       `;
       card.querySelector('.gc-check').addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (shareReadOnly) return;
         goal.done = !goal.done;
         await saveGoals();
         renderGoals();
@@ -3042,7 +2866,7 @@
     add.className = 'add-goal-card';
     add.innerHTML = `<span class="plus">+</span><span>목표 추가</span>`;
     add.addEventListener('click', () => openGoalModal());
-    if (!shareReadOnly) root.appendChild(add);
+    root.appendChild(add);
   }
 
   function renderMissions() {
@@ -3061,7 +2885,6 @@
       // 체크박스 클릭: 토글
       item.querySelector('.mission-check').addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (shareReadOnly) return;
         m.done = !m.done;
         await saveMissions();
         renderMissions();
@@ -3079,7 +2902,6 @@
       // 삭제 버튼
       item.querySelector('.mission-remove').addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (shareReadOnly) return;
         missions = missions.filter(x => x.id !== m.id);
         await saveMissions();
         renderMissions();
@@ -3090,7 +2912,6 @@
 
   document.getElementById('missionInput').addEventListener('keydown', async (e) => {
     if (e.key !== 'Enter') return;
-    if (shareReadOnly) return;
     const v = e.target.value.trim();
     if (!v) return;
     missions.push({ id: `m${Date.now()}`, title: v, done: false });
@@ -4703,13 +4524,11 @@
       if (open) open.addEventListener('click', (e) => e.stopPropagation());
       grid.appendChild(card);
     });
-    if (!shareReadOnly) {
-      const add = document.createElement('div');
-      add.className = 'app-add-card';
-      add.innerHTML = '<span class="plus">+</span><span>앱 추가</span>';
-      add.addEventListener('click', () => openAppModal());
-      grid.appendChild(add);
-    }
+    const add = document.createElement('div');
+    add.className = 'app-add-card';
+    add.innerHTML = '<span class="plus">+</span><span>앱 추가</span>';
+    add.addEventListener('click', () => openAppModal());
+    grid.appendChild(add);
   }
   const appModal = document.getElementById('appModalBackdrop');
   let editingAppId = null, apColor = 'g-green', apImage = '';
@@ -4739,7 +4558,6 @@
     });
   }
   function openAppModal(a = null) {
-    if (shareReadOnly) return;
     editingAppId = a ? a.id : null;
     document.getElementById('appModalTitle').textContent = a ? '앱 편집' : '앱 추가';
     document.getElementById('ap-icon').value = a?.icon || '';
@@ -4914,11 +4732,11 @@
     shareScopeUser = target;
     shareReadOnly = !!target;
     currentFilter = 'all';
+    if (shareReadOnly) resultModeOn(false);
     await loadScopeInto('share', target || MY.username);
     await loadGoals(); await loadMissions(); await loadProjectIndex(); await loadApps();
     renderFilters(); renderGoals(); renderMissions(); await renderGallery(); renderApps();
-    // 결과표/구글시트 연동은 팀 공용 설정이다. 다른 팀원을 선택해도 시트 연동 화면을 강제로 끄지 않는다.
-    if (typeof loadResultGoals === "function") await loadResultGoals();
+    if (!shareReadOnly && typeof loadResultGoals === "function") await loadResultGoals();
     renderMemberBars(); applyShareReadOnly();
   }
 
@@ -4941,19 +4759,11 @@
     const team = document.getElementById('newAcc-team').value;
     const role = document.getElementById('newAcc-role').value;
     if (!id || !pw) { msg.style.color = 'var(--danger)'; msg.textContent = '아이디와 초기 비밀번호를 입력하세요.'; return; }
-    msg.style.color = 'var(--text-grey)'; msg.textContent = '계정 생성 중…';
+    msg.style.color = 'var(--text-grey)'; msg.textContent = '생성 중…';
     try {
       const r = await supaRpc('app_admin_create', { p_token: TOKEN, p_username: id, p_pw: pw, p_team: team, p_role: role });
-      if (r && r.ok) {
-        msg.style.color = 'var(--success)';
-        msg.textContent = `계정 생성 완료 (초기 비번: ${pw}). 직원은 기본 시트 복사본을 만든 뒤 본인 URL을 결과표 연동에 입력하면 됩니다.`;
-        if (MY && MY.team === team) {
-          MY.members = MY.members || [];
-          if (!MY.members.some(m => m.username === id)) MY.members.push({ username: id, team, role });
-          renderMemberBars();
-        }
-        document.getElementById('newAcc-id').value = ''; document.getElementById('newAcc-pw').value = ''; loadAdminUsers();
-      }
+      if (r && r.ok) { msg.style.color = 'var(--success)'; msg.textContent = `✓ '${id}' 계정 생성됨 (초기 비번: ${pw})`;
+        document.getElementById('newAcc-id').value = ''; document.getElementById('newAcc-pw').value = ''; loadAdminUsers(); }
       else { msg.style.color = 'var(--danger)'; msg.textContent = r && r.error === 'exists' ? '이미 있는 아이디입니다.' : '생성 실패'; }
     } catch (e) { msg.style.color = 'var(--danger)'; msg.textContent = '오류: ' + (e.message || e); }
   });

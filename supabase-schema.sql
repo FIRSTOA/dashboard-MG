@@ -30,7 +30,7 @@ create table if not exists sessions (
 );
 
 create table if not exists kv (
-  scope      text primary key,               -- 'priv:<username>' | 'share:<TEAM>:<username>' | 'team:<TEAM>' | 'global:dashboard-settings'
+  scope      text primary key,               -- 'priv:<username>' | 'share:<TEAM>:<username>' | 'team:<TEAM>'
   data       jsonb not null default '{}',
   updated_at timestamptz default now()
 );
@@ -111,9 +111,6 @@ begin
     ok := (me.role = 'admin' or lower(who) = lower(me.username));
   elsif kind = 'team' then
     ok := (me.role = 'admin' or (me.team <> '' and me.team = who));
-  elsif kind = 'global' then
-    -- 팀별 GAS URL 같은 앱 공통 설정은 로그인한 사용자는 읽을 수 있다.
-    ok := (who = 'dashboard-settings');
   elsif kind = 'share' then
     team_part := split_part(who, ':', 1);
     user_part := split_part(who, ':', 2);
@@ -145,10 +142,7 @@ begin
   if kind = 'priv' then
     ok := (lower(who) = lower(me.username));
   elsif kind = 'team' then
-    ok := (me.role = 'admin' or (me.team <> '' and me.team = who));
-  elsif kind = 'global' then
-    -- 앱 공통 설정 저장은 관리자만 허용한다.
-    ok := (me.role = 'admin' and who = 'dashboard-settings');
+    ok := (me.team <> '' and me.team = who);
   elsif kind = 'share' then
     team_part := split_part(who, ':', 1);
     user_part := split_part(who, ':', 2);

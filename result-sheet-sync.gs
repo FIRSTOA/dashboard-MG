@@ -39,196 +39,13 @@ var COL = {
 };
 // ==================================================
 
-
-// ===================== A1 분기 토글 시트 전환 =====================
-// 사용 방식:
-// 1) 시트 이름을 "1Q 계획표", "2Q 계획표"처럼 1~4Q + 업무명으로 둡니다.
-// 2) Apps Script에서 setupQuarterToggles()를 1회 실행하면 해당 시트들의 A1에 1Q~4Q 드롭다운이 생깁니다.
-// 3) 이후 A1에서 분기를 선택하면 같은 업무명의 해당 분기 시트로 이동합니다.
-var QUARTER_TOGGLE_CELL = 'A1';
-// 개인 복사본 방식에서는 B1 이름 토글을 사용하지 않습니다.
-var QUARTER_TOGGLE_VALUES = ['1Q', '2Q', '3Q', '4Q'];
-// 중요: '미션결과표' 안에는 '결과표'가 포함되므로 반드시 '결과표'보다 먼저 판별해야 합니다.
-var QUARTER_SHEET_TYPES = ['미션결과표', '계획표', '결과표'];
-
-function normalizeQuarterValue_(value) {
-  var s = String(value || '').toUpperCase().replace(/\s+/g, '');
-  var m = s.match(/([1-4])(?:Q|분기)?/);
-  return m ? (m[1] + 'Q') : '';
-}
-
-function detectQuarterType_(typeText) {
-  var type = String(typeText || '').trim();
-
-  // 1차: 정확히 일치하는 이름을 먼저 판별합니다.
-  for (var i = 0; i < QUARTER_SHEET_TYPES.length; i++) {
-    if (type === QUARTER_SHEET_TYPES[i]) return QUARTER_SHEET_TYPES[i];
-  }
-
-  // 2차: 포함 판별은 긴 이름 우선 순서로만 수행합니다.
-  for (var j = 0; j < QUARTER_SHEET_TYPES.length; j++) {
-    if (type.indexOf(QUARTER_SHEET_TYPES[j]) >= 0) return QUARTER_SHEET_TYPES[j];
-  }
-  return '';
-}
-
-function parseQuarterSheetName_(sheetName) {
-  var name = String(sheetName || '').trim();
-  var m = name.match(/^([1-4])\s*Q\s*(.+)$/i) || name.match(/^([1-4])\s*분기\s*(.+)$/);
-  var member = '';
-
-  // 개인 탭 권장 형식: 이름_1Q 계획표 / 이름_2Q 결과표 / 이름_3Q 미션결과표
-  if (!m) {
-    var pm = name.match(/^(.+?)_([1-4])\s*Q\s*(.+)$/i) || name.match(/^(.+?)_([1-4])\s*분기\s*(.+)$/);
-    if (pm) {
-      member = String(pm[1] || '').trim();
-      m = [pm[0], pm[2], pm[3]];
-    }
-  }
-
-  // 표시용/수동 생성 호환 형식: 1Q 이름_계획표 / 2Q 이름_결과표 / 3Q 이름_미션결과표
-  if (!m) {
-    var qm = name.match(/^([1-4])\s*Q\s*(.+?)_(.+)$/i) || name.match(/^([1-4])\s*분기\s*(.+?)_(.+)$/);
-    if (qm) {
-      member = String(qm[2] || '').trim();
-      m = [qm[0], qm[1], qm[3]];
-    }
-  }
-
-  // 이전 배포 호환 형식: 이름_결과표_1분기
-  if (!m) {
-    var lm = name.match(/^(.+?)_(.+?)_([1-4])\s*분기$/);
-    if (lm) {
-      member = String(lm[1] || '').trim();
-      m = [lm[0], lm[3], lm[2]];
-    }
-  }
-
-  if (!m) return null;
-  var q = m[1] + 'Q';
-  var type = detectQuarterType_(m[2]);
-  if (!type) return null;
-  return { quarter: q, type: type, member: member };
-}
-
-function hideQuarterSiblingSheets_(ss, activeSheet, type, member) {
-  var activeInfo = parseQuarterSheetName_(activeSheet.getName()) || {};
-  var targetMember = member != null ? String(member || '').trim() : String(activeInfo.member || '').trim();
-  var sheets = ss.getSheets();
-  for (var i = 0; i < sheets.length; i++) {
-    var sh = sheets[i];
-    if (sh.getSheetId() === activeSheet.getSheetId()) continue;
-    var info = parseQuarterSheetName_(sh.getName());
-    if (!info || info.type !== type) continue;
-    if (targetMember) {
-      if (info.member === targetMember) {
-        try { sh.hideSheet(); } catch (err) {}
-      }
-    } else if (!info.member) {
-      try { sh.hideSheet(); } catch (err2) {}
-    }
-  }
-}
-
-function findQuarterSheet_(ss, quarter, type, member) {
-  var qNum = String(quarter || '').replace(/[^1-4]/g, '');
-  var m = cleanMember_(member);
-  var candidates = [];
-  if (m) {
-    candidates = candidates.concat([
-      safeSheetName_(m + '_' + qNum + 'Q ' + type),
-      safeSheetName_(m + '_' + qNum + 'Q' + type),
-      safeSheetName_(m + '_' + type + '_' + qNum + '분기')
-    ]);
-  } else {
-    candidates = candidates.concat([
-      qNum + 'Q ' + type,
-      qNum + 'Q' + type,
-      qNum + '분기 ' + type,
-      qNum + '분기' + type,
-      type + ' ' + qNum + 'Q',
-      type + '_' + qNum + '분기'
-    ]);
-  }
-  for (var i = 0; i < candidates.length; i++) {
-    var exact = ss.getSheetByName(candidates[i]);
-    if (exact) return exact;
-  }
-  var shs = ss.getSheets();
-  for (var s = 0; s < shs.length; s++) {
-    var info = parseQuarterSheetName_(shs[s].getName());
-    if (!info) continue;
-    if (info.quarter === (qNum + 'Q') && info.type === type && String(info.member || '') === m) return shs[s];
-  }
-  return null;
-}
-
-function setupQuarterToggles() {
-  // 개인 복사본 방식에서는 관리자 메뉴와 B1 이름 토글을 사용하지 않습니다.
-  // 필요 시 A1 분기 드롭다운만 수동 실행으로 설치할 수 있게 남겨둡니다.
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var quarterRule = SpreadsheetApp.newDataValidation()
-    .requireValueInList(QUARTER_TOGGLE_VALUES, true)
-    .setAllowInvalid(false)
-    .build();
-  var count = 0;
-  ss.getSheets().forEach(function (sh) {
-    var info = parseQuarterSheetName_(sh.getName());
-    if (!info || info.member) return;
-    var qCell = sh.getRange(QUARTER_TOGGLE_CELL);
-    qCell.setDataValidation(quarterRule);
-    qCell.setValue(info.quarter);
-    qCell.setNote('분기를 선택하면 같은 종류의 해당 분기 시트로 이동합니다.');
-    count++;
-  });
-  try { SpreadsheetApp.getUi().alert('A1 분기 토글 설정 완료: ' + count + '개 시트'); } catch (err) {}
-  return { ok: true, count: count };
-}
-
-function onOpen(e) {
-  // 개인 복사본 방식에서는 관리자 설정 메뉴를 만들지 않습니다.
-}
-
-function onEdit(e) {
-  try {
-    if (!e || !e.range) return;
-    var range = e.range;
-    if (range.getA1Notation() !== QUARTER_TOGGLE_CELL) return;
-    var sh = range.getSheet();
-    var info = parseQuarterSheetName_(sh.getName());
-    if (!info || info.member) return;
-    var targetQuarter = normalizeQuarterValue_(e.value || range.getValue());
-    if (!targetQuarter || targetQuarter === info.quarter) return;
-    var ss = sh.getParent();
-    var targetByQuarter = findQuarterSheet_(ss, targetQuarter, info.type, '');
-    if (!targetByQuarter) {
-      range.setValue(info.quarter);
-      SpreadsheetApp.getActive().toast(targetQuarter + ' ' + info.type + ' 시트를 찾지 못했습니다.', '분기 이동', 5);
-      return;
-    }
-    targetByQuarter.showSheet();
-    targetByQuarter.getRange(QUARTER_TOGGLE_CELL).setValue(targetQuarter);
-    ss.setActiveSheet(targetByQuarter);
-    hideQuarterSiblingSheets_(ss, targetByQuarter, info.type, '');
-    SpreadsheetApp.flush();
-  } catch (err) {
-    SpreadsheetApp.getActive().toast('분기 이동 오류: ' + err.message, '시트 이동', 5);
-  }
-}
-// ================================================================
-
 function doGet(e) {
-  var params = (e && e.parameter) ? e.parameter : {};
-  var action = params.action || 'goals';
-  var gid = params.gid || '';
-  var member = params.member || '';
-  var quarter = params.quarter || '';
-  var out;
-  if (action === 'goals') out = readGoals_(gid, params.goalCol, params.noMonths, member, quarter);
-  else if (action === 'tabs') out = listTabs_();
-  else if (action === 'card') out = readCard_(gid, quarter, member);
-  else out = { ok: true, msg: '결과표 연동 정상 작동 중' };
-  return respond_(out, params.callback);
+  var action = (e && e.parameter && e.parameter.action) || 'goals';
+  var gid = (e && e.parameter && e.parameter.gid) || '';
+  if (action === 'goals') return json_(readGoals_(gid, e.parameter.goalCol, e.parameter.noMonths));
+  if (action === 'tabs') return json_(listTabs_());
+  if (action === 'card') return json_(readCard_(gid, e.parameter.quarter));
+  return json_({ ok: true, msg: '결과표 연동 정상 작동 중' });
 }
 
 // 모든 탭(시트) 이름·gid 목록 — 계획표 등 탭 자동 인식용
@@ -237,14 +54,8 @@ function listTabs_() {
   return { ok: true, tabs: shs.map(function (s) { return { name: s.getName(), gid: String(s.getSheetId()) }; }) };
 }
 
-// 개인 복사본 안의 기본 탭을 찾는다. 사용자별 탭 자동 생성은 사용하지 않는다.
-var BASE_TAB_ALIASES = [
-  { base: '미션결과표', kw: ['미션결과', '미션 결과'] },
-  { base: '골든미팅카드', kw: ['골든미팅카드', '골든', '미팅', '카드'] },
-  { base: '계획표', kw: ['계획표', '레벨업계획', '계획'] },
-  { base: '결과표', kw: ['결과표'] }
-];
-function getBaseSheet_(gid) {
+// gid(시트ID)로 탭 찾기. 없으면 기본 TAB_NAME 사용
+function getSheet_(gid) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (gid) {
     var shs = ss.getSheets();
@@ -254,137 +65,79 @@ function getBaseSheet_(gid) {
   }
   return ss.getSheetByName(TAB_NAME);
 }
-function canonicalBaseName_(name) {
-  var n = String(name || '')
-    .replace(/^_?템플릿[_\s-]*/, '')
-    .replace(/_[1-4]분기$/, '')
-    .replace(/^.+?_/, '')
-    .trim();
-  for (var i = 0; i < BASE_TAB_ALIASES.length; i++) {
-    var a = BASE_TAB_ALIASES[i];
-    for (var k = 0; k < a.kw.length; k++) {
-      if (n.indexOf(a.kw[k]) >= 0) return a.base;
-    }
-  }
-  return n || TAB_NAME;
-}
-function cleanMember_(member) {
-  return String(member || '').trim();
-}
-function normalizeQuarter_(quarter) {
-  var q = String(quarter || '').replace(/[^1-4]/g, '');
-  return q || '';
-}
-function safeSheetName_(name) {
-  var s = String(name || '').replace(/[\\\/\?\*\[\]\:]/g, '-').replace(/\s+/g, ' ').trim();
-  if (!s) s = '이름없음';
-  return s.length > 95 ? s.slice(0, 95) : s;
-}
-function isQuarterSplitBase_(baseName) {
-  return baseName !== '골든미팅카드';
-}
-function memberTabName_(baseName, member, quarter) {
-  var q = normalizeQuarter_(quarter);
-  if (q && isQuarterSplitBase_(baseName)) return safeSheetName_(cleanMember_(member) + '_' + q + 'Q ' + baseName);
-  return safeSheetName_(cleanMember_(member) + '_' + baseName);
-}
-function findMainSheet_(ss, baseName, quarter) {
-  var q = normalizeQuarter_(quarter);
-  if (q && isQuarterSplitBase_(baseName)) {
-    var qs = findQuarterSheet_(ss, q + 'Q', baseName, '');
-    if (qs) return qs;
-  }
-  var exact = ss.getSheetByName(baseName);
-  if (exact) return exact;
-  var aliases = [];
-  for (var i = 0; i < BASE_TAB_ALIASES.length; i++) {
-    if (BASE_TAB_ALIASES[i].base === baseName) aliases = BASE_TAB_ALIASES[i].kw;
-  }
-  var shs = ss.getSheets();
-  for (var s = 0; s < shs.length; s++) {
-    var name = shs[s].getName();
-    if (name.indexOf('_') >= 0 || name.indexOf('템플릿') >= 0 || name.indexOf('원본') >= 0) continue;
-    for (var k = 0; k < aliases.length; k++) {
-      if (name.indexOf(aliases[k]) >= 0) return shs[s];
-    }
-  }
-  return null;
-}
-function findMemberSheet_(ss, baseName, member, quarter) {
-  var m = cleanMember_(member);
-  var q = normalizeQuarter_(quarter);
-  var primary = memberTabName_(baseName, m, q);
-  var candidates = [primary];
-  if (q && isQuarterSplitBase_(baseName)) {
-    candidates.push(safeSheetName_(m + '_' + baseName + '_' + q + '분기'));
-    candidates.push(safeSheetName_(q + 'Q ' + m + '_' + baseName));
-    candidates.push(safeSheetName_(q + 'Q' + m + '_' + baseName));
-    candidates.push(safeSheetName_(q + '분기 ' + m + '_' + baseName));
-  }
-  if (!q || !isQuarterSplitBase_(baseName)) {
-    candidates = candidates.concat([
-      safeSheetName_(baseName + '_' + m),
-      safeSheetName_(m + ' - ' + baseName),
-      safeSheetName_(baseName + ' - ' + m),
-      safeSheetName_(baseName + '(' + m + ')')
-    ]);
-  }
-  for (var i = 0; i < candidates.length; i++) {
-    var sh = ss.getSheetByName(candidates[i]);
-    if (sh) return sh;
-  }
-  return null;
-}
-function getSheet_(gid, member, quarter) {
-  // 개인별 복사본 1파일 1URL 방식에서는 사용자별 탭을 만들지 않습니다.
-  // 대시보드가 member 값을 보내더라도, 이 사용자의 복사본 안에 있는 기본 탭만 읽고 씁니다.
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var base = getBaseSheet_(gid);
-  if (!base) return null;
-  var baseName = canonicalBaseName_(base.getName());
-  var q = isQuarterSplitBase_(baseName) ? (normalizeQuarter_(quarter) || '1') : '';
-  var main = findMainSheet_(ss, baseName, q) || base;
-  return main;
-}
 
-function applyMemberSheetDefaults_(sheet, baseName, member, team) {
-  var m = cleanMember_(member);
-  var t = String(team || '').trim();
-  if (!sheet || !m) return;
-  if (baseName === '골든미팅카드') {
-    sheet.getRange('D1').setValue('파트: ' + t);
-    sheet.getRange('F1').setValue('이름: ' + m);
-    return;
-  }
-  if (baseName === '계획표') {
-    sheet.getRange('A4').setValue(m);
-    return;
-  }
-  if (baseName === '미션결과표') {
-    sheet.getRange('A3').setValue('※ 1년차 cs ' + t + ' ' + m + '프로');
-    return;
-  }
-  if (baseName === '결과표') {
-    sheet.getRange('A4').setValue('※ 1년차 cs ' + t + ' ' + m + '프로');
-  }
-}
+function readGoals_(gid, goalColParam, noMonths) {
+  var sh = getSheet_(gid);
+  if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다 (gid: ' + (gid || TAB_NAME) + ')' };
+  var goalCol = Number(goalColParam) || COL.goal; // 계획표: C(3)=기본업무, I(9)=미션업무
+  var skipMonths = String(noMonths || '') === '1';
+  var last = sh.getLastRow();
+  if (last < START_ROW) return { ok: true, months: [], rows: [] };
+  var n = last - START_ROW + 1;
+  var lastCol = Math.max(13, sh.getLastColumn());
+  var values = sh.getRange(START_ROW, 1, n, lastCol).getValues();
+  var rich = sh.getRange(START_ROW, 1, n, lastCol).getRichTextValues();
 
-function createMemberSheets_(team, member) {
-  // 개인별 복사본 1파일 1URL 방식에서는 서버가 개인 탭을 자동 생성하지 않습니다.
-  // 예전 대시보드/캐시에서 이 액션이 호출되더라도 안전하게 건너뜁니다.
-  return { ok: true, skipped: true, count: 0, message: 'personal-copy-url-mode' };
+  // 1) 월 머리글 행 자동 탐지 ('4월','5월'… 또는 '7월','8월'… 분기 바뀌어도 자동 인식)
+  var monthCols = [];
+  if (!skipMonths) {
+    for (var h = 0; h < n; h++) {
+      var found = [];
+      for (var c = 0; c < lastCol; c++) {
+        var hv = String(values[h][c] || '').trim();
+        if (/^\d{1,2}\s*월$/.test(hv)) found.push({ col: c + 1, label: hv.replace(/\s/g, '') });
+      }
+      if (found.length >= 2) { monthCols = found; break; }
+    }
+    if (!monthCols.length) monthCols = [{ col: 11, label: '4월' }, { col: 12, label: '5월' }, { col: 13, label: '6월' }];
+  }
+
+  // 1.5) 월 컬럼이 가로로 병합된 행 탐지(통합 표시용)
+  var mergedRows = {};
+  if (monthCols.length >= 2) {
+    var firstC = monthCols[0].col, cnt = monthCols.length;
+    try {
+      sh.getRange(START_ROW, firstC, n, cnt).getMergedRanges().forEach(function (rng) {
+        if (rng.getNumColumns() >= cnt) {
+          for (var rr = rng.getRow(); rr < rng.getRow() + rng.getNumRows(); rr++) mergedRows[rr] = true;
+        }
+      });
+    } catch (e) {}
+  }
+
+  // 2) 데이터 행
+  var rows = [];
+  var lastGubun = '';
+  for (var i = 0; i < n; i++) {
+    var gubun = String(values[i][COL.gubun - 1] || '').trim();
+    var goal = String(values[i][goalCol - 1] || '').trim();
+    var gN = gubun.replace(/\s/g, ''), goN = goal.replace(/\s/g, ''); // '구 분','목 표' 등 띄어쓰기 무시
+    if (gN === '구분' || goN === '목표' || goN === '구분' || goN === '목 표') continue;
+    if (/^\d{4}\s*년?\s*\d?\s*분기$/.test(goN)) continue;
+    var isMonthHeader = monthCols.some(function (mc) { return String(values[i][mc.col - 1] || '').trim() === mc.label; });
+    if (isMonthHeader) continue;
+    if (gubun) lastGubun = gubun;
+    if (goal === '') continue;
+    var months = monthCols.map(function (mc) {
+      return { col: mc.col, label: mc.label, text: String(values[i][mc.col - 1] || '') }; // 월칸은 그냥 텍스트(검정)
+    });
+    rows.push({
+      row: START_ROW + i,
+      gubun: gubun || lastGubun,
+      goal: goal,
+      goalCol: goalCol,
+      goalHtml: cellHtml_(rich[i][goalCol - 1]), // 목표: 줄바꿈+색상 유지
+      months: months,
+      merged: !!mergedRows[START_ROW + i]         // 월 셀 통합(병합) 여부
+    });
+  }
+  return { ok: true, months: monthCols.map(function (m) { return m.label; }), rows: rows };
 }
 
 function doPost(e) {
   try {
     var b = JSON.parse(e.postData.contents || '{}');
-    if (b.action === 'aiCard') {
-      return json_(aiFillCard_(b));
-    }
-    if (b.action === 'createMemberSheets') {
-      return json_(createMemberSheets_(b.team, b.member));
-    }
-    var sh = getSheet_(b.gid, b.member, b.quarter);
+    var sh = getSheet_(b.gid);
     if (!sh) return json_({ ok: false, error: '탭 없음 (gid: ' + (b.gid || TAB_NAME) + ')' });
 
     if (b.action === 'update') {
@@ -426,6 +179,9 @@ function doPost(e) {
       sh.deleteRow(dr);
       return json_({ ok: true });
     }
+    if (b.action === 'aiCard') {
+      return json_(aiFillCard_(b));
+    }
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -456,13 +212,13 @@ function aiFillCard_(b) {
   if (!apiKey) return { ok: false, error: 'OPENAI_API_KEY가 설정되지 않았습니다. (Apps Script → 프로젝트 설정 → 스크립트 속성)' };
 
   // 1) 입력 자료 수집: 결과표(구분/목표/월별), 미션표(구분/목표/월별)
-  var resultData = readGoals_(b.resultGid, null, null, b.member, quarter);
-  var missionData = readGoals_(b.missionGid, null, null, b.member, quarter);
+  var resultData = readGoals_(b.resultGid, null, null);
+  var missionData = readGoals_(b.missionGid, null, null);
   var resultText = goalsToText_(resultData, '기본업무 결과표');
   var missionText = goalsToText_(missionData, '미션 결과표');
 
   // 2) 골든카드에서 참고용 예시(작성된 다른 분기) 추출
-  var exampleText = cardExampleText_(b.cardGid, quarter, b.member);
+  var exampleText = cardExampleText_(b.cardGid, quarter);
 
   // 3) GPT 호출
   var prompt = buildCardPrompt_(quarter, resultText, missionText, exampleText);
@@ -473,7 +229,7 @@ function aiFillCard_(b) {
   if (b.dryRun) return { ok: true, preview: card, quarter: quarter };
 
   // 4) 골든카드 해당 분기 24칸에 입력
-  var written = writeCard_(b.cardGid, quarter, card, b.member);
+  var written = writeCard_(b.cardGid, quarter, card);
   return { ok: true, written: written, quarter: quarter, preview: card };
 }
 
@@ -492,12 +248,12 @@ function goalsToText_(data, title) {
 }
 
 // 골든카드에서 quarter 외 다른 분기의 작성된 내용을 예시로 추출
-function cardExampleText_(gid, quarter, member) {
+function cardExampleText_(gid, quarter) {
   var ex = '';
   for (var q = 1; q <= 4; q++) {
     var qs = String(q);
     if (qs === quarter) continue;
-    var c = readCard_(gid, qs, member);
+    var c = readCard_(gid, qs);
     if (!c.ok || !c.questions) continue;
     var has = c.questions.some(function (qq) { return (qq.cells || []).some(function (cl) { return cl.text && cl.text.trim(); }); });
     if (!has) continue;
@@ -592,10 +348,10 @@ function callOpenAI_(apiKey, prompt) {
 
 // 카테고리 키 → readCard_의 catCols 키 매핑
 var AI_CAT_KEYS = ['매출', '효율', '비용', '자기', '소통', 'AI'];
-function writeCard_(gid, quarter, card, member) {
-  var c = readCard_(gid, quarter, member);
+function writeCard_(gid, quarter, card) {
+  var c = readCard_(gid, quarter);
   if (!c.ok) throw new Error(c.error || '카드 읽기 실패');
-  var sh = getSheet_(gid, member);
+  var sh = getSheet_(gid);
   var qKeyMap = { q1: '성과', q2: '기여', q3: '학습', q4: '지원' }; // 라벨 매칭 보조
   var written = 0;
   c.questions.forEach(function (q) {
@@ -636,17 +392,6 @@ function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function respond_(o, callback) {
-  if (callback) {
-    var safe = String(callback).replace(/[^A-Za-z0-9_$\.]/g, '');
-    if (safe) {
-      return ContentService.createTextOutput(safe + '(' + JSON.stringify(o) + ');')
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
-    }
-  }
-  return json_(o);
-}
-
 // ===================== 골든미팅카드 (분기 × 질문4 × 카테고리6) =====================
 // 주의: 위에서부터 검사하므로, 더 구체적인 q2(기여)를 q1(성과)보다 먼저 둠
 // ("타인의 성과에 내가 기여한" 에도 '성과'가 있어 q1으로 잘못 잡히던 문제 방지)
@@ -680,8 +425,8 @@ function quarterOf_(text) {
   return m ? m[1] : '';
 }
 
-function readCard_(gid, quarter, member) {
-  var sh = getSheet_(gid, member);
+function readCard_(gid, quarter) {
+  var sh = getSheet_(gid);
   if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다 (gid: ' + gid + ')' };
   quarter = String(quarter || '').replace(/[^1-4]/g, '') || '2';
   var lastRow = sh.getLastRow(), lastCol = Math.max(10, sh.getLastColumn());

@@ -1876,26 +1876,80 @@
     return 'priv';
   }
   function cacheFor(scope) { return scope === 'team' ? TEAM : scope === 'share' ? SHARE : PRIV; }
+  function scopedTeamName(team) {
+    const name = String(team || '').trim();
+    return name || '_none';
+  }
+  function shareScopeUserName(user) {
+    return String(user || shareScopeUser || MY.username || '').trim();
+  }
+  function legacyShareScopeKey(user) {
+    return 'share:' + shareScopeUserName(user);
+  }
   function scopeKeyStr(scope, user) {
-    if (scope === 'team') return 'team:' + (MY.team || '_none');
-    if (scope === 'share') return 'share:' + (user || shareScopeUser || MY.username);
+    if (scope === 'team') return 'team:' + scopedTeamName(MY.team);
+    if (scope === 'share') return 'share:' + scopedTeamName(MY.team) + ':' + shareScopeUserName(user);
     return 'priv:' + MY.username;
   }
+  async function loadScopeData(scopeKey) {
+    const r = await supaRpc('app_load', { p_token: TOKEN, p_scope: scopeKey });
+    return (r && r.ok && r.data && typeof r.data === 'object') ? r.data : {};
+  }
+  async function saveScopeData(scopeKey, data) {
+    return supaRpc('app_save', { p_token: TOKEN, p_scope: scopeKey, p_data: data });
+  }
+  function hasScopeData(obj) {
+    return !!obj && typeof obj === 'object' && !Array.isArray(obj) && Object.keys(obj).length > 0;
+  }
+  function cloneScopeData(obj) {
+    try { return JSON.parse(JSON.stringify(obj || {})); }
+    catch (e) { return Object.assign({}, obj || {}); }
+  }
+  function storedValueLooksEmpty(v) {
+    if (v == null || v === '') return true;
+    try {
+      const parsed = JSON.parse(v);
+      if (Array.isArray(parsed)) return parsed.length === 0;
+      if (parsed && typeof parsed === 'object') return Object.keys(parsed).length === 0;
+    } catch (e) {}
+    return false;
+  }
+  function storedValueLooksNonEmpty(v) { return !storedValueLooksEmpty(v); }
   function scheduleScopeSave(scope) {
     if (scope === 'share' && shareReadOnly) return; // 보기 전용
+    const saveKey = scopeKeyStr(scope);
+    const saveData = cloneScopeData(cacheFor(scope));
     setSyncState('saving');
     clearTimeout(saveTimers[scope]);
     saveTimers[scope] = setTimeout(async () => {
       try {
-        const r = await supaRpc('app_save', { p_token: TOKEN, p_scope: scopeKeyStr(scope), p_data: cacheFor(scope) });
+        const r = await saveScopeData(saveKey, saveData);
         setSyncState(r && r.ok ? 'ok' : 'error');
       } catch (e) { console.error('save', scope, e); setSyncState('error'); }
     }, 700);
   }
   async function loadScopeInto(scope, user) {
     try {
-      const r = await supaRpc('app_load', { p_token: TOKEN, p_scope: scopeKeyStr(scope, user) });
-      const obj = (r && r.ok && r.data && typeof r.data === 'object') ? r.data : {};
+      const targetUser = shareScopeUserName(user);
+      const scopeKey = scopeKeyStr(scope, user);
+      let obj = await loadScopeData(scopeKey);
+      if (scope === 'share' && !hasScopeData(obj)) {
+        const legacyKey = legacyShareScopeKey(user);
+        if (legacyKey !== scopeKey) {
+          const legacyObj = await loadScopeData(legacyKey);
+          if (hasScopeData(legacyObj)) {
+            obj = legacyObj;
+            if (targetUser === MY.username) {
+              await saveScopeData(scopeKey, legacyObj);
+              await saveScopeData(legacyKey, {});
+            }
+          }
+        }
+      }
+      if (scope === 'share' && targetUser === MY.username) {
+        const migrated = importLocalShareInto(obj);
+        if (migrated) await saveScopeData(scopeKey, obj);
+      }
       if (scope === 'team') TEAM = obj; else if (scope === 'share') SHARE = obj; else PRIV = obj;
       setSyncState('ok');
     } catch (e) { console.error('load', scope, e); setSyncState('error'); }
@@ -1915,15 +1969,52 @@
 
   // 기존 raw localStorage 데이터를 캐시로 가져오기 (최초 1회 마이그레이션)
   function importLegacy() {
-    const prefixes = ['check:', 'goal:', 'quarter-goals:', 'quarter-missions:', 'ai-projects:', 'ai-project:'];
+    const prefixes = ['check:', 'goal:', 'quarter-goals:', 'quarter-missions:', 'ai-projects:', 'ai-project:', 'automation-apps'];
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && prefixes.some(p => k.startsWith(p)) && !(k in CACHE)) {
+        if (k && prefixes.some(p => k === p || k.startsWith(p)) && !(k in CACHE)) {
           CACHE[k] = localStorage.getItem(k);
         }
       }
     } catch (e) {}
+  }
+
+  // Supabase 전환 후 기존 브라우저 localStorage에 남아 있던 공유 탭 데이터를 복구한다.
+  // 원격 값이 없거나 빈 배열/객체일 때만 가져와서, 이미 저장된 팀 공유 데이터는 덮어쓰지 않는다.
+  function importLocalShareInto(target) {
+    if (!SUPA_MODE || !MY) return false;
+    const marker = 'dashboard:migrated:share:' + scopedTeamName(MY.team) + ':' + MY.username;
+    let changed = false;
+    const isShareImportKey = (k) => k === 'automation-apps' || k === 'ai-projects:index'
+      || k.indexOf('quarter-goals:') === 0 || k.indexOf('quarter-missions:') === 0 || k.indexOf('ai-project:') === 0;
+    const copyIfUseful = (key, raw) => {
+      try {
+        if (storedValueLooksNonEmpty(raw) && (!(key in target) || storedValueLooksEmpty(target[key]))) {
+          target[key] = raw;
+          changed = true;
+        }
+      } catch (e) {}
+    };
+    try {
+      // 1) 아주 오래된 버전처럼 개별 localStorage 키로 남아 있는 데이터
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !isShareImportKey(k)) continue;
+        copyIfUseful(k, localStorage.getItem(k));
+      }
+      // 2) 최근 레거시/로컬 모드처럼 dashboard:blob:* 안의 CACHE 객체로 저장된 데이터
+      for (let i = 0; i < localStorage.length; i++) {
+        const blobKey = localStorage.key(i);
+        if (!blobKey || blobKey.indexOf('dashboard:blob:') !== 0) continue;
+        let blob = null;
+        try { blob = JSON.parse(localStorage.getItem(blobKey) || '{}'); } catch (e) { blob = null; }
+        if (!blob || typeof blob !== 'object') continue;
+        Object.keys(blob).forEach(k => { if (isShareImportKey(k)) copyIfUseful(k, blob[k]); });
+      }
+      if (changed) localStorage.setItem(marker, new Date().toISOString());
+    } catch (e) {}
+    return changed;
   }
 
   async function remoteLoad() {
@@ -2324,7 +2415,15 @@
   let currentFilter = 'all';
 
   async function loadGoals() {
-    const raw = await storeGet(`quarter-goals:${QUARTER}`);
+    let raw = await storeGet(`quarter-goals:${QUARTER}`);
+    if (!raw && SUPA_MODE) {
+      const shareCache = cacheFor('share') || {};
+      const fallbackKey = Object.keys(shareCache)
+        .filter(k => k.indexOf('quarter-goals:') === 0)
+        .sort()
+        .reverse()[0];
+      if (fallbackKey) raw = shareCache[fallbackKey];
+    }
     if (raw) {
       try {
         goals = JSON.parse(raw);
@@ -2332,6 +2431,7 @@
       } catch { goals = []; }
     }
     else goals = [];
+    if (currentFilter !== 'all' && !goals.some(g => g.category === currentFilter)) currentFilter = 'all';
   }
   async function saveGoals() { await storeSet(`quarter-goals:${QUARTER}`, JSON.stringify(goals)); }
 
@@ -2750,7 +2850,15 @@
   if (resultRefreshBtn) resultRefreshBtn.addEventListener('click', loadResultGoals);
 
   async function loadMissions() {
-    const raw = await storeGet(`quarter-missions:${QUARTER}`);
+    let raw = await storeGet(`quarter-missions:${QUARTER}`);
+    if (!raw && SUPA_MODE) {
+      const shareCache = cacheFor('share') || {};
+      const fallbackKey = Object.keys(shareCache)
+        .filter(k => k.indexOf('quarter-missions:') === 0)
+        .sort()
+        .reverse()[0];
+      if (fallbackKey) raw = shareCache[fallbackKey];
+    }
     if (raw) {
       try {
         missions = JSON.parse(raw);
@@ -2811,6 +2919,7 @@
       `;
       card.querySelector('.gc-check').addEventListener('click', async (e) => {
         e.stopPropagation();
+        if (shareReadOnly) return;
         goal.done = !goal.done;
         await saveGoals();
         renderGoals();
@@ -2823,7 +2932,7 @@
     add.className = 'add-goal-card';
     add.innerHTML = `<span class="plus">+</span><span>목표 추가</span>`;
     add.addEventListener('click', () => openGoalModal());
-    root.appendChild(add);
+    if (!shareReadOnly) root.appendChild(add);
   }
 
   function renderMissions() {
@@ -2842,6 +2951,7 @@
       // 체크박스 클릭: 토글
       item.querySelector('.mission-check').addEventListener('click', async (e) => {
         e.stopPropagation();
+        if (shareReadOnly) return;
         m.done = !m.done;
         await saveMissions();
         renderMissions();
@@ -2859,6 +2969,7 @@
       // 삭제 버튼
       item.querySelector('.mission-remove').addEventListener('click', async (e) => {
         e.stopPropagation();
+        if (shareReadOnly) return;
         missions = missions.filter(x => x.id !== m.id);
         await saveMissions();
         renderMissions();
@@ -2869,6 +2980,7 @@
 
   document.getElementById('missionInput').addEventListener('keydown', async (e) => {
     if (e.key !== 'Enter') return;
+    if (shareReadOnly) return;
     const v = e.target.value.trim();
     if (!v) return;
     missions.push({ id: `m${Date.now()}`, title: v, done: false });
@@ -4481,11 +4593,13 @@
       if (open) open.addEventListener('click', (e) => e.stopPropagation());
       grid.appendChild(card);
     });
-    const add = document.createElement('div');
-    add.className = 'app-add-card';
-    add.innerHTML = '<span class="plus">+</span><span>앱 추가</span>';
-    add.addEventListener('click', () => openAppModal());
-    grid.appendChild(add);
+    if (!shareReadOnly) {
+      const add = document.createElement('div');
+      add.className = 'app-add-card';
+      add.innerHTML = '<span class="plus">+</span><span>앱 추가</span>';
+      add.addEventListener('click', () => openAppModal());
+      grid.appendChild(add);
+    }
   }
   const appModal = document.getElementById('appModalBackdrop');
   let editingAppId = null, apColor = 'g-green', apImage = '';
@@ -4515,6 +4629,7 @@
     });
   }
   function openAppModal(a = null) {
+    if (shareReadOnly) return;
     editingAppId = a ? a.id : null;
     document.getElementById('appModalTitle').textContent = a ? '앱 편집' : '앱 추가';
     document.getElementById('ap-icon').value = a?.icon || '';
@@ -4688,9 +4803,12 @@
     const target = (username && username !== MY.username) ? username : null;
     shareScopeUser = target;
     shareReadOnly = !!target;
+    currentFilter = 'all';
+    if (shareReadOnly) resultModeOn(false);
     await loadScopeInto('share', target || MY.username);
     await loadGoals(); await loadMissions(); await loadProjectIndex(); await loadApps();
     renderFilters(); renderGoals(); renderMissions(); await renderGallery(); renderApps();
+    if (!shareReadOnly && typeof loadResultGoals === "function") await loadResultGoals();
     renderMemberBars(); applyShareReadOnly();
   }
 

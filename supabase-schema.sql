@@ -145,7 +145,7 @@ begin
   if kind = 'priv' then
     ok := (lower(who) = lower(me.username));
   elsif kind = 'team' then
-    ok := (me.team <> '' and me.team = who);
+    ok := (me.role = 'admin' or (me.team <> '' and me.team = who));
   elsif kind = 'global' then
     -- 앱 공통 설정 저장은 관리자만 허용한다.
     ok := (me.role = 'admin' and who = 'dashboard-settings');

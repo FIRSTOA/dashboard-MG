@@ -88,6 +88,15 @@ function parseQuarterSheetName_(sheetName) {
     }
   }
 
+  // 표시용/수동 생성 호환 형식: 1Q 이름_계획표 / 2Q 이름_결과표 / 3Q 이름_미션결과표
+  if (!m) {
+    var qm = name.match(/^([1-4])\s*Q\s*(.+?)_(.+)$/i) || name.match(/^([1-4])\s*분기\s*(.+?)_(.+)$/);
+    if (qm) {
+      member = String(qm[2] || '').trim();
+      m = [qm[0], qm[1], qm[3]];
+    }
+  }
+
   // 이전 배포 호환 형식: 이름_결과표_1분기
   if (!m) {
     var lm = name.match(/^(.+?)_(.+?)_([1-4])\s*분기$/);
@@ -362,6 +371,9 @@ function findMemberSheet_(ss, baseName, member, quarter) {
   var candidates = [primary];
   if (q && isQuarterSplitBase_(baseName)) {
     candidates.push(safeSheetName_(m + '_' + baseName + '_' + q + '분기'));
+    candidates.push(safeSheetName_(q + 'Q ' + m + '_' + baseName));
+    candidates.push(safeSheetName_(q + 'Q' + m + '_' + baseName));
+    candidates.push(safeSheetName_(q + '분기 ' + m + '_' + baseName));
   }
   if (!q || !isQuarterSplitBase_(baseName)) {
     candidates = candidates.concat([

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>?낅Т ??쒕낫??/title>
+<title>업무 대시보드</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
@@ -156,7 +156,7 @@
   .goal-content:empty:before { content: attr(data-placeholder); color: rgba(120, 70, 20, 0.55); font-weight: 500; }
   .goal-hint { font-size: 11px; color: rgba(26, 27, 58, 0.5); margin-top: 8px; text-align: right; opacity: 0; transition: opacity 0.3s; }
   .goal-hint.visible { opacity: 1; }
-  /* 二쇨컙 怨꾪쉷 쨌 ?쇱씪 釉뚮━??*/
+  /* 주간 계획 · 일일 브리핑 */
   .brief-sec { margin-top: 12px; }
   .brief-sec:first-of-type { margin-top: 4px; }
   .brief-label { display: block; font-size: 12.5px; font-weight: 800; color: #5A3410; margin-bottom: 5px; }
@@ -178,7 +178,7 @@
   .brief-copy { margin-left: 8px; background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.7);
     border-radius: 8px; padding: 4px 10px; font-size: 11.5px; font-weight: 700; color: #5A3410; cursor: pointer; font-family: inherit; }
   .brief-copy:hover { background: rgba(255,255,255,0.9); }
-  /* ?ъ씠????+ ?앹뾽 */
+  /* 사이드 독 + 팝업 */
   .side-dock { position: fixed; right: 14px; top: 50%; transform: translateY(-50%); z-index: 350;
     display: flex; flex-direction: column; gap: 10px; }
   .dock-btn { width: 46px; height: 46px; border-radius: 14px; border: 1px solid var(--border);
@@ -186,7 +186,7 @@
     display: flex; align-items: center; justify-content: center; transition: transform .12s, background .12s; }
   .dock-btn:hover { transform: translateY(-2px); }
   .dock-btn.active { background: var(--bg); border-color: var(--bg); filter: saturate(1.1); }
-  /* 寃곌낵???쒗듃?곕룞) */
+  /* 결과표(시트연동) */
   .rs-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
   .rs-tab { border: 1.5px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.1); color: white;
     border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
@@ -197,7 +197,7 @@
     display: inline-block; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; }
   .rs-card { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
     box-shadow: 0 4px 16px rgba(20,14,80,0.07); }
-  /* 怨⑤뱺誘명똿移대뱶 */
+  /* 골든미팅카드 */
   .gm-qbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
   .gm-qbtn { border: 1.5px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); color: white;
     border-radius: 10px; padding: 7px 18px; font-size: 13.5px; font-weight: 800; cursor: pointer; }
@@ -306,13 +306,13 @@
   .goal-card.done { opacity: 0.65; }
   .goal-card.done .gc-title { text-decoration: line-through; color: var(--text-light); }
   .goal-card.cat-AI { border-left-color: #6366F1; }
-  .goal-card.cat-?먭린媛쒕컻 { border-left-color: #10B981; }
-  .goal-card.cat-留ㅼ텧利앸? { border-left-color: #F97316; }
-  .goal-card.cat-留ㅼ텧?덉젙 { border-left-color: #EC4899; }
-  .goal-card.cat-?⑥쑉??{ border-left-color: #06B6D4; }
-  .goal-card.cat-鍮꾩슜?덇컧 { border-left-color: #F59E0B; }
-  .goal-card.cat-?뚰넻 { border-left-color: #A855F7; }
-  .goal-card.cat-湲고? { border-left-color: #6B7280; }
+  .goal-card.cat-자기개발 { border-left-color: #10B981; }
+  .goal-card.cat-매출증대 { border-left-color: #F97316; }
+  .goal-card.cat-매출안정 { border-left-color: #EC4899; }
+  .goal-card.cat-효율성 { border-left-color: #06B6D4; }
+  .goal-card.cat-비용절감 { border-left-color: #F59E0B; }
+  .goal-card.cat-소통 { border-left-color: #A855F7; }
+  .goal-card.cat-기타 { border-left-color: #6B7280; }
 
   .gc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 6px; }
   .gc-num {
@@ -325,13 +325,13 @@
   .gc-tags { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
   .cat-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
   .cat-tag.cat-AI { background: #E0E7FF; color: #4338CA; }
-  .cat-tag.cat-?먭린媛쒕컻 { background: #D1FAE5; color: #065F46; }
-  .cat-tag.cat-留ㅼ텧利앸? { background: #FFEDD5; color: #9A3412; }
-  .cat-tag.cat-留ㅼ텧?덉젙 { background: #FCE7F3; color: #9D174D; }
-  .cat-tag.cat-?⑥쑉??{ background: #CFFAFE; color: #155E75; }
-  .cat-tag.cat-鍮꾩슜?덇컧 { background: #FEF3C7; color: #92400E; }
-  .cat-tag.cat-?뚰넻 { background: #F3E8FF; color: #6B21A8; }
-  .cat-tag.cat-湲고? { background: #F3F4F6; color: #1F2937; }
+  .cat-tag.cat-자기개발 { background: #D1FAE5; color: #065F46; }
+  .cat-tag.cat-매출증대 { background: #FFEDD5; color: #9A3412; }
+  .cat-tag.cat-매출안정 { background: #FCE7F3; color: #9D174D; }
+  .cat-tag.cat-효율성 { background: #CFFAFE; color: #155E75; }
+  .cat-tag.cat-비용절감 { background: #FEF3C7; color: #92400E; }
+  .cat-tag.cat-소통 { background: #F3E8FF; color: #6B21A8; }
+  .cat-tag.cat-기타 { background: #F3F4F6; color: #1F2937; }
   .grade-tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; color: white; min-width: 26px; text-align: center; }
   .grade-tag.grade-A { background: #DC2626; }
   .grade-tag.grade-B { background: #F97316; }
@@ -349,7 +349,7 @@
     padding: 9px 11px; font-size: 11.5px;
     display: flex; align-items: flex-start; gap: 6px; line-height: 1.45;
   }
-  .gc-method::before { content: '?뱦'; flex-shrink: 0; font-size: 12px; }
+  .gc-method::before { content: '📌'; flex-shrink: 0; font-size: 12px; }
   .gc-check {
     position: absolute; top: 14px; right: 14px;
     width: 22px; height: 22px; border-radius: 7px;
@@ -432,7 +432,7 @@
   .ai-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(20, 14, 80, 0.12); }
   .ai-photo { width: 100%; aspect-ratio: 5 / 3; background: linear-gradient(135deg, #E9E5FA 0%, #D4CFF0 100%); position: relative; overflow: hidden; display: grid; gap: 2px; }
   .ai-photo.count-0 { display: flex; align-items: center; justify-content: center; }
-  .ai-photo.count-0::after { content: '??; font-size: 38px; opacity: 0.4; }
+  .ai-photo.count-0::after { content: '✨'; font-size: 38px; opacity: 0.4; }
   .ai-photo.count-1 { grid-template-columns: 1fr; }
   .ai-photo.count-2 { grid-template-columns: 1fr 1fr; }
   .ai-photo.count-3 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }
@@ -610,7 +610,7 @@
   .help-note li { margin-bottom: 2px; }
   .help-note strong { color: #92400E; }
 
-  /* Notes (吏꾪뻾 湲곕줉) */
+  /* Notes (진행 기록) */
   .notes-section {
     margin-top: 18px;
     padding-top: 16px;
@@ -934,7 +934,7 @@
   .cal-ev.done { opacity: 0.5; text-decoration: line-through; text-decoration-thickness: 1.5px; }
   .cal-more { font-size: 10px; color: var(--text-grey); font-weight: 700; padding: 1px 3px; cursor: pointer; border-radius: 4px; }
   .cal-more:hover { background: rgba(20,14,80,0.08); color: var(--bg); text-decoration: underline; }
-  /* ?섎（ ?쇱젙 ?붾낫湲?*/
+  /* 하루 일정 더보기 */
   .day-ev-row { display: flex; align-items: center; gap: 10px; padding: 11px 8px; border-radius: 9px; cursor: pointer; }
   .day-ev-row:hover { background: var(--card-soft); }
   .day-ev-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
@@ -1020,11 +1020,11 @@
 
   /* ===== Team member bar ===== */
   .member-bar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
-  .member-bar::before { content: '?뫁 ???蹂닿린'; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7); margin-right: 6px; }
+  .member-bar::before { content: '👥 팀원 보기'; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7); margin-right: 6px; }
   .ro-banner { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white;
     border-radius: 10px; padding: 8px 14px; font-size: 12.5px; margin-bottom: 14px; display: none; }
   .ro-banner.show { display: block; }
-  /* ???蹂닿린(?쎄린 ?꾩슜) ???몄쭛 ?붿냼 ?④? */
+  /* 팀원 보기(읽기 전용) 시 편집 요소 숨김 */
   body.share-ro .add-goal-card, body.share-ro .ai-add-card, body.share-ro .app-add-card,
   body.share-ro #addGoalBtn, body.share-ro #addProjectBtn, body.share-ro #addAppBtn,
   body.share-ro #syncBtn, body.share-ro .mission-add-row, body.share-ro .gc-check,
@@ -1066,16 +1066,16 @@
 <div class="page">
 
   <div class="topbar">
-    <div class="logo"><div class="badge">?뱥</div><span>FirstOA</span></div>
+    <div class="logo"><div class="badge">📋</div><span>FirstOA</span></div>
     <div class="topbar-right">
-      <span id="topbarDate">??/span>
+      <span id="topbarDate">—</span>
       <span class="dot"></span>
-      <span id="topbarWeek">??/span>
+      <span id="topbarWeek">—</span>
       <span class="dot"></span>
-      <span class="sync-badge" id="syncBadge"><span class="s-dot"></span><span class="s-txt">??/span></span>
-      <button class="topbar-btn" id="userBadge">?뫀 寃뚯뒪??/button>
-      <button class="topbar-btn" id="adminBtn" title="愿由ъ옄 ?⑤꼸" style="display:none">?썳截?愿由ъ옄</button>
-      <button class="topbar-btn" id="settingsBtn" title="?숆린???ㅼ젙">?숋툘</button>
+      <span class="sync-badge" id="syncBadge"><span class="s-dot"></span><span class="s-txt">—</span></span>
+      <button class="topbar-btn" id="userBadge">👤 게스트</button>
+      <button class="topbar-btn" id="adminBtn" title="관리자 패널" style="display:none">🛡️ 관리자</button>
+      <button class="topbar-btn" id="settingsBtn" title="동기화 설정">⚙️</button>
     </div>
   </div>
 
@@ -1084,7 +1084,7 @@
       <div class="hero-text">
         <div class="hello">Today's Dashboard</div>
         <div class="greeting display" id="greeting">Hello.</div>
-        <div class="subline" id="subline">留ㅼ씪 ?ㅼ뿬?ㅻ낫???낅Т瑜???怨녹뿉.</div>
+        <div class="subline" id="subline">매일 들여다보는 업무를 한 곳에.</div>
       </div>
       <div class="ring">
         <svg width="110" height="110" viewBox="0 0 110 110">
@@ -1101,80 +1101,80 @@
 
   <!-- Top navigation -->
   <nav class="main-nav" id="mainNav">
-    <button class="nav-tab active" data-view="board">?뾺截??낅Т蹂대뱶</button>
-    <button class="nav-tab" data-view="goals">?렞 遺꾧린 紐⑺몴</button>
-    <button class="nav-tab" data-view="apps">?숋툘 ?먮룞????/button>
-    <button class="nav-tab" data-view="calendar">?뱟 罹섎┛??/button>
+    <button class="nav-tab active" data-view="board">🗂️ 업무보드</button>
+    <button class="nav-tab" data-view="goals">🎯 분기 목표</button>
+    <button class="nav-tab" data-view="apps">⚙️ 자동화 앱</button>
+    <button class="nav-tab" data-view="calendar">📅 캘린더</button>
   </nav>
 
-  <!-- VIEW: ?낅Т蹂대뱶 (留ㅼ씪?좎씪/二쇨컙紐⑺몴/鍮좊Ⅸ留곹겕 ?꾩젽? JS媛 ???덉쑝濡??대룞) -->
+  <!-- VIEW: 업무보드 (매일할일/주간목표/빠른링크 위젯은 JS가 이 안으로 이동) -->
   <div class="view active" data-view="board" id="view-board">
-    <!-- 罹섎┛??誘몃땲 -->
+    <!-- 캘린더 미니 -->
     <div class="widget" id="miniCalWidget" style="margin-bottom:16px">
       <div class="w-head" style="margin-bottom:14px">
-        <div class="w-icon" style="background:var(--g-cyan)">?뿎截?/div>
-        <div class="w-title">罹섎┛??誘몃땲</div>
+        <div class="w-icon" style="background:var(--g-cyan)">🗓️</div>
+        <div class="w-title">캘린더 미니</div>
         <div class="cal-cat-tabs" id="miniCatTabs" style="margin-left:auto"></div>
       </div>
       <div class="cal-head" style="margin-bottom:10px">
-        <button class="cal-nav-btn" id="miniPrev">??/button>
-        <div class="cal-month-title" id="miniMonthTitle" style="font-size:15px;min-width:auto">??/div>
-        <button class="cal-nav-btn" id="miniNext">??/button>
-        <button class="w-add-btn" id="miniGoFull" style="margin-left:auto">?꾩껜 罹섎┛????/button>
+        <button class="cal-nav-btn" id="miniPrev">‹</button>
+        <div class="cal-month-title" id="miniMonthTitle" style="font-size:15px;min-width:auto">—</div>
+        <button class="cal-nav-btn" id="miniNext">›</button>
+        <button class="w-add-btn" id="miniGoFull" style="margin-left:auto">전체 캘린더 →</button>
       </div>
       <div class="cal-grid" id="miniDowRow" style="margin-bottom:4px"></div>
       <div class="mini-cal"><div class="cal-grid" id="miniCalGrid"></div></div>
     </div>
 
-    <!-- 媛꾪렪 硫붾え??-->
+    <!-- 간편 메모장 -->
     <div class="widget" id="memoWidget">
       <div class="w-head" style="margin-bottom:14px">
-        <div class="w-icon" style="background:var(--g-yellow)">?뱷</div>
-        <div class="w-title">媛꾪렪 硫붾え??/div>
-        <span class="goal-hint" id="memoHint" style="margin-left:auto">??λ맖 ??/span>
+        <div class="w-icon" style="background:var(--g-yellow)">📝</div>
+        <div class="w-title">간편 메모장</div>
+        <span class="goal-hint" id="memoHint" style="margin-left:auto">저장됨 ✓</span>
       </div>
       <div class="memo-toolbar" id="memoToolbar">
-        <button class="memo-tool" data-add="text">竊??띿뒪??/button>
-        <button class="memo-tool" data-add="h1">H1 ?쒕ぉ</button>
-        <button class="memo-tool" data-add="h2">H2 ?뚯젣紐?/button>
-        <button class="memo-tool" data-add="bullet">??紐⑸줉</button>
-        <button class="memo-tool" data-add="numbered">1. 踰덊샇</button>
-        <button class="memo-tool" data-add="todo">??泥댄겕</button>
-        <button class="memo-tool" data-add="toggle">???좉?</button>
+        <button class="memo-tool" data-add="text">＋ 텍스트</button>
+        <button class="memo-tool" data-add="h1">H1 제목</button>
+        <button class="memo-tool" data-add="h2">H2 소제목</button>
+        <button class="memo-tool" data-add="bullet">• 목록</button>
+        <button class="memo-tool" data-add="numbered">1. 번호</button>
+        <button class="memo-tool" data-add="todo">☑ 체크</button>
+        <button class="memo-tool" data-add="toggle">▶ 토글</button>
       </div>
       <div class="memo-list" id="memoList"></div>
     </div>
   </div>
 
-  <!-- VIEW: 遺꾧린 紐⑺몴 (遺꾧린紐⑺몴/AI?묒뾽 諛뺤뒪??JS媛 ???덉쑝濡??대룞) -->
+  <!-- VIEW: 분기 목표 (분기목표/AI작업 박스는 JS가 이 안으로 이동) -->
   <div class="view" data-view="goals" id="view-goals"></div>
 
-  <!-- VIEW: ?먮룞????-->
+  <!-- VIEW: 자동화 앱 -->
   <div class="view" data-view="apps" id="view-apps">
     <div class="apps-section">
       <div class="apps-head">
-        <div class="ah-title"><div class="icon">??</div>?꾩꽦???먮룞????/div>
-        <button class="btn-white-small" id="addAppBtn">+ ??異붽?</button>
+        <div class="ah-title"><div class="icon">🚀</div>완성한 자동화 앱</div>
+        <button class="btn-white-small" id="addAppBtn">+ 앱 추가</button>
       </div>
       <div class="apps-grid" id="appsGrid"></div>
     </div>
   </div>
 
-  <!-- VIEW: 罹섎┛??-->
+  <!-- VIEW: 캘린더 -->
   <div class="view" data-view="calendar" id="view-calendar">
     <div class="quarter-section">
       <div class="cal-head">
-        <button class="cal-nav-btn" id="calPrev">??/button>
-        <div class="cal-month-title" id="calMonthTitle" style="color:white">??/div>
-        <button class="cal-nav-btn" id="calNext">??/button>
-        <button class="cal-nav-btn" id="calToday" style="width:auto;padding:0 12px;font-size:12.5px;font-weight:700">?ㅻ뒛</button>
+        <button class="cal-nav-btn" id="calPrev">‹</button>
+        <div class="cal-month-title" id="calMonthTitle" style="color:white">—</div>
+        <button class="cal-nav-btn" id="calNext">›</button>
+        <button class="cal-nav-btn" id="calToday" style="width:auto;padding:0 12px;font-size:12.5px;font-weight:700">오늘</button>
         <div class="cal-cat-tabs" id="calCatTabs" style="margin-left:8px"></div>
-        <button class="btn-white-small" id="addEventBtn" style="margin-left:auto">+ ?쇱젙</button>
-        <button class="btn-white-small" id="workmapBtn" style="margin-left:6px">?뱧 ?ш퀎??媛?몄삤湲?/button>
+        <button class="btn-white-small" id="addEventBtn" style="margin-left:auto">+ 일정</button>
+        <button class="btn-white-small" id="workmapBtn" style="margin-left:6px">📍 재계약 가져오기</button>
       </div>
       <div class="cal-grid" id="calDowRow" style="margin-bottom:4px"></div>
       <div class="cal-grid" id="calGrid"></div>
-      <div style="margin-top:12px; font-size:12px; color:rgba(255,255,255,0.6)">?좎쭨 ?대┃ ???쇱젙 異붽? 쨌 ?쇱젙 ?대┃ ???섏젙쨌??젣 쨌 鍮④컙 ?좎쭨 = 怨듯쑕??/div>
+      <div style="margin-top:12px; font-size:12px; color:rgba(255,255,255,0.6)">날짜 클릭 → 일정 추가 · 일정 클릭 → 수정·삭제 · 빨간 날짜 = 공휴일</div>
     </div>
   </div>
 
@@ -1182,17 +1182,17 @@
   <div class="grid">
     <div class="widget col-7">
       <div class="w-head">
-        <div class="w-icon" style="background:var(--g-orange)">?截?/div>
-        <div class="w-title">留ㅼ씪 ????/div>
-        <button class="w-add-btn" id="addDailyBtn">+ 異붽?</button>
+        <div class="w-icon" style="background:var(--g-orange)">☀️</div>
+        <div class="w-title">매일 할 일</div>
+        <button class="w-add-btn" id="addDailyBtn">+ 추가</button>
       </div>
       <div class="task-list" id="dailyList"></div>
 
       <div style="margin-top: 20px;">
         <div class="w-head" style="margin-bottom: 12px;">
-          <div class="w-icon" style="background:var(--g-emerald)">?뿎截?/div>
-          <div class="w-title" style="font-size: 14px;">二?1??/div>
-          <button class="w-add-btn" id="addWeeklyBtn">+ 異붽?</button>
+          <div class="w-icon" style="background:var(--g-emerald)">🗓️</div>
+          <div class="w-title" style="font-size: 14px;">주 1회</div>
+          <button class="w-add-btn" id="addWeeklyBtn">+ 추가</button>
         </div>
         <div class="task-list" id="weeklyList"></div>
       </div>
@@ -1201,33 +1201,33 @@
     <div class="col-5">
       <div class="goal-widget brief-widget">
         <div class="w-head">
-          <div class="w-icon" style="background:var(--g-orange)">?뱦</div>
-          <div class="w-title">二쇨컙 怨꾪쉷 쨌 釉뚮━??/div>
-          <div class="w-meta" id="weeklyPeriod">??/div>
-          <button class="brief-copy" id="briefCopyBtn" title="?뺤떇?濡?蹂듭궗">?뱥 蹂듭궗</button>
+          <div class="w-icon" style="background:var(--g-orange)">📌</div>
+          <div class="w-title">주간 계획 · 브리핑</div>
+          <div class="w-meta" id="weeklyPeriod">—</div>
+          <button class="brief-copy" id="briefCopyBtn" title="형식대로 복사">📋 복사</button>
         </div>
         <div class="brief-sec">
-          <label class="brief-label">?슙 蹂묐ぉ?꾩긽</label>
-          <div class="brief-box" id="bf-bottleneck" data-key="bottleneck" data-scope="week" contenteditable="true" data-placeholder="?꾩옱 媛濡쒕쭑??臾몄젣쨌?쒖빟???곸뼱二쇱꽭??></div>
+          <label class="brief-label">🚧 병목현상</label>
+          <div class="brief-box" id="bf-bottleneck" data-key="bottleneck" data-scope="week" contenteditable="true" data-placeholder="현재 가로막는 문제·제약을 적어주세요"></div>
         </div>
         <div class="brief-sec">
-          <label class="brief-label">?렞 二쇨컙紐⑺몴 <span class="brief-sub">(紐⑺몴 ???ㅽ뻾)</span></label>
-          <div class="brief-box" id="bf-goals" data-key="goals" data-scope="week" contenteditable="true" data-placeholder="1. 紐⑺몴&#10; ???ㅽ뻾 諛⑸쾿"></div>
+          <label class="brief-label">🎯 주간목표 <span class="brief-sub">(목표 → 실행)</span></label>
+          <div class="brief-box" id="bf-goals" data-key="goals" data-scope="week" contenteditable="true" data-placeholder="1. 목표&#10; → 실행 방법"></div>
         </div>
         <div class="brief-sec brief-daily">
-          <label class="brief-label">?뱥 ?쇱씪釉뚮━??<span class="brief-sub" id="briefDate">?ㅻ뒛</span></label>
+          <label class="brief-label">📋 일일브리핑 <span class="brief-sub" id="briefDate">오늘</span></label>
           <div class="brief-row">
             <div class="brief-half">
-              <div class="brief-mini">?슅 ?멸렐</div>
-              <div class="brief-box" id="bf-out" data-key="out" data-scope="day" contenteditable="true" data-placeholder="?멸렐 ?쇱젙"></div>
+              <div class="brief-mini">🚗 외근</div>
+              <div class="brief-box" id="bf-out" data-key="out" data-scope="day" contenteditable="true" data-placeholder="외근 일정"></div>
             </div>
             <div class="brief-half">
-              <div class="brief-mini">?룫 ?닿렐</div>
-              <div class="brief-box" id="bf-in" data-key="in" data-scope="day" contenteditable="true" data-placeholder="?닿렐 ?낅Т"></div>
+              <div class="brief-mini">🏢 내근</div>
+              <div class="brief-box" id="bf-in" data-key="in" data-scope="day" contenteditable="true" data-placeholder="내근 업무"></div>
             </div>
           </div>
         </div>
-        <div class="goal-hint" id="weeklyGoalHint">??λ맖 ??/div>
+        <div class="goal-hint" id="weeklyGoalHint">저장됨 ✓</div>
       </div>
     </div>
   </div>
@@ -1235,21 +1235,21 @@
   <!-- Quarter Goals -->
   <div class="quarter-section">
     <div class="quarter-head">
-      <div class="quarter-title"><div class="icon">?뢾</div>遺꾧린 紐⑺몴
-        <a class="head-shortcut" href="https://docs.google.com/spreadsheets/d/1IbcagsyTIBPfSQrD9L4Fr5ajBk2E56LaN5Fl4c749WU/edit?gid=74381469#gid=74381469" target="_blank" rel="noopener" title="怨⑤뱺誘명똿移대뱶 ?쒗듃 諛붾줈媛湲?>?깗</a>
+      <div class="quarter-title"><div class="icon">🏁</div>분기 목표
+        <a class="head-shortcut" href="https://docs.google.com/spreadsheets/d/1IbcagsyTIBPfSQrD9L4Fr5ajBk2E56LaN5Fl4c749WU/edit?gid=74381469#gid=74381469" target="_blank" rel="noopener" title="골든미팅카드 시트 바로가기">🃏</a>
       </div>
       <div class="quarter-actions">
-        <span class="quarter-tag" id="quarterPeriod">??/span>
-        <button class="btn-ghost-white" id="syncBtn">?뱥 ?쒗듃 媛?몄삤湲?/button>
-        <button class="btn-ghost-white" id="goalSheetBtn" title="??遺꾧린紐⑺몴瑜???援ш??쒗듃?먮룄 ?먮룞 湲곕줉">?뵕 ?쒗듃?곕룞</button>
-        <button class="btn-ghost-white" id="resultRefreshBtn" title="寃곌낵???덈줈怨좎묠" style="display:none">???덈줈怨좎묠</button>
-        <button class="btn-ghost-white" id="resultLinkBtn" title="寃곌낵???쒗듃? ?묐갑???곕룞">?뵕 寃곌낵???곕룞</button>
-        <button class="btn-white-small" id="addGoalBtn">+ 紐⑺몴 異붽?</button>
+        <span class="quarter-tag" id="quarterPeriod">—</span>
+        <button class="btn-ghost-white" id="syncBtn">📋 시트 가져오기</button>
+        <button class="btn-ghost-white" id="goalSheetBtn" title="새 분기목표를 내 구글시트에도 자동 기록">🔗 시트연동</button>
+        <button class="btn-ghost-white" id="resultRefreshBtn" title="결과표 새로고침" style="display:none">↻ 새로고침</button>
+        <button class="btn-ghost-white" id="resultLinkBtn" title="결과표 시트와 양방향 연동">🔗 결과표 연동</button>
+        <button class="btn-white-small" id="addGoalBtn">+ 목표 추가</button>
       </div>
     </div>
     <div class="sync-status" id="syncStatus" style="display:none">
       <span class="dot"></span>
-      <span id="syncStatusText">??/span>
+      <span id="syncStatusText">—</span>
     </div>
     <div class="filter-row" id="filterRow"></div>
     <div class="goal-grid" id="goalGrid"></div>
@@ -1258,11 +1258,11 @@
 
     <div class="mission-block" style="display:none">
       <div class="mission-block-head">
-        <div class="mission-block-title"><span class="em">??/span>異붽? 誘몄뀡</div>
+        <div class="mission-block-title"><span class="em">✨</span>추가 미션</div>
       </div>
       <div class="mission-list" id="missionList"></div>
       <div class="mission-add-row">
-        <input type="text" class="mission-add-input" id="missionInput" placeholder="??誘몄뀡???낅젰?섍퀬 Enter">
+        <input type="text" class="mission-add-input" id="missionInput" placeholder="새 미션을 입력하고 Enter">
       </div>
     </div>
   </div>
@@ -1270,10 +1270,10 @@
   <!-- AI Projects -->
   <div class="ai-section" style="display:none">
     <div class="ai-section-head">
-      <div class="ai-h-title"><div class="icon">?쨼</div>AI ?먮룞???묒뾽
-        <a class="head-shortcut" href="https://docs.google.com/spreadsheets/d/1iL49NTAPSHzOEka5y7TmTgnb17_GKckXAAWSRlKquFY/edit?gid=1826162532#gid=1826162532" target="_blank" rel="noopener" title="?먮룞?붿쭊?됱떆??諛붾줈媛湲?>?뱫</a>
+      <div class="ai-h-title"><div class="icon">🤖</div>AI 자동화 작업
+        <a class="head-shortcut" href="https://docs.google.com/spreadsheets/d/1iL49NTAPSHzOEka5y7TmTgnb17_GKckXAAWSRlKquFY/edit?gid=1826162532#gid=1826162532" target="_blank" rel="noopener" title="자동화진행시트 바로가기">📑</a>
       </div>
-      <button class="btn-white-small" id="addProjectBtn">+ ???꾨줈?앺듃</button>
+      <button class="btn-white-small" id="addProjectBtn">+ 새 프로젝트</button>
     </div>
     <div class="ai-gallery" id="aiGallery"></div>
   </div>
@@ -1281,65 +1281,65 @@
   <!-- Quick Links -->
   <div class="widget" id="quickLinksWidget">
     <div class="w-head">
-      <div class="w-icon" style="background:var(--g-blue)">?뵕</div>
-      <div class="w-title">鍮좊Ⅸ 留곹겕</div>
+      <div class="w-icon" style="background:var(--g-blue)">🔗</div>
+      <div class="w-title">빠른 링크</div>
       <div class="tab-bar">
-        <button class="tab active" data-tab="work">?낅Т??/button>
-        <button class="tab" data-tab="lookup">議고쉶??/button>
+        <button class="tab active" data-tab="work">업무용</button>
+        <button class="tab" data-tab="lookup">조회용</button>
       </div>
-      <button class="w-add-btn" id="addLinkBtn">+ 異붽?</button>
+      <button class="w-add-btn" id="addLinkBtn">+ 추가</button>
     </div>
 
     <div class="quick-grid tab-content active" data-tab-content="work" id="linksWork"></div>
     <div class="quick-grid tab-content" data-tab-content="lookup" id="linksLookup"></div>
   </div>
 
-  <div class="footer">留ㅼ씪 ?먮룞 由ъ뀑 쨌 二쇨컙? ?붿슂??由ъ뀑 쨌 紐⑤뱺 ??ぉ? 吏곸젒 異붽?/?몄쭛/??젣 媛??쨌 ?숋툘 ?ㅼ젙?먯꽌 湲곌린 媛??숆린??/div>
+  <div class="footer">매일 자동 리셋 · 주간은 월요일 리셋 · 모든 항목은 직접 추가/편집/삭제 가능 · ⚙️ 설정에서 기기 간 동기화</div>
 </div>
 
 <!-- AI Project Modal -->
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <div class="modal-head">
-      <h3 id="modalTitle">??AI ?꾨줈?앺듃</h3>
-      <button class="modal-close" id="modalCloseBtn">??/button>
+      <h3 id="modalTitle">새 AI 프로젝트</h3>
+      <button class="modal-close" id="modalCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="field">
-        <label class="field-label">?꾨줈?앺듃紐?<span class="req">*</span></label>
+        <label class="field-label">프로젝트명 <span class="req">*</span></label>
         <input type="text" class="input" id="f-name">
       </div>
       <div class="field">
-        <label class="field-label">?댁슜</label>
+        <label class="field-label">내용</label>
         <textarea class="textarea" id="f-content"></textarea>
       </div>
       <div class="field">
-        <label class="field-label">?ъ슜 ?꾧뎄 (?щ윭 媛??좏깮)</label>
+        <label class="field-label">사용 도구 (여러 개 선택)</label>
         <div class="chip-group" id="f-tools"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label class="field-label">援ш??쒗듃 留곹겕</label><input type="url" class="input" id="f-sheet"></div>
-        <div class="field"><label class="field-label">Apps Script 留곹겕</label><input type="url" class="input" id="f-gas"></div>
+        <div class="field"><label class="field-label">구글시트 링크</label><input type="url" class="input" id="f-sheet"></div>
+        <div class="field"><label class="field-label">Apps Script 링크</label><input type="url" class="input" id="f-gas"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label class="field-label">湲고? 留곹겕</label><input type="url" class="input" id="f-extra"></div>
-        <div class="field"><label class="field-label">?좎쭨</label><input type="date" class="input" id="f-date"></div>
+        <div class="field"><label class="field-label">기타 링크</label><input type="url" class="input" id="f-extra"></div>
+        <div class="field"><label class="field-label">날짜</label><input type="date" class="input" id="f-date"></div>
       </div>
       <div class="field">
-        <label class="field-label">?ъ쭊 泥⑤?</label>
+        <label class="field-label">사진 첨부</label>
         <div class="upload-area" id="uploadArea">
-          <span class="em">?벜</span><div>?대┃ ?먮뒗 ?쒕옒洹?/div>
-          <div class="upload-hint">理쒕? 8??쨌 ?먮룞 由ъ궗?댁쫰</div>
+          <span class="em">📷</span><div>클릭 또는 드래그</div>
+          <div class="upload-hint">최대 8장 · 자동 리사이즈</div>
         </div>
         <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
         <div class="preview-grid" id="previewGrid"></div>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-danger" id="deleteBtn" style="display:none">??젣</button>
+      <button class="btn btn-danger" id="deleteBtn" style="display:none">삭제</button>
       <div class="modal-foot-right">
-        <button class="btn" id="cancelBtn">痍⑥냼</button>
-        <button class="btn btn-primary" id="saveBtn">???/button>
+        <button class="btn" id="cancelBtn">취소</button>
+        <button class="btn btn-primary" id="saveBtn">저장</button>
       </div>
     </div>
   </div>
@@ -1349,48 +1349,48 @@
 <div class="modal-backdrop" id="goalModalBackdrop">
   <div class="modal">
     <div class="modal-head">
-      <h3 id="goalModalTitle">??遺꾧린 紐⑺몴</h3>
-      <button class="modal-close" id="goalModalCloseBtn">??/button>
+      <h3 id="goalModalTitle">새 분기 목표</h3>
+      <button class="modal-close" id="goalModalCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="field">
-        <label class="field-label">?쒕ぉ <span class="req">*</span></label>
+        <label class="field-label">제목 <span class="req">*</span></label>
         <input type="text" class="input" id="gf-title">
       </div>
       <div class="field-row">
         <div class="field">
-          <label class="field-label">移댄뀒怨좊━</label>
+          <label class="field-label">카테고리</label>
           <select class="select" id="gf-category">
-            <option>AI</option><option>?먭린媛쒕컻</option><option>留ㅼ텧利앸?</option><option>留ㅼ텧?덉젙</option>
-            <option>?⑥쑉??/option><option>鍮꾩슜?덇컧</option><option>?뚰넻</option><option>湲고?</option>
+            <option>AI</option><option>자기개발</option><option>매출증대</option><option>매출안정</option>
+            <option>효율성</option><option>비용절감</option><option>소통</option><option>기타</option>
           </select>
         </div>
         <div class="field">
-          <label class="field-label">?깃툒</label>
+          <label class="field-label">등급</label>
           <select class="select" id="gf-grade">
             <option>A</option><option>B</option><option selected>C</option><option>D</option>
           </select>
         </div>
       </div>
-      <div class="field"><label class="field-label">紐⑹쟻쨌?댁슜</label><textarea class="textarea" id="gf-purpose"></textarea></div>
-      <div class="field"><label class="field-label">?ㅽ뻾 諛⑸쾿</label><textarea class="textarea" id="gf-method"></textarea></div>
+      <div class="field"><label class="field-label">목적·내용</label><textarea class="textarea" id="gf-purpose"></textarea></div>
+      <div class="field"><label class="field-label">실행 방법</label><textarea class="textarea" id="gf-method"></textarea></div>
 
-      <!-- 吏꾪뻾 湲곕줉 -->
+      <!-- 진행 기록 -->
       <div class="notes-section" id="gf-notes-section" style="display:none">
-        <h4>?뱷 吏꾪뻾 湲곕줉 <span class="count" id="gf-notes-count">0</span></h4>
+        <h4>📝 진행 기록 <span class="count" id="gf-notes-count">0</span></h4>
         <div class="notes-add">
           <input type="date" id="gf-note-date">
-          <textarea id="gf-note-text" placeholder="吏꾪뻾 ?ы빆쨌硫붾え瑜??낅젰?섍퀬 異붽??섏꽭??></textarea>
-          <button class="add-btn" id="gf-note-add">+ 異붽?</button>
+          <textarea id="gf-note-text" placeholder="진행 사항·메모를 입력하고 추가하세요"></textarea>
+          <button class="add-btn" id="gf-note-add">+ 추가</button>
         </div>
         <div class="notes-list" id="gf-notes-list"></div>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-danger" id="goalDeleteBtn" style="display:none">??젣</button>
+      <button class="btn btn-danger" id="goalDeleteBtn" style="display:none">삭제</button>
       <div class="modal-foot-right">
-        <button class="btn" id="goalCancelBtn">痍⑥냼</button>
-        <button class="btn btn-primary" id="goalSaveBtn">???/button>
+        <button class="btn" id="goalCancelBtn">취소</button>
+        <button class="btn btn-primary" id="goalSaveBtn">저장</button>
       </div>
     </div>
   </div>
@@ -1400,68 +1400,68 @@
 <div class="modal-backdrop" id="missionModalBackdrop">
   <div class="modal">
     <div class="modal-head">
-      <h3 id="missionModalTitle">誘몄뀡 吏꾪뻾 湲곕줉</h3>
-      <button class="modal-close" id="missionModalCloseBtn">??/button>
+      <h3 id="missionModalTitle">미션 진행 기록</h3>
+      <button class="modal-close" id="missionModalCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="field">
-        <label class="field-label">誘몄뀡 ?쒕ぉ</label>
+        <label class="field-label">미션 제목</label>
         <input type="text" class="input" id="mf-title">
       </div>
       <div style="display:flex; align-items:center; gap:10px; margin-bottom: 14px;">
         <span class="task-check" id="mf-status-check" style="cursor:pointer">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg>
         </span>
-        <span id="mf-status-label" style="font-size: 13.5px; font-weight: 600; cursor:pointer">吏꾪뻾以?/span>
+        <span id="mf-status-label" style="font-size: 13.5px; font-weight: 600; cursor:pointer">진행중</span>
       </div>
 
       <div class="notes-section" style="border-top: none; padding-top: 0; margin-top: 0;">
-        <h4>?뱷 吏꾪뻾 湲곕줉 <span class="count" id="mf-notes-count">0</span></h4>
+        <h4>📝 진행 기록 <span class="count" id="mf-notes-count">0</span></h4>
         <div class="notes-add">
           <input type="date" id="mf-note-date">
-          <textarea id="mf-note-text" placeholder="吏꾪뻾 ?ы빆쨌硫붾え瑜??낅젰?섍퀬 異붽??섏꽭??></textarea>
-          <button class="add-btn" id="mf-note-add">+ 異붽?</button>
+          <textarea id="mf-note-text" placeholder="진행 사항·메모를 입력하고 추가하세요"></textarea>
+          <button class="add-btn" id="mf-note-add">+ 추가</button>
         </div>
         <div class="notes-list" id="mf-notes-list"></div>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-danger" id="missionDeleteBtn">??젣</button>
+      <button class="btn btn-danger" id="missionDeleteBtn">삭제</button>
       <div class="modal-foot-right">
-        <button class="btn" id="missionCancelBtn">痍⑥냼</button>
-        <button class="btn btn-primary" id="missionSaveBtn">???/button>
+        <button class="btn" id="missionCancelBtn">취소</button>
+        <button class="btn btn-primary" id="missionSaveBtn">저장</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Sheet Sync Modal (遺숈뿬?ｊ린 ?꾩슜) -->
+<!-- Sheet Sync Modal (붙여넣기 전용) -->
 <div class="modal-backdrop" id="syncModalBackdrop">
   <div class="modal">
     <div class="modal-head">
-      <h3>?뱥 ?쒗듃?먯꽌 遺꾧린 紐⑺몴 媛?몄삤湲?/h3>
-      <button class="modal-close" id="syncModalCloseBtn">??/button>
+      <h3>📋 시트에서 분기 목표 가져오기</h3>
+      <button class="modal-close" id="syncModalCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="help-note">
-        援ш? ?쒗듃?먯꽌 ?곗씠???곸뿭??蹂듭궗???꾨옒??遺숈뿬?ｌ쑝硫??먮룞?쇰줈 ?뚯떛?⑸땲??
+        구글 시트에서 데이터 영역을 복사해 아래에 붙여넣으면 자동으로 파싱됩니다.
         <ol>
-          <li>援ш? ?쒗듃?먯꽌 ?꾩껜 ?곗씠???곸뿭 ?좏깮 ??<strong>Ctrl+C</strong></li>
-          <li>?꾨옒 諛뺤뒪??<strong>Ctrl+V</strong>濡?遺숈뿬?ｊ린</li>
-          <li><strong>?뚯떛?섍린</strong> ??誘몃━蹂닿린 ?뺤씤 ??<strong>媛?몄삤湲?/strong></li>
+          <li>구글 시트에서 전체 데이터 영역 선택 → <strong>Ctrl+C</strong></li>
+          <li>아래 박스에 <strong>Ctrl+V</strong>로 붙여넣기</li>
+          <li><strong>파싱하기</strong> → 미리보기 확인 → <strong>가져오기</strong></li>
         </ol>
-        ??媛濡??몃줈 ?덉씠?꾩썐 紐⑤몢 ?먮룞 ?몄떇?⑸땲??
+        ※ 가로/세로 레이아웃 모두 자동 인식합니다.
       </div>
       <div class="field">
-        <label class="field-label">?쒗듃 ?댁슜 遺숈뿬?ｊ린</label>
-        <textarea class="textarea" id="pasteInput" style="min-height: 200px; font-family: monospace; font-size: 12px;" placeholder="?ш린???쒗듃 ???蹂듭궗?댁꽌 遺숈뿬?ｌ쑝?몄슂"></textarea>
+        <label class="field-label">시트 내용 붙여넣기</label>
+        <textarea class="textarea" id="pasteInput" style="min-height: 200px; font-family: monospace; font-size: 12px;" placeholder="여기에 시트 셀을 복사해서 붙여넣으세요"></textarea>
       </div>
-      <button class="btn btn-primary" id="parsePasteBtn">?뚯떛?섍린</button>
+      <button class="btn btn-primary" id="parsePasteBtn">파싱하기</button>
       <div id="pastePreview"></div>
     </div>
     <div class="modal-foot">
-      <button class="btn" id="syncCancelBtn">痍⑥냼</button>
-      <button class="btn btn-primary" id="applySyncBtn" disabled>媛?몄삤湲?(??뼱?곌린)</button>
+      <button class="btn" id="syncCancelBtn">취소</button>
+      <button class="btn btn-primary" id="applySyncBtn" disabled>가져오기 (덮어쓰기)</button>
     </div>
   </div>
 </div>
@@ -1470,79 +1470,79 @@
 <div class="modal-backdrop" id="settingsModalBackdrop">
   <div class="modal" style="max-width:560px">
     <div class="modal-head">
-      <h3>?숋툘 ?숆린???ㅼ젙</h3>
-      <button class="modal-close" id="settingsCloseBtn">??/button>
+      <h3>⚙️ 동기화 설정</h3>
+      <button class="modal-close" id="settingsCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="help-note">
-        媛숈? ?곗씠?곕? <strong>?대뒓 湲곌린?먯꽌??/strong> 蹂대젮硫?Google Apps Script 諛깆뿏?쒓? ?꾩슂?⑸땲??<br>
-        ?④퍡 諛쏆? <strong>apps-script-backend.gs</strong> 肄붾뱶瑜?諛고룷???? ?앹꽦???뱀빋 URL???꾨옒???ｌ뼱二쇱꽭??
-        <strong>"???대쫫"</strong>???ㅻⅤ寃??섎㈃ ??諛깆뿏?쒕줈 ?щ윭 紐낆씠 媛곸옄 蹂대뱶瑜??????덉뒿?덈떎.
+        같은 데이터를 <strong>어느 기기에서든</strong> 보려면 Google Apps Script 백엔드가 필요합니다.<br>
+        함께 받은 <strong>apps-script-backend.gs</strong> 코드를 배포한 뒤, 생성된 웹앱 URL을 아래에 넣어주세요.
+        <strong>"내 이름"</strong>을 다르게 하면 한 백엔드로 여러 명이 각자 보드를 쓸 수 있습니다.
       </div>
       <div class="field">
-        <label class="field-label">???대쫫 / ID <span class="req">*</span></label>
-        <input type="text" class="input" id="set-userId" placeholder="?? 誘명쁽, hyun, ?곸뾽1???>
+        <label class="field-label">내 이름 / ID <span class="req">*</span></label>
+        <input type="text" class="input" id="set-userId" placeholder="예: 미현, hyun, 영업1팀…">
       </div>
       <div class="field">
-        <label class="field-label">?숆린???쒕쾭 URL (Apps Script ?뱀빋)</label>
+        <label class="field-label">동기화 서버 URL (Apps Script 웹앱)</label>
         <input type="url" class="input" id="set-syncUrl" placeholder="https://script.google.com/macros/s/XXXX/exec">
       </div>
       <div id="set-status" style="font-size:12.5px; min-height:18px; color:var(--text-grey)"></div>
     </div>
     <div class="modal-foot">
-      <button class="btn" id="settingsTestBtn">?곌껐 ?뚯뒪??/button>
+      <button class="btn" id="settingsTestBtn">연결 테스트</button>
       <div class="modal-foot-right">
-        <button class="btn" id="settingsCancelBtn">痍⑥냼</button>
-        <button class="btn btn-primary" id="settingsSaveBtn">??????숆린??/button>
+        <button class="btn" id="settingsCancelBtn">취소</button>
+        <button class="btn btn-primary" id="settingsSaveBtn">저장 후 동기화</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Task Edit Modal (留ㅼ씪 ????/ 二?1??怨듭슜) -->
+<!-- Task Edit Modal (매일 할 일 / 주 1회 공용) -->
 <div class="modal-backdrop" id="taskModalBackdrop">
   <div class="modal" style="max-width:600px">
     <div class="modal-head">
-      <h3 id="taskModalTitle">????/h3>
-      <button class="modal-close" id="taskCloseBtn">??/button>
+      <h3 id="taskModalTitle">할 일</h3>
+      <button class="modal-close" id="taskCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="field-row">
         <div class="field">
-          <label class="field-label">?꾩씠肄?(?대え吏)</label>
+          <label class="field-label">아이콘 (이모지)</label>
           <div style="display:flex; gap:6px;">
-            <input type="text" class="input" id="tk-icon" maxlength="4" placeholder="?? style="flex:1">
-            <button type="button" class="btn emoji-pick-btn" data-target="tk-icon">??</button>
+            <input type="text" class="input" id="tk-icon" maxlength="4" placeholder="✅" style="flex:1">
+            <button type="button" class="btn emoji-pick-btn" data-target="tk-icon">😀</button>
           </div>
         </div>
         <div class="field">
-          <label class="field-label">?됱긽</label>
+          <label class="field-label">색상</label>
           <div class="color-group" id="tk-colors"></div>
         </div>
       </div>
       <div class="field">
-        <label class="field-label">?쒕ぉ <span class="req">*</span></label>
+        <label class="field-label">제목 <span class="req">*</span></label>
         <input type="text" class="input" id="tk-title">
       </div>
       <div class="field">
-        <label class="field-label">?ㅻ챸</label>
+        <label class="field-label">설명</label>
         <input type="text" class="input" id="tk-desc">
       </div>
       <div class="field">
-        <label class="field-label">硫뷀? ?쒓렇 (?좏깮, ?? "踰뺤뭅 ????)</label>
+        <label class="field-label">메타 태그 (선택, 예: "법카 쓴 날")</label>
         <input type="text" class="input" id="tk-meta">
       </div>
       <div class="field">
-        <label class="field-label">諛붾줈媛湲?留곹겕</label>
+        <label class="field-label">바로가기 링크</label>
         <div id="tk-links"></div>
-        <button class="btn" id="tk-add-link" style="margin-top:8px">+ 留곹겕 異붽?</button>
+        <button class="btn" id="tk-add-link" style="margin-top:8px">+ 링크 추가</button>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-danger" id="taskDeleteBtn" style="display:none">??젣</button>
+      <button class="btn btn-danger" id="taskDeleteBtn" style="display:none">삭제</button>
       <div class="modal-foot-right">
-        <button class="btn" id="taskCancelBtn">痍⑥냼</button>
-        <button class="btn btn-primary" id="taskSaveBtn">???/button>
+        <button class="btn" id="taskCancelBtn">취소</button>
+        <button class="btn btn-primary" id="taskSaveBtn">저장</button>
       </div>
     </div>
   </div>
@@ -1552,67 +1552,67 @@
 <div class="modal-backdrop" id="linkModalBackdrop">
   <div class="modal" style="max-width:520px">
     <div class="modal-head">
-      <h3 id="linkModalTitle">鍮좊Ⅸ 留곹겕</h3>
-      <button class="modal-close" id="linkCloseBtn">??/button>
+      <h3 id="linkModalTitle">빠른 링크</h3>
+      <button class="modal-close" id="linkCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="field-row">
         <div class="field">
-          <label class="field-label">?꾩씠肄?(?대え吏)</label>
+          <label class="field-label">아이콘 (이모지)</label>
           <div style="display:flex; gap:6px;">
-            <input type="text" class="input" id="lk-icon" maxlength="4" placeholder="?뵕" style="flex:1">
-            <button type="button" class="btn emoji-pick-btn" data-target="lk-icon">??</button>
+            <input type="text" class="input" id="lk-icon" maxlength="4" placeholder="🔗" style="flex:1">
+            <button type="button" class="btn emoji-pick-btn" data-target="lk-icon">😀</button>
           </div>
         </div>
         <div class="field">
-          <label class="field-label">?됱긽</label>
+          <label class="field-label">색상</label>
           <div class="color-group" id="lk-colors"></div>
         </div>
       </div>
       <div class="field">
-        <label class="field-label">?대쫫 <span class="req">*</span></label>
+        <label class="field-label">이름 <span class="req">*</span></label>
         <input type="text" class="input" id="lk-name">
       </div>
       <div class="field">
-        <label class="field-label">遺꾨쪟 ?쇰꺼 (?좏깮, ?? Sheets)</label>
+        <label class="field-label">분류 라벨 (선택, 예: Sheets)</label>
         <input type="text" class="input" id="lk-meta">
       </div>
       <div class="field">
         <label class="field-label">URL <span class="req">*</span></label>
-        <input type="url" class="input" id="lk-url" placeholder="https://??>
+        <input type="url" class="input" id="lk-url" placeholder="https://…">
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-danger" id="linkDeleteBtn" style="display:none">??젣</button>
+      <button class="btn btn-danger" id="linkDeleteBtn" style="display:none">삭제</button>
       <div class="modal-foot-right">
-        <button class="btn" id="linkCancelBtn">痍⑥냼</button>
-        <button class="btn btn-primary" id="linkSaveBtn">???/button>
+        <button class="btn" id="linkCancelBtn">취소</button>
+        <button class="btn btn-primary" id="linkSaveBtn">저장</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ?ъ씠????(鍮좊Ⅸ留곹겕 / 誘몃땲罹섎┛??/ 硫붾え) + ?앹뾽 ?몄뒪??-->
+<!-- 사이드 독 (빠른링크 / 미니캘린더 / 메모) + 팝업 호스트 -->
 <div class="side-dock" id="sideDock">
-  <button class="dock-btn" data-panel="links" title="鍮좊Ⅸ 留곹겕">?뵕</button>
-  <button class="dock-btn" data-panel="cal" title="誘몃땲 罹섎┛??>?뿎截?/button>
-  <button class="dock-btn" data-panel="memo" title="媛꾪렪 硫붾え??>?뱷</button>
+  <button class="dock-btn" data-panel="links" title="빠른 링크">🔗</button>
+  <button class="dock-btn" data-panel="cal" title="미니 캘린더">🗓️</button>
+  <button class="dock-btn" data-panel="memo" title="간편 메모장">📝</button>
 </div>
 <div class="flyout-host" id="flyoutHost"></div>
 
-<!-- Auth Gate (濡쒓렇?? -->
+<!-- Auth Gate (로그인) -->
 <div class="auth-gate" id="authGate">
   <div class="auth-card">
-    <div class="auth-emoji">?뱥</div>
-    <h2 id="authTitle">濡쒓렇??/h2>
-    <p id="authMsg">愿由ъ옄?먭쾶 諛쏆? ?꾩씠?붿? 鍮꾨?踰덊샇濡?濡쒓렇?명븯?몄슂.</p>
+    <div class="auth-emoji">📋</div>
+    <h2 id="authTitle">로그인</h2>
+    <p id="authMsg">관리자에게 받은 아이디와 비밀번호로 로그인하세요.</p>
     <div style="margin-top:18px; text-align:left;">
-      <input type="text" class="input" id="login-id" placeholder="?꾩씠??(?대쫫)" autocomplete="username" style="margin-bottom:10px">
-      <input type="password" class="input" id="login-pw" placeholder="鍮꾨?踰덊샇" autocomplete="current-password">
+      <input type="text" class="input" id="login-id" placeholder="아이디 (이름)" autocomplete="username" style="margin-bottom:10px">
+      <input type="password" class="input" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
     </div>
     <div id="login-err" style="color:var(--danger); font-size:12.5px; min-height:18px; margin-top:8px;"></div>
-    <button class="btn btn-primary" id="loginBtn" style="width:100%; justify-content:center; margin-top:6px;">濡쒓렇??/button>
-    <div id="auth-config-note" style="font-size:11.5px; color:var(--text-light); margin-top:14px; display:none;">?좑툘 Supabase ?ㅼ젙???꾩슂?⑸땲?? supabase-schema.sql ?덈궡瑜?李멸퀬?섏꽭??</div>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%; justify-content:center; margin-top:6px;">로그인</button>
+    <div id="auth-config-note" style="font-size:11.5px; color:var(--text-light); margin-top:14px; display:none;">⚠️ Supabase 설정이 필요합니다. supabase-schema.sql 안내를 참고하세요.</div>
   </div>
 </div>
 
@@ -1620,25 +1620,25 @@
 <div class="modal-backdrop" id="adminModalBackdrop">
   <div class="modal" style="max-width:760px">
     <div class="modal-head">
-      <h3>?썳截?愿由ъ옄 ?⑤꼸 ??怨꾩젙 愿由?/h3>
-      <button class="modal-close" id="adminCloseBtn">??/button>
+      <h3>🛡️ 관리자 패널 — 계정 관리</h3>
+      <button class="modal-close" id="adminCloseBtn">✕</button>
     </div>
     <div class="modal-body">
-      <div class="help-note"><strong>??怨꾩젙 留뚮뱾湲?/strong> ???꾩씠???대쫫)쨌珥덇린 鍮꾨?踰덊샇쨌????뺥빐 吏곸썝?먭쾶 ?뚮젮二쇱꽭?? 鍮꾨?踰덊샇瑜??딆쑝硫??꾨옒 紐⑸줉??<strong>鍮꾨쾲 珥덇린??/strong>濡??덈줈 諛쒓툒?????덉뒿?덈떎.</div>
+      <div class="help-note"><strong>새 계정 만들기</strong> — 아이디(이름)·초기 비밀번호·팀을 정해 직원에게 알려주세요. 비밀번호를 잊으면 아래 목록의 <strong>비번 초기화</strong>로 새로 발급할 수 있습니다.</div>
       <div class="admin-create">
-        <input type="text" class="input" id="newAcc-id" placeholder="?꾩씠??(?? 誘명쁽)">
-        <input type="text" class="input" id="newAcc-pw" placeholder="珥덇린 鍮꾨?踰덊샇">
+        <input type="text" class="input" id="newAcc-id" placeholder="아이디 (예: 미현)">
+        <input type="text" class="input" id="newAcc-pw" placeholder="초기 비밀번호">
         <select class="select" id="newAcc-team"></select>
-        <select class="select" id="newAcc-role"><option value="member">硫ㅻ쾭</option><option value="admin">愿由ъ옄</option></select>
-        <button class="btn btn-primary" id="newAcc-add">+ ?앹꽦</button>
+        <select class="select" id="newAcc-role"><option value="member">멤버</option><option value="admin">관리자</option></select>
+        <button class="btn btn-primary" id="newAcc-add">+ 생성</button>
       </div>
       <div id="newAcc-msg" style="font-size:12.5px; min-height:16px; margin:4px 2px 10px;"></div>
-      <div id="adminUserList"><div class="notes-empty">遺덈윭?ㅻ뒗 以묅?/div></div>
+      <div id="adminUserList"><div class="notes-empty">불러오는 중…</div></div>
     </div>
     <div class="modal-foot">
       <div class="modal-foot-right">
-        <button class="btn" id="adminReloadBtn">紐⑸줉 ?덈줈怨좎묠</button>
-        <button class="btn btn-primary" id="adminDoneBtn">?リ린</button>
+        <button class="btn" id="adminReloadBtn">목록 새로고침</button>
+        <button class="btn btn-primary" id="adminDoneBtn">닫기</button>
       </div>
     </div>
   </div>
@@ -1651,44 +1651,44 @@
 <div class="modal-backdrop" id="eventModalBackdrop">
   <div class="modal" style="max-width:480px">
     <div class="modal-head">
-      <h3 id="eventModalTitle">?쇱젙</h3>
-      <button class="modal-close" id="eventCloseBtn">??/button>
+      <h3 id="eventModalTitle">일정</h3>
+      <button class="modal-close" id="eventCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="field">
-        <label class="field-label">遺꾨쪟</label>
+        <label class="field-label">분류</label>
         <div class="chip-group" id="ev-cats"></div>
       </div>
       <div class="field-row">
         <div class="field">
-          <label class="field-label">?좎쭨 <span class="req">*</span></label>
+          <label class="field-label">날짜 <span class="req">*</span></label>
           <input type="date" class="input" id="ev-date">
         </div>
         <div class="field">
-          <label class="field-label">?쒓컙 (?좏깮)</label>
-          <input type="text" class="input" id="ev-time" placeholder="?? 14:00 / ?ㅽ썑">
+          <label class="field-label">시간 (선택)</label>
+          <input type="text" class="input" id="ev-time" placeholder="예: 14:00 / 오후">
         </div>
       </div>
       <div class="field">
-        <label class="field-label">?쒕ぉ <span class="req">*</span></label>
-        <input type="text" class="input" id="ev-title" placeholder="?쇱젙 ?댁슜">
+        <label class="field-label">제목 <span class="req">*</span></label>
+        <input type="text" class="input" id="ev-title" placeholder="일정 내용">
       </div>
       <div class="field">
-        <label class="field-label">諛섎났</label>
+        <label class="field-label">반복</label>
         <select class="input" id="ev-repeat">
-          <option value="none">諛섎났 ?놁쓬</option>
-          <option value="weekly">留ㅼ＜</option>
-          <option value="monthly">留ㅼ썡</option>
-          <option value="yearly">留ㅻ뀈</option>
+          <option value="none">반복 없음</option>
+          <option value="weekly">매주</option>
+          <option value="monthly">매월</option>
+          <option value="yearly">매년</option>
         </select>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-danger" id="eventDeleteBtn" style="display:none">??젣</button>
+      <button class="btn btn-danger" id="eventDeleteBtn" style="display:none">삭제</button>
       <div class="modal-foot-right">
-        <button class="btn" id="eventDoneBtn" style="display:none">???꾨즺</button>
-        <button class="btn" id="eventCancelBtn">痍⑥냼</button>
-        <button class="btn btn-primary" id="eventSaveBtn">???/button>
+        <button class="btn" id="eventDoneBtn" style="display:none">✓ 완료</button>
+        <button class="btn" id="eventCancelBtn">취소</button>
+        <button class="btn btn-primary" id="eventSaveBtn">저장</button>
       </div>
     </div>
   </div>
@@ -1698,69 +1698,69 @@
 <div class="modal-backdrop" id="importModalBackdrop">
   <div class="modal" style="max-width:600px">
     <div class="modal-head">
-      <h3>?뱿 罹섎┛???쒗듃 ?낅줈??/h3>
-      <button class="modal-close" id="importCloseBtn">??/button>
+      <h3>📥 캘린더 시트 업로드</h3>
+      <button class="modal-close" id="importCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="help-note">
-        援ш??쒗듃/?묒??먯꽌 <strong>???곸뿭??蹂듭궗(Ctrl+C)?댁꽌 ?꾨옒??遺숈뿬?ｊ린(Ctrl+V)</strong> ?섏꽭?? 泥?以꾩? <strong>?ㅻ뜑(而щ읆紐?</strong> ?ъ빞 ?⑸땲??<br>
-        ?몄떇?섎뒗 而щ읆紐? <code>?좎쭨</code>(?꾩닔) 쨌 <code>?쒕ぉ</code>(?꾩닔) 쨌 <code>遺꾨쪟</code> 쨌 <code>?쒓컙</code> 쨌 <code>諛섎났</code> 쨌 <code>硫붾え</code><br>
-        ?? ?좎쭨 <code>2026-06-01</code> 쨌 遺꾨쪟 <code>留ㅼ썡?먭?/?ш퀎???닿?</code> 쨌 諛섎났 <code>?놁쓬/留ㅼ＜/留ㅼ썡/留ㅻ뀈</code>
+        구글시트/엑셀에서 <strong>표 영역을 복사(Ctrl+C)해서 아래에 붙여넣기(Ctrl+V)</strong> 하세요. 첫 줄은 <strong>헤더(컬럼명)</strong> 여야 합니다.<br>
+        인식하는 컬럼명: <code>날짜</code>(필수) · <code>제목</code>(필수) · <code>분류</code> · <code>시간</code> · <code>반복</code> · <code>메모</code><br>
+        예) 날짜 <code>2026-06-01</code> · 분류 <code>매월점검/재계약/휴가</code> · 반복 <code>없음/매주/매월/매년</code>
       </div>
-      <textarea class="textarea" id="importText" rows="9" placeholder="?좎쭨&#9;?쒕ぉ&#9;遺꾨쪟&#9;?쒓컙&#9;諛섎났&#10;2026-06-01&#9;?댁삤釉뚮줈??AS&#9;?ш퀎??#9;10:00&#9;留ㅼ썡&#10;2026-06-03&#9;?댄뵾肄?#9;留ㅼ썡?먭?&#9;&#9;留ㅼ＜" style="font-family:monospace; font-size:12.5px; white-space:pre;"></textarea>
+      <textarea class="textarea" id="importText" rows="9" placeholder="날짜&#9;제목&#9;분류&#9;시간&#9;반복&#10;2026-06-01&#9;이오브로스 AS&#9;재계약&#9;10:00&#9;매월&#10;2026-06-03&#9;해피콜&#9;매월점검&#9;&#9;매주" style="font-family:monospace; font-size:12.5px; white-space:pre;"></textarea>
       <div id="importPreview" style="font-size:12.5px; margin-top:8px; color:var(--text-grey);"></div>
     </div>
     <div class="modal-foot">
       <div class="modal-foot-right">
-        <button class="btn" id="importCancelBtn">痍⑥냼</button>
-        <button class="btn btn-primary" id="importDoBtn">誘몃━蹂닿린</button>
+        <button class="btn" id="importCancelBtn">취소</button>
+        <button class="btn btn-primary" id="importDoBtn">미리보기</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ?뚰궧留?媛?몄삤湲?Modal -->
+<!-- 워킹맵 가져오기 Modal -->
 <div class="modal-backdrop" id="workmapModalBackdrop">
   <div class="modal" style="max-width:540px">
     <div class="modal-head">
-      <h3>?뱧 ?ш퀎??媛?몄삤湲?/h3>
-      <button class="modal-close" id="workmapCloseBtn">??/button>
+      <h3>📍 재계약 가져오기</h3>
+      <button class="modal-close" id="workmapCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="help-note">
-        ?ш퀎??怨꾩빟醫낅즺) ?뚰궧留??묒?(<code>.xlsx</code>)??洹몃?濡??щ━硫?罹섎┛?붿뿉 ?먮룞 ?깅줉?쇱슂.<br>
-        ?좎쭨 = 怨꾩빟醫낅즺??L) 쨌 ?쒕ぉ = 嫄곕옒泥섎챸(M) + ?깃툒(O) 쨌 媛숈? 嫄곕옒泥섎뒗 <strong>1媛쒕줈 ?⑹묠</strong>.<br>
-        遺꾧린留덈떎 ???뚯씪???щ━硫?<strong>?댁쟾 ?먮룞?깅줉遺꾩? 援먯껜</strong>?⑸땲??
+        재계약(계약종료) 워킹맵 엑셀(<code>.xlsx</code>)을 그대로 올리면 캘린더에 자동 등록돼요.<br>
+        날짜 = 계약종료일(L) · 제목 = 거래처명(M) + 등급(O) · 같은 거래처는 <strong>1개로 합침</strong>.<br>
+        분기마다 새 파일을 올리면 <strong>이전 자동등록분은 교체</strong>됩니다.
       </div>
       <div class="field" style="border:1.5px solid var(--divider); border-radius:12px; padding:12px;">
         <input type="file" id="wm-recontract-file" accept=".xlsx,.xls" style="display:none">
-        <button class="btn btn-primary" id="wm-recontract-btn">?뱛 ?ш퀎???뚯씪 ?좏깮</button>
-        <button class="btn" id="wm-cancel-btn" style="margin-left:6px">?뿊 ?깅줉 痍⑥냼</button>
+        <button class="btn btn-primary" id="wm-recontract-btn">📂 재계약 파일 선택</button>
+        <button class="btn" id="wm-cancel-btn" style="margin-left:6px">🗑 등록 취소</button>
       </div>
       <div id="wm-result" style="font-size:13px; margin-top:12px; color:var(--text);"></div>
     </div>
     <div class="modal-foot">
       <div class="modal-foot-right">
-        <button class="btn" id="workmapDoneBtn">?リ린</button>
+        <button class="btn" id="workmapDoneBtn">닫기</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ?섎（ ?쇱젙 ?붾낫湲?Modal -->
+<!-- 하루 일정 더보기 Modal -->
 <div class="modal-backdrop" id="dayModalBackdrop">
   <div class="modal" style="max-width:420px">
     <div class="modal-head">
-      <h3 id="dayModalTitle">?쇱젙</h3>
-      <button class="modal-close" id="dayCloseBtn">??/button>
+      <h3 id="dayModalTitle">일정</h3>
+      <button class="modal-close" id="dayCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div id="dayEventList"></div>
     </div>
     <div class="modal-foot">
       <div class="modal-foot-right">
-        <button class="btn" id="dayCloseBtn2">?リ린</button>
-        <button class="btn btn-primary" id="dayAddBtn">+ ?????쇱젙 異붽?</button>
+        <button class="btn" id="dayCloseBtn2">닫기</button>
+        <button class="btn btn-primary" id="dayAddBtn">+ 이 날 일정 추가</button>
       </div>
     </div>
   </div>
@@ -1770,83 +1770,83 @@
 <div class="modal-backdrop" id="appModalBackdrop">
   <div class="modal" style="max-width:520px">
     <div class="modal-head">
-      <h3 id="appModalTitle">?먮룞????/h3>
-      <button class="modal-close" id="appCloseBtn">??/button>
+      <h3 id="appModalTitle">자동화 앱</h3>
+      <button class="modal-close" id="appCloseBtn">✕</button>
     </div>
     <div class="modal-body">
       <div class="field-row">
         <div class="field">
-          <label class="field-label">?꾩씠肄?(?대え吏)</label>
+          <label class="field-label">아이콘 (이모지)</label>
           <div style="display:flex; gap:6px;">
-            <input type="text" class="input" id="ap-icon" maxlength="4" placeholder="??" style="flex:1">
-            <button type="button" class="btn emoji-pick-btn" data-target="ap-icon">??</button>
+            <input type="text" class="input" id="ap-icon" maxlength="4" placeholder="🚀" style="flex:1">
+            <button type="button" class="btn emoji-pick-btn" data-target="ap-icon">😀</button>
           </div>
         </div>
         <div class="field">
-          <label class="field-label">?됱긽</label>
+          <label class="field-label">색상</label>
           <div class="color-group" id="ap-colors"></div>
         </div>
       </div>
       <div class="field">
-        <label class="field-label">???대쫫 <span class="req">*</span></label>
+        <label class="field-label">앱 이름 <span class="req">*</span></label>
         <input type="text" class="input" id="ap-name">
       </div>
       <div class="field">
-        <label class="field-label">?ㅻ챸</label>
+        <label class="field-label">설명</label>
         <textarea class="textarea" id="ap-desc"></textarea>
       </div>
       <div class="field">
-        <label class="field-label">?ㅽ뻾 留곹겕 (URL)</label>
-        <input type="url" class="input" id="ap-url" placeholder="https://??>
+        <label class="field-label">실행 링크 (URL)</label>
+        <input type="url" class="input" id="ap-url" placeholder="https://…">
       </div>
       <div class="field">
-        <label class="field-label">硫붿씤 ?ъ쭊</label>
+        <label class="field-label">메인 사진</label>
         <div class="ap-photo-row">
           <img id="ap-photo-preview" class="ap-photo-preview" style="display:none" alt="">
           <div class="ap-photo-actions">
             <input type="file" id="ap-photo-file" accept="image/*" style="display:none">
-            <button type="button" class="btn" id="ap-photo-btn">?벜 ?ъ쭊 ?좏깮</button>
-            <button type="button" class="btn" id="ap-photo-clear" style="display:none">?ъ쭊 ?쒓굅</button>
-            <span style="font-size:11.5px; color:var(--text-light); line-height:1.4;">罹≪쿂 ??<b>Ctrl+V</b><br>?먮뒗 ?뚯뼱???볤린</span>
+            <button type="button" class="btn" id="ap-photo-btn">📷 사진 선택</button>
+            <button type="button" class="btn" id="ap-photo-clear" style="display:none">사진 제거</button>
+            <span style="font-size:11.5px; color:var(--text-light); line-height:1.4;">캡처 후 <b>Ctrl+V</b><br>또는 끌어다 놓기</span>
           </div>
         </div>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-danger" id="appDeleteBtn" style="display:none">??젣</button>
+      <button class="btn btn-danger" id="appDeleteBtn" style="display:none">삭제</button>
       <div class="modal-foot-right">
-        <button class="btn" id="appCancelBtn">痍⑥냼</button>
-        <button class="btn btn-primary" id="appSaveBtn">???/button>
+        <button class="btn" id="appCancelBtn">취소</button>
+        <button class="btn btn-primary" id="appSaveBtn">저장</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // ---------- ?숆린????μ냼 (Google Apps Script + ?쒗듃 諛깆뿏?? ----------
-  // ?ъ슜 諛⑸쾿:
-  //  1) ?④퍡 ?쒓났??apps-script-backend.gs 肄붾뱶瑜?Apps Script??遺숈뿬?ｊ퀬 ?뱀빋?쇰줈 諛고룷
-  //  2) 諛고룷 URL???꾨옒 DEFAULT_SYNC_URL ???ｊ굅?? ?곗륫 ?곷떒 "?숋툘 ?ㅼ젙"?먯꽌 ?낅젰
-  //  3) "???대쫫"???뺥븯硫??щ엺留덈떎 媛곸옄??蹂대뱶媛 ??λ맗?덈떎 (?섎굹??諛깆뿏??怨듭쑀)
-  const DEFAULT_SYNC_URL = ''; // ?? 'https://script.google.com/macros/s/XXXX/exec'
+  // ---------- 동기화 저장소 (Google Apps Script + 시트 백엔드) ----------
+  // 사용 방법:
+  //  1) 함께 제공된 apps-script-backend.gs 코드를 Apps Script에 붙여넣고 웹앱으로 배포
+  //  2) 배포 URL을 아래 DEFAULT_SYNC_URL 에 넣거나, 우측 상단 "⚙️ 설정"에서 입력
+  //  3) "내 이름"을 정하면 사람마다 각자의 보드가 저장됩니다 (하나의 백엔드 공유)
+  const DEFAULT_SYNC_URL = ''; // 예: 'https://script.google.com/macros/s/XXXX/exec'
 
   const LS_SYNC_URL = 'dashboard:syncUrl';
   const LS_USER_ID  = 'dashboard:userId';
 
-  // ?뚮뱶諛뺤뒪 iframe ?깆뿉??localStorage ?묎렐??留됲???二쎌? ?딅룄濡??덉쟾 ?섑띁 ?ъ슜
+  // 샌드박스 iframe 등에서 localStorage 접근이 막혀도 죽지 않도록 안전 래퍼 사용
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
 
   let SYNC_URL = (lsGet(LS_SYNC_URL) || DEFAULT_SYNC_URL || '').trim();
   let USER_ID  = (lsGet(LS_USER_ID) || '').trim();
-  let CACHE = {};          // key -> string value (?꾩옱 ?ъ슜?먯쓽 ?꾩껜 ?곗씠??
+  let CACHE = {};          // key -> string value (현재 사용자의 전체 데이터)
   let pushTimer = null;
   let lastSyncState = 'idle'; // idle | saving | ok | error | local
 
-  // ===== Supabase 紐⑤뱶 (?대쫫 ID + 鍮꾨?踰덊샇 濡쒓렇??/ 愿由ъ옄 怨꾩젙 ?앹꽦 / ? 怨듭쑀) =====
-  // 愿由ъ옄: supabase-schema.sql ?ㅽ뻾 ???꾨옒 ??媛믪쓣 梨꾩슦?몄슂. (anon key??怨듦컻?쇰룄 ?덉쟾 ??RLS濡?蹂댄샇)
-  const DEFAULT_SUPABASE_URL = 'https://msfxgxsapnrnxigxacpj.supabase.co';      // ?? 'https://xxxx.supabase.co'
-  const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_oBDarQA8w_R7ycu066YPxA_3-D79_PV'; // ?? 'eyJhbGciOi...'
+  // ===== Supabase 모드 (이름 ID + 비밀번호 로그인 / 관리자 계정 생성 / 팀 공유) =====
+  // 관리자: supabase-schema.sql 실행 후 아래 두 값을 채우세요. (anon key는 공개돼도 안전 — RLS로 보호)
+  const DEFAULT_SUPABASE_URL = 'https://msfxgxsapnrnxigxacpj.supabase.co';      // 예: 'https://xxxx.supabase.co'
+  const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_oBDarQA8w_R7ycu066YPxA_3-D79_PV'; // 예: 'eyJhbGciOi...'
   const SUPABASE_URL = (lsGet('dashboard:supaUrl') || DEFAULT_SUPABASE_URL || '').trim();
   const SUPABASE_ANON_KEY = (lsGet('dashboard:supaKey') || DEFAULT_SUPABASE_ANON_KEY || '').trim();
   const SUPA = (SUPABASE_URL && SUPABASE_ANON_KEY && typeof window !== 'undefined' && window.supabase)
@@ -1854,7 +1854,7 @@
   const LS_TOKEN = 'dashboard:token';
   let TOKEN = lsGet(LS_TOKEN) || '';
   let MY = null;             // { username, team, role, isAdmin, members:[{username}] }
-  let SUPA_MODE = false;     // 濡쒓렇???깃났 ??true
+  let SUPA_MODE = false;     // 로그인 성공 후 true
 
   async function supaRpc(fn, params) {
     if (!SUPA) throw new Error('no-supabase');
@@ -1863,10 +1863,10 @@
     return data;
   }
 
-  // ?ㅼ퐫?꾨퀎 罹먯떆: priv(媛쒖씤) / share(遺꾧린紐⑺몴쨌?먮룞?붿빋쨌AI?묒뾽) / team(罹섎┛??
+  // 스코프별 캐시: priv(개인) / share(분기목표·자동화앱·AI작업) / team(캘린더)
   let PRIV = {}, SHARE = {}, TEAM = {};
-  let shareReadOnly = false;    // ?ㅻⅨ ??먯쓽 怨듭쑀 ?곗씠?곕? 蹂대뒗 以묒씤吏
-  let shareScopeUser = null;    // ?꾩옱 SHARE 罹먯떆 二쇱씤 (null = ??
+  let shareReadOnly = false;    // 다른 팀원의 공유 데이터를 보는 중인지
+  let shareScopeUser = null;    // 현재 SHARE 캐시 주인 (null = 나)
   const saveTimers = {};
 
   function scopeOf(key) {
@@ -1902,7 +1902,7 @@
     return !!obj && typeof obj === 'object' && !Array.isArray(obj) && Object.keys(obj).length > 0;
   }
   function scheduleScopeSave(scope) {
-    if (scope === 'share' && shareReadOnly) return; // 蹂닿린 ?꾩슜
+    if (scope === 'share' && shareReadOnly) return; // 보기 전용
     setSyncState('saving');
     clearTimeout(saveTimers[scope]);
     saveTimers[scope] = setTimeout(async () => {
@@ -1942,12 +1942,12 @@
     try { localStorage.setItem(blobKey(), JSON.stringify(CACHE)); }
     catch (e) {
       if (e && e.name === 'QuotaExceededError') {
-        console.warn('localStorage ?⑸웾 珥덇낵 ???먭꺽 ?숆린?붾쭔 ?ъ슜?⑸땲??');
+        console.warn('localStorage 용량 초과 — 원격 동기화만 사용합니다.');
       }
     }
   }
 
-  // 湲곗〈 raw localStorage ?곗씠?곕? 罹먯떆濡?媛?몄삤湲?(理쒖큹 1??留덉씠洹몃젅?댁뀡)
+  // 기존 raw localStorage 데이터를 캐시로 가져오기 (최초 1회 마이그레이션)
   function importLegacy() {
     const prefixes = ['check:', 'goal:', 'quarter-goals:', 'quarter-missions:', 'ai-projects:', 'ai-project:'];
     try {
@@ -1975,7 +1975,7 @@
       setSyncState('ok');
       return true;
     } catch (e) {
-      console.error('remoteLoad ?ㅽ뙣:', e);
+      console.error('remoteLoad 실패:', e);
       setSyncState('error');
       return false;
     }
@@ -1986,14 +1986,14 @@
     try {
       const res = await fetch(SYNC_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS preflight ?뚰뵾
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS preflight 회피
         body: JSON.stringify({ userId: USER_ID, data: CACHE })
       });
       const json = await res.json().catch(() => null);
       setSyncState(json && json.ok ? 'ok' : 'error');
       return !!(json && json.ok);
     } catch (e) {
-      console.error('remotePush ?ㅽ뙣:', e);
+      console.error('remotePush 실패:', e);
       setSyncState('error');
       return false;
     }
@@ -2036,17 +2036,17 @@
     else setSyncState('local');
   }
 
-  // ---------- ?숆린???곹깭 諛곗? / ?ъ슜???쒖떆 ----------
+  // ---------- 동기화 상태 배지 / 사용자 표시 ----------
   function setSyncState(state) {
     lastSyncState = state;
     const badge = document.getElementById('syncBadge');
     if (!badge) return;
     const map = {
-      idle:   { dot: 'rgba(255,255,255,0.4)', txt: '?? },
-      saving: { dot: '#FBBF24', txt: '???以묅? },
-      ok:     { dot: '#22C55E', txt: '?숆린?붾맖' },
-      error:  { dot: '#EF4444', txt: '?숆린???ㅻ쪟' },
-      local:  { dot: '#9B9CB5', txt: '??湲곌린?먮쭔 ??? },
+      idle:   { dot: 'rgba(255,255,255,0.4)', txt: '—' },
+      saving: { dot: '#FBBF24', txt: '저장 중…' },
+      ok:     { dot: '#22C55E', txt: '동기화됨' },
+      error:  { dot: '#EF4444', txt: '동기화 오류' },
+      local:  { dot: '#9B9CB5', txt: '이 기기에만 저장' },
     };
     const m = map[state] || map.idle;
     badge.querySelector('.s-dot').style.background = m.dot;
@@ -2055,8 +2055,8 @@
   function updateUserBadge() {
     const el = document.getElementById('userBadge');
     if (!el) return;
-    if (SUPA_MODE) el.textContent = `?뫀 ${MY.username}${MY.team ? ' 쨌 ' + MY.team + '?' : ''}`;
-    else el.textContent = USER_ID ? `?뫀 ${USER_ID}` : '?뫀 寃뚯뒪??;
+    if (SUPA_MODE) el.textContent = `👤 ${MY.username}${MY.team ? ' · ' + MY.team + '팀' : ''}`;
+    else el.textContent = USER_ID ? `👤 ${USER_ID}` : '👤 게스트';
   }
 
   // ---------- Date ----------
@@ -2080,25 +2080,25 @@
     const day = d.getDay() || 7;
     const mon = new Date(d); mon.setDate(d.getDate() - (day - 1));
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-    return `${mon.getMonth()+1}/${mon.getDate()} ??${sun.getMonth()+1}/${sun.getDate()}`;
+    return `${mon.getMonth()+1}/${mon.getDate()} – ${sun.getMonth()+1}/${sun.getDate()}`;
   }
   function koreanDate(d) {
-    const days = ['??,'??,'??,'??,'紐?,'湲?,'??];
+    const days = ['일','월','화','수','목','금','토'];
     return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} (${days[d.getDay()]})`;
   }
   function shortDate(s) {
     if (!s) return '';
     const d = new Date(s); if (isNaN(d)) return s;
-    return `${d.getMonth()+1}??${d.getDate()}??;
+    return `${d.getMonth()+1}월 ${d.getDate()}일`;
   }
   function greetingByHour() {
     const h = new Date().getHours();
     if (h < 6) return 'Late hours.';
-    if (h < 12) return 'Good morning ?截?;
-    if (h < 14) return 'Lunch time ?띂截?;
-    if (h < 18) return 'Good afternoon ??;
-    if (h < 22) return 'Wrapping up ?뙔';
-    return 'Good evening ?뙔';
+    if (h < 12) return 'Good morning ☀️';
+    if (h < 14) return 'Lunch time 🍽️';
+    if (h < 18) return 'Good afternoon ✨';
+    if (h < 22) return 'Wrapping up 🌙';
+    return 'Good evening 🌙';
   }
 
   const TODAY = todayKey();
@@ -2106,7 +2106,7 @@
   const QUARTER = getQuarter(new Date());
 
   document.getElementById('topbarDate').textContent = koreanDate(new Date());
-  document.getElementById('topbarWeek').textContent = `${WEEK} 쨌 ${getWeekRange(new Date())}`;
+  document.getElementById('topbarWeek').textContent = `${WEEK} · ${getWeekRange(new Date())}`;
   document.getElementById('greeting').textContent = greetingByHour();
   document.getElementById('weeklyPeriod').textContent = WEEK;
   document.getElementById('quarterPeriod').textContent = QUARTER;
@@ -2114,7 +2114,7 @@
   function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
   const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg>';
 
-  // ?됱긽 洹몃씪?곗씠??(CSS :root ? ?숈씪)
+  // 색상 그라데이션 (CSS :root 와 동일)
   const GRADIENTS = {
     'g-pink':'linear-gradient(135deg, #F472B6, #FB7185)',
     'g-orange':'linear-gradient(135deg, #FB923C, #F97316)',
@@ -2132,41 +2132,41 @@
   const GRAD_KEYS = Object.keys(GRADIENTS);
   function gradOf(c) { return GRADIENTS[c] || GRADIENTS['g-blue']; }
 
-  // ---------- 湲곕낯媛?(理쒖큹 1???쒕뱶) ----------
+  // ---------- 기본값 (최초 1회 시드) ----------
   const DEFAULT_DAILY = [
-    { id:'d-receipt', icon:'?㎨', color:'g-pink', title:'?곸닔利?泥섎━', desc:'?댁뭅?댄듃???뱀씪 踰뺤씤移대뱶 ?곸닔利??낅줈??, meta:'踰뺤뭅 ????, links:[{icon:'??, url:'https://login.ecount.com/Login/KR/'}] },
-    { id:'d-schedule', icon:'?뱟', color:'g-cyan', title:'?ㅼ?以?吏쒓린', desc:'?ㅼ씠踰?罹섎┛??+ ?뚰궓留듭쑝濡??ㅻ뒛 ?숈꽑 ?뺣━', meta:'', links:[{icon:'?뱟', url:'https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fcalendar.naver.com%2Fmain'},{icon:'?뿺', url:'https://www.workinmap.com/work1'}] },
-    { id:'d-weekly-board', icon:'?뱤', color:'g-violet', title:'二쇨컙?꾪솴???묒꽦', desc:'?섎（ ?낅Т ?뺣━ 쨌 二쇨컙紐⑺몴 吏꾪뻾 ?곹솴 湲곕줉', meta:'', links:[{icon:'??, url:'https://docs.google.com/spreadsheets/d/1C_YHqY61wJkxCpn_Jd7opoFVBuJj39xORKVdctrrFOo/edit?gid=1939823870#gid=1939823870'}] },
+    { id:'d-receipt', icon:'🧾', color:'g-pink', title:'영수증 처리', desc:'이카운트에 당일 법인카드 영수증 업로드', meta:'법카 쓴 날', links:[{icon:'↗', url:'https://login.ecount.com/Login/KR/'}] },
+    { id:'d-schedule', icon:'📅', color:'g-cyan', title:'스케줄 짜기', desc:'네이버 캘린더 + 워킨맵으로 오늘 동선 정리', meta:'', links:[{icon:'📅', url:'https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fcalendar.naver.com%2Fmain'},{icon:'🗺', url:'https://www.workinmap.com/work1'}] },
+    { id:'d-weekly-board', icon:'📊', color:'g-violet', title:'주간현황판 작성', desc:'하루 업무 정리 · 주간목표 진행 상황 기록', meta:'', links:[{icon:'↗', url:'https://docs.google.com/spreadsheets/d/1C_YHqY61wJkxCpn_Jd7opoFVBuJj39xORKVdctrrFOo/edit?gid=1939823870#gid=1939823870'}] },
   ];
   const DEFAULT_WEEKLY = [
-    { id:'w-blog', icon:'?뮠', color:'g-green', title:'?뚯궗 釉붾줈洹??볤?', desc:'mai0819 釉붾줈洹??볤? + 湲곕줉 ?쒗듃', meta:'', links:[{icon:'?뱷', url:'https://blog.naver.com/mai0819'},{icon:'?뱤', url:'https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=1665859459#gid=1665859459'}] },
-    { id:'w-gainge', icon:'?렗', color:'g-rose', title:'媛?몄? ?먮젅?댁뀡', desc:'?곸긽 ?쒖껌 ??GPT ?붿빟蹂??낅줈??, meta:'', links:[{icon:'??, url:'https://gainge.com/contents/curation'}] },
+    { id:'w-blog', icon:'💬', color:'g-green', title:'회사 블로그 댓글', desc:'mai0819 블로그 댓글 + 기록 시트', meta:'', links:[{icon:'📝', url:'https://blog.naver.com/mai0819'},{icon:'📊', url:'https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=1665859459#gid=1665859459'}] },
+    { id:'w-gainge', icon:'🎬', color:'g-rose', title:'가인지 큐레이션', desc:'영상 시청 후 GPT 요약본 업로드', meta:'', links:[{icon:'↗', url:'https://gainge.com/contents/curation'}] },
   ];
   const DEFAULT_LINKS = {
     work: [
-      { id:'l-week', icon:'?뱤', color:'g-violet', name:'二쇨컙?꾪솴??, meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1C_YHqY61wJkxCpn_Jd7opoFVBuJj39xORKVdctrrFOo/edit?gid=1939823870#gid=1939823870' },
-      { id:'l-auto', icon:'?뱫', color:'g-indigo', name:'?먮룞?붿쭊?됱떆??, meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1iL49NTAPSHzOEka5y7TmTgnb17_GKckXAAWSRlKquFY/edit?gid=1826162532#gid=1826162532' },
-      { id:'l-golden', icon:'?깗', color:'g-yellow', name:'怨⑤뱺誘명똿移대뱶 ?쒗듃', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1IbcagsyTIBPfSQrD9L4Fr5ajBk2E56LaN5Fl4c749WU/edit?gid=74381469#gid=74381469' },
-      { id:'l-ecount', icon:'?㎨', color:'g-pink', name:'?댁뭅?댄듃', meta:'?곸닔利?, url:'https://login.ecount.com/Login/KR/' },
-      { id:'l-blog', icon:'?뱷', color:'g-green', name:'?뚯궗 釉붾줈洹?, meta:'Naver Blog', url:'https://blog.naver.com/mai0819' },
-      { id:'l-comment', icon:'?뮠', color:'g-emerald', name:'釉붾줈洹??볤?', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=1665859459#gid=1665859459' },
-      { id:'l-gainge', icon:'?렗', color:'g-rose', name:'媛?몄?', meta:'?곸긽', url:'https://gainge.com/contents/curation' },
-      { id:'l-naver', icon:'?뱟', color:'g-cyan', name:'?ㅼ씠踰?罹섎┛??, meta:'?쇱젙', url:'https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fcalendar.naver.com%2Fmain' },
-      { id:'l-map', icon:'?뿺截?, color:'g-blue', name:'?뚰궓留?, meta:'?숈꽑 吏??, url:'https://www.workinmap.com/work1' },
+      { id:'l-week', icon:'📊', color:'g-violet', name:'주간현황판', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1C_YHqY61wJkxCpn_Jd7opoFVBuJj39xORKVdctrrFOo/edit?gid=1939823870#gid=1939823870' },
+      { id:'l-auto', icon:'📑', color:'g-indigo', name:'자동화진행시트', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1iL49NTAPSHzOEka5y7TmTgnb17_GKckXAAWSRlKquFY/edit?gid=1826162532#gid=1826162532' },
+      { id:'l-golden', icon:'🃏', color:'g-yellow', name:'골든미팅카드 시트', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1IbcagsyTIBPfSQrD9L4Fr5ajBk2E56LaN5Fl4c749WU/edit?gid=74381469#gid=74381469' },
+      { id:'l-ecount', icon:'🧾', color:'g-pink', name:'이카운트', meta:'영수증', url:'https://login.ecount.com/Login/KR/' },
+      { id:'l-blog', icon:'📝', color:'g-green', name:'회사 블로그', meta:'Naver Blog', url:'https://blog.naver.com/mai0819' },
+      { id:'l-comment', icon:'💬', color:'g-emerald', name:'블로그 댓글', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=1665859459#gid=1665859459' },
+      { id:'l-gainge', icon:'🎬', color:'g-rose', name:'가인지', meta:'영상', url:'https://gainge.com/contents/curation' },
+      { id:'l-naver', icon:'📅', color:'g-cyan', name:'네이버 캘린더', meta:'일정', url:'https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fcalendar.naver.com%2Fmain' },
+      { id:'l-map', icon:'🗺️', color:'g-blue', name:'워킨맵', meta:'동선 지도', url:'https://www.workinmap.com/work1' },
     ],
     lookup: [
-      { id:'l-rent-status', icon:'?룫', color:'g-indigo', name:'?꾨??꾪솴??, meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1qA9l4Xu2P8wQyNTJU_jgUq-zbKNb-_-4TtIsHs9rtDI/edit?gid=1360067034#gid=1360067034' },
-      { id:'l-db-dash', icon:'?뱢', color:'g-purple', name:'?듯빀DB??쒕낫??, meta:'Apps Script', url:'https://script.google.com/macros/s/AKfycbwDGT6PSZCN8ELo5dny5inf7-gdw-QBgyiKOiZPrnFGiYsHd3TekrsSZGbNQ93fNlyx/exec' },
-      { id:'l-pc', icon:'?뮲', color:'g-orange', name:'PC ?뺤옣??, meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1Q0u_ok6s3o7_qnSFyDW632zkspV_MqttRnFQ4uurmpg/edit?gid=1571265600#gid=1571265600' },
-      { id:'l-printer', icon:'?뼥截?, color:'g-yellow', name:'蹂듯빀湲??뺤옣??, meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/10850TfeSvd0Z1iiI1ycCyGskGRPXicRUd1_Xx996QKQ/edit?gid=746760933#gid=746760933' },
-      { id:'l-credit', icon:'?뮯', color:'g-rose', name:'C吏??誘몄닔', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1gc5bcv6GuJ0PV1iXpu0CLBwiAoLJYdBaPqRQCqn4yHU/edit?gid=1754535432#gid=1754535432&fvid=1279190544' },
-      { id:'l-over', icon:'?좑툘', color:'g-red', name:'珥덇낵', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1YySH2gK0ZUth4872zCy3pzp1zu8ZM7yAXopvyfTnp-0/edit?gid=108651391#gid=108651391' },
-      { id:'l-complaint', icon:'?뱽', color:'g-pink', name:'遺덈쭔', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=419415178#gid=419415178' },
-      { id:'l-rentlist', icon:'?뱥', color:'g-cyan', name:'?꾨?由ъ뒪??, meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1YySH2gK0ZUth4872zCy3pzp1zu8ZM7yAXopvyfTnp-0/edit?gid=1037918773#gid=1037918773' },
+      { id:'l-rent-status', icon:'🏢', color:'g-indigo', name:'임대현황표', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1qA9l4Xu2P8wQyNTJU_jgUq-zbKNb-_-4TtIsHs9rtDI/edit?gid=1360067034#gid=1360067034' },
+      { id:'l-db-dash', icon:'📈', color:'g-purple', name:'통합DB대시보드', meta:'Apps Script', url:'https://script.google.com/macros/s/AKfycbwDGT6PSZCN8ELo5dny5inf7-gdw-QBgyiKOiZPrnFGiYsHd3TekrsSZGbNQ93fNlyx/exec' },
+      { id:'l-pc', icon:'💻', color:'g-orange', name:'PC 확장성', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1Q0u_ok6s3o7_qnSFyDW632zkspV_MqttRnFQ4uurmpg/edit?gid=1571265600#gid=1571265600' },
+      { id:'l-printer', icon:'🖨️', color:'g-yellow', name:'복합기 확장성', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/10850TfeSvd0Z1iiI1ycCyGskGRPXicRUd1_Xx996QKQ/edit?gid=746760933#gid=746760933' },
+      { id:'l-credit', icon:'💸', color:'g-rose', name:'C지역 미수', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1gc5bcv6GuJ0PV1iXpu0CLBwiAoLJYdBaPqRQCqn4yHU/edit?gid=1754535432#gid=1754535432&fvid=1279190544' },
+      { id:'l-over', icon:'⚠️', color:'g-red', name:'초과', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1YySH2gK0ZUth4872zCy3pzp1zu8ZM7yAXopvyfTnp-0/edit?gid=108651391#gid=108651391' },
+      { id:'l-complaint', icon:'📣', color:'g-pink', name:'불만', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1H15RFS7h-euPJM1pfPIQl_FQNzxk6OrjkSmZZGsqWKQ/edit?gid=419415178#gid=419415178' },
+      { id:'l-rentlist', icon:'📋', color:'g-cyan', name:'임대리스트', meta:'Sheets', url:'https://docs.google.com/spreadsheets/d/1YySH2gK0ZUth4872zCy3pzp1zu8ZM7yAXopvyfTnp-0/edit?gid=1037918773#gid=1037918773' },
     ],
   };
 
-  // ---------- 留ㅼ씪 ????/ 二?1??/ 鍮좊Ⅸ 留곹겕 (?몄쭛 媛??+ ?숆린?? ----------
+  // ---------- 매일 할 일 / 주 1회 / 빠른 링크 (편집 가능 + 동기화) ----------
   let dailyTasks = [];
   let weeklyTasks = [];
   let quickLinks = { work: [], lookup: [] };
@@ -2198,7 +2198,7 @@
     const root = document.getElementById(rootId);
     root.innerHTML = '';
     if (!tasks.length) {
-      root.innerHTML = `<div class="task-empty">?꾩쭅 ??ぉ???놁뼱?? "+ 異붽?"濡?留뚮뱾??蹂댁꽭??</div>`;
+      root.innerHTML = `<div class="task-empty">아직 항목이 없어요. "+ 추가"로 만들어 보세요.</div>`;
       return;
     }
     tasks.forEach(t => {
@@ -2207,18 +2207,18 @@
       item.className = 'task-item' + (done ? ' done' : '');
       item.dataset.id = t.id;
       const linksHtml = (t.links || []).filter(l => l.url).map(l =>
-        `<a class="task-link" href="${escapeHTML(l.url)}" target="_blank" rel="noopener">${escapeHTML(l.icon || '??)}</a>`).join('');
+        `<a class="task-link" href="${escapeHTML(l.url)}" target="_blank" rel="noopener">${escapeHTML(l.icon || '↗')}</a>`).join('');
       item.innerHTML = `
-        <span class="drag-handle" title="?쒕옒洹몃줈 ?쒖꽌 蹂寃?>??/span>
+        <span class="drag-handle" title="드래그로 순서 변경">⠿</span>
         <span class="task-check">${CHECK_SVG}</span>
-        <span class="task-icon" style="background:${gradOf(t.color)}">${escapeHTML(t.icon || '??)}</span>
+        <span class="task-icon" style="background:${gradOf(t.color)}">${escapeHTML(t.icon || '✅')}</span>
         <div class="task-text">
           <div class="task-title">${escapeHTML(t.title)}</div>
           ${t.desc ? `<div class="task-desc">${escapeHTML(t.desc)}</div>` : ''}
         </div>
         ${t.meta ? `<span class="task-meta">${escapeHTML(t.meta)}</span>` : ''}
         <div class="task-links">${linksHtml}</div>
-        <button class="item-edit" title="?몄쭛">??/button>
+        <button class="item-edit" title="편집">✎</button>
       `;
       item.addEventListener('click', async (e) => {
         if (e.target.closest('a') || e.target.closest('.item-edit') || e.target.closest('.drag-handle')) return;
@@ -2262,7 +2262,7 @@
     const root = document.getElementById(rootId);
     root.innerHTML = '';
     if (!links.length) {
-      root.innerHTML = `<div class="quick-empty">?꾩쭅 留곹겕媛 ?놁뼱?? "+ 異붽?"濡?留뚮뱾??蹂댁꽭??</div>`;
+      root.innerHTML = `<div class="quick-empty">아직 링크가 없어요. "+ 추가"로 만들어 보세요.</div>`;
       return;
     }
     links.forEach(l => {
@@ -2271,9 +2271,9 @@
       a.dataset.id = l.id;
       a.href = l.url || '#'; a.target = '_blank'; a.rel = 'noopener';
       a.innerHTML = `
-        <span class="q-icon" style="background:${gradOf(l.color)}">${escapeHTML(l.icon || '?뵕')}</span>
+        <span class="q-icon" style="background:${gradOf(l.color)}">${escapeHTML(l.icon || '🔗')}</span>
         <div class="q-text"><div class="q-name">${escapeHTML(l.name)}</div><div class="q-meta">${escapeHTML(l.meta || '')}</div></div>
-        <button class="item-edit" title="?몄쭛">??/button>
+        <button class="item-edit" title="편집">✎</button>
       `;
       a.querySelector('.item-edit').addEventListener('click', (e) => {
         e.preventDefault(); e.stopPropagation(); openLinkModal(tab, l);
@@ -2285,13 +2285,13 @@
     });
   }
 
-  // ---------- 二쇨컙 怨꾪쉷 쨌 ?쇱씪 釉뚮━??----------
-  // week ?ㅼ퐫??蹂묐ぉ/二쇨컙紐⑺몴) = goal:weekly:<WEEK> / day ?ㅼ퐫???멸렐쨌?닿렐) = brief:daily:<?좎쭨>
+  // ---------- 주간 계획 · 일일 브리핑 ----------
+  // week 스코프(병목/주간목표) = goal:weekly:<WEEK> / day 스코프(외근·내근) = brief:daily:<날짜>
   function briefBoxes() { return Array.from(document.querySelectorAll('.brief-box')); }
   function briefStoreKey(scope) { return scope === 'day' ? `brief:daily:${todayKey()}` : `goal:weekly:${WEEK}`; }
   async function saveBrief(scope) {
     const obj = {};
-    briefBoxes().filter(b => b.dataset.scope === scope).forEach(b => { obj[b.dataset.key] = b.innerText.replace(/혻/g, ' '); });
+    briefBoxes().filter(b => b.dataset.scope === scope).forEach(b => { obj[b.dataset.key] = b.innerText.replace(/ /g, ' '); });
     await storeSet(briefStoreKey(scope), JSON.stringify(obj));
   }
   function setupGoalListener() {
@@ -2309,7 +2309,7 @@
   function parseBrief(raw) {
     if (!raw) return {};
     try { const o = JSON.parse(raw); return (o && typeof o === 'object') ? o : { goals: String(raw) }; }
-    catch (e) { return { goals: String(raw) }; } // ???⑥닚 ?띿뒪???명솚
+    catch (e) { return { goals: String(raw) }; } // 옛 단순 텍스트 호환
   }
   async function refreshWeeklyGoal() {
     const week = parseBrief(await storeGet(briefStoreKey('week')));
@@ -2319,19 +2319,19 @@
       b.innerText = src[b.dataset.key] || '';
     });
   }
-  // 二쇨컙怨꾪쉷???뺥빐吏??뺤떇 ?띿뒪?몃줈 蹂듭궗
+  // 주간계획을 정해진 형식 텍스트로 복사
   function buildBriefText() {
     const get = id => (document.getElementById(id) ? document.getElementById(id).innerText.trim() : '');
     const DIV = '-----------------------------';
     return [
-      '蹂묐ぉ?꾩긽', get('bf-bottleneck'),
+      '병목현상', get('bf-bottleneck'),
       DIV,
-      '二쇨컙紐⑺몴', get('bf-goals'),
+      '주간목표', get('bf-goals'),
       DIV,
-      '?쇱씪釉뚮━??,
-      '?멸렐', get('bf-out'),
+      '일일브리핑',
+      '외근', get('bf-out'),
       '',
-      '?닿렐', get('bf-in')
+      '내근', get('bf-in')
     ].join('\n');
   }
   async function copyBrief() {
@@ -2344,13 +2344,13 @@
         ta.style.position = 'fixed'; ta.style.left = '-9999px'; document.body.appendChild(ta);
         ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
       }
-      if (btn) { const o = btn.textContent; btn.textContent = '??蹂듭궗??; setTimeout(() => { btn.textContent = o; }, 1500); }
-    } catch (e) { console.error('蹂듭궗 ?ㅽ뙣', e); alert('蹂듭궗???ㅽ뙣?덉뒿?덈떎.'); }
+      if (btn) { const o = btn.textContent; btn.textContent = '✓ 복사됨'; setTimeout(() => { btn.textContent = o; }, 1500); }
+    } catch (e) { console.error('복사 실패', e); alert('복사에 실패했습니다.'); }
   }
   document.getElementById('briefCopyBtn').addEventListener('click', copyBrief);
 
   // ---------- Quarter Goals ----------
-  const CATEGORIES = ['AI','?먭린媛쒕컻','留ㅼ텧利앸?','留ㅼ텧?덉젙','?⑥쑉??,'鍮꾩슜?덇컧','?뚰넻','湲고?'];
+  const CATEGORIES = ['AI','자기개발','매출증대','매출안정','효율성','비용절감','소통','기타'];
   const VALID_CATS = new Set(CATEGORIES);
 
   let goals = [];
@@ -2378,7 +2378,7 @@
   }
   async function saveGoals() { await storeSet(`quarter-goals:${QUARTER}`, JSON.stringify(goals)); }
 
-  // 遺꾧린紐⑺몴 ????援ш??쒗듃 ?먮룞 ?몄떆 (媛쒖씤 ?ㅼ젙)
+  // 분기목표 → 내 구글시트 자동 푸시 (개인 설정)
   async function getGoalSheetUrl() { return (await storeGet('settings:goalSheetUrl')) || ''; }
   async function pushGoalToSheet(goal) {
     const url = await getGoalSheetUrl();
@@ -2386,45 +2386,45 @@
     try {
       await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS preflight ?뚰뵾
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS preflight 회피
         body: JSON.stringify({
           quarter: QUARTER, title: goal.title, category: goal.category,
           grade: goal.grade, purpose: goal.purpose, method: goal.method, done: !!goal.done
         })
       });
-    } catch (e) { console.error('?쒗듃 ?몄떆 ?ㅽ뙣', e); }
+    } catch (e) { console.error('시트 푸시 실패', e); }
   }
   const goalSheetBtn = document.getElementById('goalSheetBtn');
   if (goalSheetBtn) goalSheetBtn.addEventListener('click', async () => {
     const cur = await getGoalSheetUrl();
-    const v = prompt('遺꾧린紐⑺몴瑜??먮룞 湲곕줉??援ш??쒗듃 ?뱀빋(GAS) URL???낅젰?섏꽭??\n(goal-sheet-sync.gs 諛고룷 ??諛쏆? ??exec 二쇱냼)\n\n鍮꾩슦怨??뺤씤?섎㈃ ?곕룞 ?댁젣?⑸땲??', cur);
+    const v = prompt('분기목표를 자동 기록할 구글시트 웹앱(GAS) URL을 입력하세요.\n(goal-sheet-sync.gs 배포 후 받은 …/exec 주소)\n\n비우고 확인하면 연동 해제됩니다.', cur);
     if (v === null) return;
     const url = v.trim();
     await storeSet('settings:goalSheetUrl', url);
-    if (url && !/\/exec$/.test(url)) alert('??μ? ?덉?留? URL??蹂댄넻 ??exec 濡??앸궔?덈떎. ?ㅼ떆 ?뺤씤??二쇱꽭??');
-    else alert(url ? '?쒗듃?곕룞???ㅼ젙?먯뒿?덈떎. ?댁젣 ??遺꾧린紐⑺몴媛 ?쒗듃?먮룄 湲곕줉?⑸땲??' : '?쒗듃?곕룞???댁젣?먯뒿?덈떎.');
+    if (url && !/\/exec$/.test(url)) alert('저장은 했지만, URL이 보통 …/exec 로 끝납니다. 다시 확인해 주세요.');
+    else alert(url ? '시트연동이 설정됐습니다. 이제 새 분기목표가 시트에도 기록됩니다.' : '시트연동이 해제됐습니다.');
     updateGoalSheetBtn(url);
   });
   function updateGoalSheetBtn(url) {
     if (!goalSheetBtn) return;
-    goalSheetBtn.textContent = url ? '?뵕 ?쒗듃?곕룞?? : '?뵕 ?쒗듃?곕룞';
+    goalSheetBtn.textContent = url ? '🔗 시트연동됨' : '🔗 시트연동';
     goalSheetBtn.style.opacity = url ? '1' : '';
   }
 
-  // ===================== 寃곌낵???쒗듃 ?묐갑???곕룞 =====================
+  // ===================== 결과표 시트 양방향 연동 =====================
   let resultRows = [];
-  // type: 'goals'=寃곌낵?쒗삎(援щ텇/紐⑺몴/?붾퀎), 'card'=怨⑤뱺誘명똿移대뱶(遺꾧린횞吏덈Ц횞移댄뀒怨좊━)
-  // gid 鍮꾩슦怨?nameKw 二쇰㈃ ?쒗듃 ???대쫫?쇰줈 ?먮룞 ?몄떇
+  // type: 'goals'=결과표형(구분/목표/월별), 'card'=골든미팅카드(분기×질문×카테고리)
+  // gid 비우고 nameKw 주면 시트 탭 이름으로 자동 인식
   const RESULT_TABS = [
-    { key: 'quarter', label: '?뱤 遺꾧린寃곌낵??, type: 'goals', gid: '', nameKw: ['寃곌낵??], nameExclude: ['誘몄뀡'] },
-    { key: 'mission', label: '?렞 誘몄뀡寃곌낵??, type: 'goals', gid: '1053550780', nameKw: ['誘몄뀡寃곌낵', '誘몄뀡 寃곌낵'] },
-    { key: 'plan',    label: '?뱷 怨꾪쉷??,     type: 'plan',  gid: '', nameKw: ['怨꾪쉷??, '?덈꺼?낃퀎??, '怨꾪쉷'] },
-    { key: 'card',    label: '?깗 怨⑤뱺誘명똿移대뱶', type: 'card', gid: '', nameKw: ['怨⑤뱺', '誘명똿', '移대뱶'] }
+    { key: 'quarter', label: '📊 분기결과표', type: 'goals', gid: '', nameKw: ['결과표'], nameExclude: ['미션'] },
+    { key: 'mission', label: '🎯 미션결과표', type: 'goals', gid: '1053550780', nameKw: ['미션결과', '미션 결과'] },
+    { key: 'plan',    label: '📝 계획표',     type: 'plan',  gid: '', nameKw: ['계획표', '레벨업계획', '계획'] },
+    { key: 'card',    label: '🃏 골든미팅카드', type: 'card', gid: '', nameKw: ['골든', '미팅', '카드'] }
   ];
-  // 怨꾪쉷???섏쐞 紐⑤뱶: 湲곕낯?낅Т(C=3) / 誘몄뀡?낅Т(I=9), ?붿뭏 ?놁쓬
+  // 계획표 하위 모드: 기본업무(C=3) / 미션업무(I=9), 월칸 없음
   const PLAN_MODES = [
-    { key: 'basic',   label: '湲곕낯?낅Т', goalCol: 3 },
-    { key: 'mission', label: '誘몄뀡?낅Т', goalCol: 9 }
+    { key: 'basic',   label: '기본업무', goalCol: 3 },
+    { key: 'mission', label: '미션업무', goalCol: 9 }
   ];
   let planMode = 'basic';
   let resultTab = 'quarter';
@@ -2444,7 +2444,7 @@
     const hit = tabGidCache.find(x => t.nameKw.some(k => x.name.includes(k)) && !ex.some(k => x.name.includes(k)));
     return hit ? hit.gid : '';
   }
-  function currentResultGid() { return activeGid || curTab().gid; } // 濡쒕뱶 ??resolveGid濡?媛깆떊??
+  function currentResultGid() { return activeGid || curTab().gid; } // 로드 시 resolveGid로 갱신됨
   let activeGid = '';
   function renderResultTabs() {
     const bar = document.getElementById('resultTabs'); if (!bar) return;
@@ -2457,17 +2457,17 @@
       bar.appendChild(b);
     });
   }
-  let cardQuarter = Math.floor((new Date().getMonth()) / 3) + 1; // ?꾩옱 遺꾧린 ?먮룞
+  let cardQuarter = Math.floor((new Date().getMonth()) / 3) + 1; // 현재 분기 자동
   async function getResultUrl() { return (await storeGet('settings:resultSheetUrl')) || ''; }
   function resultModeOn(active) {
-    // ?쒗듃 ??紐⑤뱶 ??湲곗〈 移대뱶 紐⑤뱶 ?꾪솚
+    // 시트 표 모드 ↔ 기존 카드 모드 전환
     ['filterRow', 'goalGrid', 'syncBtn', 'goalSheetBtn', 'addGoalBtn', 'goalsMemberBar', 'goalsRoBanner'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = active ? 'none' : '';
     });
     const rt = document.getElementById('resultTabs'); if (rt) rt.style.display = active ? '' : 'none';
     const rs = document.getElementById('resultSection'); if (rs) rs.style.display = active ? '' : 'none';
     const rf = document.getElementById('resultRefreshBtn'); if (rf) rf.style.display = active ? '' : 'none';
-    const rl = document.getElementById('resultLinkBtn'); if (rl) rl.textContent = active ? '?뵕 ?곕룞?? : '?뵕 寃곌낵???곕룞';
+    const rl = document.getElementById('resultLinkBtn'); if (rl) rl.textContent = active ? '🔗 연동됨' : '🔗 결과표 연동';
   }
   async function loadResultGoals() {
     const url = await getResultUrl();
@@ -2475,7 +2475,7 @@
     resultModeOn(true);
     renderResultTabs();
     const root = document.getElementById('resultSection');
-    root.innerHTML = '<div class="rs-loading">遺덈윭?ㅻ뒗 以묅?/div>';
+    root.innerHTML = '<div class="rs-loading">불러오는 중…</div>';
     const t = curTab();
     try {
       activeGid = await resolveGid(t);
@@ -2483,49 +2483,49 @@
         const q = url + (url.includes('?') ? '&' : '?') + 'action=card&quarter=' + cardQuarter + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
-        if (!json || !json.ok) throw new Error((json && json.error) || '?묐떟 ?ㅻ쪟');
+        if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         renderCardTable(json);
       } else if (t.type === 'plan') {
         const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
         const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&goalCol=' + mode.goalCol + '&noMonths=1' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
-        if (!json || !json.ok) throw new Error((json && json.error) || '?묐떟 ?ㅻ쪟');
+        if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
         renderPlanTable();
       } else {
         const q = url + (url.includes('?') ? '&' : '?') + 'action=goals' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
-        if (!json || !json.ok) throw new Error((json && json.error) || '?묐떟 ?ㅻ쪟');
+        if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
         renderResultTable();
       }
     } catch (e) {
-      root.innerHTML = '<div class="rs-empty">遺덈윭?ㅺ린 ?ㅽ뙣: ' + (e.message || e) + '<br><small>?곕룞 URL怨?GAS 諛고룷(?≪꽭?? 紐⑤뱺 ?ъ슜??瑜??뺤씤?섏꽭?? ??쓣 紐?李얠쑝硫??쒗듃 ???대쫫???뺤씤?섏꽭??</small></div>';
+      root.innerHTML = '<div class="rs-empty">불러오기 실패: ' + (e.message || e) + '<br><small>연동 URL과 GAS 배포(액세스: 모든 사용자)를 확인하세요. 탭을 못 찾으면 시트 탭 이름을 확인하세요.</small></div>';
     }
   }
   function autoGrowTextarea(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(60, ta.scrollHeight + 2) + 'px'; }
   function renderResultTable() {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
-    if (!resultRows.length) { root.innerHTML = '<div class="rs-empty">寃곌낵?쒖뿉 ?곗씠?곌? ?놁뒿?덈떎.</div>'; return; }
-    // 援щ텇(A)蹂꾨줈 洹몃９??
+    if (!resultRows.length) { root.innerHTML = '<div class="rs-empty">결과표에 데이터가 없습니다.</div>'; return; }
+    // 구분(A)별로 그룹화
     const groups = {};
     const order = [];
-    resultRows.forEach(r => { const g = r.gubun || '湲고?'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(r); });
+    resultRows.forEach(r => { const g = r.gubun || '기타'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(r); });
     order.forEach(g => {
       const wrap = document.createElement('div'); wrap.className = 'rs-group';
       const gt = document.createElement('div'); gt.className = 'rs-group-title'; gt.textContent = g;
       wrap.appendChild(gt);
       groups[g].forEach(r => wrap.appendChild(buildResultCard(r)));
       const rowsInG = groups[g];
-      const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 紐⑺몴 異붽?`;
+      const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 목표 추가`;
       addBtn.addEventListener('click', async () => {
         const afterRow = rowsInG[rowsInG.length - 1].row;
-        addBtn.disabled = true; addBtn.textContent = '異붽? 以묅?;
+        addBtn.disabled = true; addBtn.textContent = '추가 중…';
         const ok = await postResult({ action: 'addRow', afterRow, gubun: g });
-        if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 紐⑺몴 異붽?`; alert('異붽? ?ㅽ뙣: ?쒗듃 沅뚰븳쨌GAS ?щ같?щ? ?뺤씤?섏꽭??'); }
+        if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 목표 추가`; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
       });
       wrap.appendChild(addBtn);
       root.appendChild(wrap);
@@ -2539,38 +2539,38 @@
     const count = allMonths.length;
     const head = document.createElement('div'); head.className = 'rs-card-head';
     const goal = document.createElement('div'); goal.className = 'rs-goal';
-    goal.setAttribute('contenteditable', 'true'); goal.dataset.placeholder = '紐⑺몴 ?낅젰';
-    if (r.goalHtml) goal.innerHTML = r.goalHtml;        // 紐⑺몴(B): 以꾨컮轅??됱긽 洹몃?濡?
+    goal.setAttribute('contenteditable', 'true'); goal.dataset.placeholder = '목표 입력';
+    if (r.goalHtml) goal.innerHTML = r.goalHtml;        // 목표(B): 줄바꿈+색상 그대로
     else if (r.goal) goal.textContent = r.goal;
     const goalSave = debounce(async () => {
-      const ok = await postResultUpdate(r.row, 2, goal.innerText.replace(/ /g, ' ').trim()); // B??2)=紐⑺몴
+      const ok = await postResultUpdate(r.row, 2, goal.innerText.replace(/ /g, ' ').trim()); // B열(2)=목표
       if (ok) r.goal = goal.innerText.trim();
     }, 800);
     goal.addEventListener('input', goalSave);
     head.appendChild(goal);
-    if (firstCol && count >= 2) {                       // ?듯빀/?붾퀎 ?좉?(? 蹂묓빀)
+    if (firstCol && count >= 2) {                       // 통합/월별 토글(셀 병합)
       const tg = document.createElement('button'); tg.className = 'rs-merge-btn';
-      tg.textContent = r.merged ? '???붾퀎濡? : '?뵕 ?듯빀';
-      tg.title = r.merged ? '?ㅼ떆 ?붾퀎濡??섎늻湲? : '?щ윭 ?ъ쓣 ??移몄쑝濡??듯빀(?쒗듃 ? 蹂묓빀)';
+      tg.textContent = r.merged ? '↔ 월별로' : '🔗 통합';
+      tg.title = r.merged ? '다시 월별로 나누기' : '여러 달을 한 칸으로 통합(시트 셀 병합)';
       tg.addEventListener('click', async () => {
-        tg.disabled = true; tg.textContent = '??;
+        tg.disabled = true; tg.textContent = '…';
         const ok = await postResult({ action: r.merged ? 'unmergeMonths' : 'mergeMonths', row: r.row, col: firstCol, count });
         if (ok) { await loadResultGoals(); }
-        else { tg.disabled = false; tg.textContent = r.merged ? '???붾퀎濡? : '?뵕 ?듯빀'; alert('?듯빀/?댁젣 ?ㅽ뙣: ?쒗듃 沅뚰븳쨌GAS ?щ같?щ? ?뺤씤?섏꽭??'); }
+        else { tg.disabled = false; tg.textContent = r.merged ? '↔ 월별로' : '🔗 통합'; alert('통합/해제 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
       });
       head.appendChild(tg);
     }
-    const delBtn = document.createElement('button'); delBtn.className = 'rs-del-btn'; delBtn.textContent = '?뿊'; delBtn.title = '??紐⑺몴 ????젣';
+    const delBtn = document.createElement('button'); delBtn.className = 'rs-del-btn'; delBtn.textContent = '🗑'; delBtn.title = '이 목표 행 삭제';
     delBtn.addEventListener('click', async () => {
-      if (!confirm('??紐⑺몴 ?됱쓣 ?쒗듃?먯꽌 ??젣?좉퉴??')) return;
+      if (!confirm('이 목표 행을 시트에서 삭제할까요?')) return;
       delBtn.disabled = true;
       const ok = await postResult({ action: 'deleteRow', row: r.row });
-      if (ok) { await loadResultGoals(); } else { delBtn.disabled = false; alert('??젣 ?ㅽ뙣: ?쒗듃 沅뚰븳쨌GAS ?щ같?щ? ?뺤씤?섏꽭??'); }
+      if (ok) { await loadResultGoals(); } else { delBtn.disabled = false; alert('삭제 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
     });
     head.appendChild(delBtn);
     card.appendChild(head);
     const mlabel = (m) => (r.merged && allMonths.length)
-      ? (allMonths[0].label + '~' + allMonths[allMonths.length - 1].label + ' ?듯빀') : m.label;
+      ? (allMonths[0].label + '~' + allMonths[allMonths.length - 1].label + ' 통합') : m.label;
     const months = document.createElement('div'); months.className = 'rs-months';
     const list = (r.merged && allMonths.length) ? [allMonths[0]] : allMonths;
     months.style.gridTemplateColumns = `repeat(${Math.min(Math.max(list.length, 1), 4)}, 1fr)`;
@@ -2581,11 +2581,11 @@
       lab.appendChild(dot); lab.appendChild(document.createTextNode(mlabel(m)));
       const box = document.createElement('div');
       box.className = 'rs-month-edit'; box.setAttribute('contenteditable', 'true');
-      box.dataset.placeholder = mlabel(m) + ' ?댁슜 ?낅젰';
-      if (m.text) box.textContent = m.text;            // ?붿뭏? 寃???띿뒪?몃줈
+      box.dataset.placeholder = mlabel(m) + ' 내용 입력';
+      if (m.text) box.textContent = m.text;            // 월칸은 검정 텍스트로
       const save = debounce(async () => {
         dot.className = 'rs-dot saving';
-        const text = box.innerText.replace(/혻/g, ' ');
+        const text = box.innerText.replace(/ /g, ' ');
         const ok = await postResultUpdate(r.row, m.col, text);
         dot.className = 'rs-dot ' + (ok ? 'ok' : 'err');
         if (ok) m.text = text;
@@ -2598,30 +2598,30 @@
     return card;
   }
 
-  // ===================== 怨⑤뱺誘명똿移대뱶 ?뚮뜑 (遺꾧린 ?좏깮 + 吏덈Ц4 移대뱶 횞 移댄뀒怨좊━6 ?낅젰) =====================
+  // ===================== 골든미팅카드 렌더 (분기 선택 + 질문4 카드 × 카테고리6 입력) =====================
   function renderCardTable(data) {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
-    // 遺꾧린 ?좏깮 諛?
+    // 분기 선택 바
     const qbar = document.createElement('div'); qbar.className = 'gm-qbar';
     [1, 2, 3, 4].forEach(q => {
       const b = document.createElement('button');
       b.className = 'gm-qbtn' + (q === cardQuarter ? ' active' : '');
-      b.textContent = q + '遺꾧린';
+      b.textContent = q + '분기';
       b.addEventListener('click', () => { if (cardQuarter === q) return; cardQuarter = q; loadResultGoals(); });
       qbar.appendChild(b);
     });
-    // AI ?먮룞?묒꽦 踰꾪듉
+    // AI 자동작성 버튼
     const aiBtn = document.createElement('button'); aiBtn.className = 'gm-ai-btn'; aiBtn.id = 'gmAiBtn';
-    aiBtn.textContent = '?쨼 AI ?먮룞?묒꽦';
-    aiBtn.title = '寃곌낵?쑣룸??섍껐怨쇳몴瑜?遺꾩꽍????遺꾧린 移몄쓣 ?먮룞?쇰줈 ?묒꽦';
+    aiBtn.textContent = '🤖 AI 자동작성';
+    aiBtn.title = '결과표·미션결과표를 분석해 이 분기 칸을 자동으로 작성';
     aiBtn.addEventListener('click', () => runAiCard());
     qbar.appendChild(aiBtn);
     root.appendChild(qbar);
     const aiStatus = document.createElement('div'); aiStatus.id = 'gmAiStatus'; aiStatus.className = 'gm-ai-status';
     root.appendChild(aiStatus);
     const qs = data.questions || [];
-    if (!qs.length) { const e = document.createElement('div'); e.className = 'rs-empty'; e.innerHTML = `${cardQuarter}遺꾧린 怨⑤뱺誘명똿移대뱶 ?곗씠?곕? 李얠? 紐삵뻽?댁슂.<br><small>?쒗듃???대떦 遺꾧린 移몄씠 ?덈뒗吏 ?뺤씤?섏꽭??</small>`; root.appendChild(e); return; }
+    if (!qs.length) { const e = document.createElement('div'); e.className = 'rs-empty'; e.innerHTML = `${cardQuarter}분기 골든미팅카드 데이터를 찾지 못했어요.<br><small>시트에 해당 분기 칸이 있는지 확인하세요.</small>`; root.appendChild(e); return; }
     qs.forEach((q, qi) => {
       const card = document.createElement('div'); card.className = 'rs-card';
       const head = document.createElement('div'); head.className = 'gm-q-title';
@@ -2634,7 +2634,7 @@
         const dot = document.createElement('span'); dot.className = 'rs-dot';
         lab.appendChild(dot); lab.appendChild(document.createTextNode(cell.cat));
         const box = document.createElement('div'); box.className = 'rs-month-edit'; box.setAttribute('contenteditable', 'true');
-        box.dataset.placeholder = cell.cat + ' ?낅젰';
+        box.dataset.placeholder = cell.cat + ' 입력';
         if (cell.text) box.textContent = cell.text;
         const save = debounce(async () => {
           if (!cell.col) return;
@@ -2652,25 +2652,25 @@
     });
   }
 
-  // 怨⑤뱺移대뱶 AI ?먮룞?묒꽦 ?ㅽ뻾
+  // 골든카드 AI 자동작성 실행
   async function runAiCard() {
     const btn = document.getElementById('gmAiBtn');
     const status = document.getElementById('gmAiStatus');
     if (!btn || !status) return;
-    if (!confirm(`${cardQuarter}遺꾧린 怨⑤뱺誘명똿移대뱶瑜?AI濡??먮룞?묒꽦?좉퉴??\n寃곌낵?쑣룸??섍껐怨쇳몴瑜?遺꾩꽍????遺꾧린 24移몄쓣 梨꾩썎?덈떎.\n(湲곗〈 ${cardQuarter}遺꾧린 ?댁슜? ??뼱?곗뿬??`)) return;
-    btn.disabled = true; const orig = btn.textContent; btn.textContent = '???묒꽦 以묅?;
+    if (!confirm(`${cardQuarter}분기 골든미팅카드를 AI로 자동작성할까요?\n결과표·미션결과표를 분석해 이 분기 24칸을 채웁니다.\n(기존 ${cardQuarter}분기 내용은 덮어쓰여요)`)) return;
+    btn.disabled = true; const orig = btn.textContent; btn.textContent = '⏳ 작성 중…';
     status.className = 'gm-ai-status busy';
-    // 寃쎄낵 ?쒓컙 ?쒖떆 + 臾댄븳?湲?諛⑹? ??꾩븘??10遺?
+    // 경과 시간 표시 + 무한대기 방지 타임아웃(10분)
     const t0 = Date.now();
     const tick = setInterval(() => {
       const s = Math.round((Date.now() - t0) / 1000);
-      const mm = s >= 60 ? `${Math.floor(s / 60)}遺?${s % 60}珥? : `${s}珥?;
-      status.textContent = `?쨼 AI媛 ?뺥솗???곗꽑(high)?쇰줈 ?묒꽦 以묅?(${mm} 寃쎄낵) 쨌 紐?遺?嫄몃┫ ???덉뼱?? 李쎌쓣 ?レ? 留먭퀬 湲곕떎??二쇱꽭??`;
+      const mm = s >= 60 ? `${Math.floor(s / 60)}분 ${s % 60}초` : `${s}초`;
+      status.textContent = `🤖 AI가 정확도 우선(high)으로 작성 중… (${mm} 경과) · 몇 분 걸릴 수 있어요. 창을 닫지 말고 기다려 주세요.`;
     }, 1000);
     const ctrl = new AbortController();
-    const killer = setTimeout(() => ctrl.abort(), 600000); // 10遺?
+    const killer = setTimeout(() => ctrl.abort(), 600000); // 10분
     try {
-      // 寃곌낵??誘몄뀡??gid ?뺣낫(??紐⑸줉 ?먮룞 ?댁꽍)
+      // 결과표/미션표 gid 확보(탭 목록 자동 해석)
       const resultGid = await resolveGid(RESULT_TABS.find(t => t.key === 'quarter'));
       const missionGid = await resolveGid(RESULT_TABS.find(t => t.key === 'mission'));
       const cardGid = await resolveGid(curTab());
@@ -2683,11 +2683,11 @@
       clearInterval(tick); clearTimeout(killer);
       const json = await res.json().catch(() => null);
       if (json && json.ok) {
-        status.textContent = `???묒꽦 ?꾨즺! (${json.written || 0}移??낅젰?? ?뺤씤?섏꽭??`;
+        status.textContent = `✅ 작성 완료! (${json.written || 0}칸 입력됨) 확인하세요.`;
         status.className = 'gm-ai-status done';
         await loadResultGoals();
       } else {
-        status.textContent = '???묒꽦 ?ㅽ뙣: ' + ((json && json.error) || 'API ???ㅼ젙쨌GAS ?щ같?щ? ?뺤씤?섏꽭??');
+        status.textContent = '❌ 작성 실패: ' + ((json && json.error) || 'API 키 설정·GAS 재배포를 확인하세요.');
         status.className = 'gm-ai-status err';
         btn.disabled = false; btn.textContent = orig;
       }
@@ -2695,18 +2695,18 @@
       clearInterval(tick); clearTimeout(killer);
       const aborted = (e && e.name === 'AbortError');
       status.textContent = aborted
-        ? '???묐떟???덈Т ?ㅻ옒 嫄몃젮 以묐떒?덉뼱?? ?좎떆 ???ㅼ떆 ?쒕룄?섍굅?? GPT 異붾줎??以꾩뿬蹂댁꽭???ㅽ겕由쏀듃 ?띿꽦 OPENAI_REASONING_EFFORT=minimal).'
-        : '???ㅻ쪟: ' + (e.message || e);
+        ? '⌛ 응답이 너무 오래 걸려 중단했어요. 잠시 후 다시 시도하거나, GPT 추론을 줄여보세요(스크립트 속성 OPENAI_REASONING_EFFORT=minimal).'
+        : '❌ 오류: ' + (e.message || e);
       status.className = 'gm-ai-status err';
       btn.disabled = false; btn.textContent = orig;
     }
   }
 
-  // ===================== 怨꾪쉷???뚮뜑 (湲곕낯?낅Т / 誘몄뀡?낅Т ?좉? + 紐⑺몴 ?몄쭛) =====================
+  // ===================== 계획표 렌더 (기본업무 / 미션업무 토글 + 목표 편집) =====================
   function renderPlanTable() {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
-    // 湲곕낯/誘몄뀡 ?좉?
+    // 기본/미션 토글
     const bar = document.createElement('div'); bar.className = 'gm-qbar';
     PLAN_MODES.forEach(m => {
       const b = document.createElement('button');
@@ -2716,10 +2716,10 @@
       bar.appendChild(b);
     });
     root.appendChild(bar);
-    if (!resultRows.length) { const e = document.createElement('div'); e.className = 'rs-empty'; e.innerHTML = '????ぉ??紐⑺몴瑜?李얠? 紐삵뻽?댁슂.<br><small>怨꾪쉷????援ъ“瑜??뺤씤?섏꽭??</small>'; root.appendChild(e); return; }
-    // 援щ텇蹂?洹몃９??
+    if (!resultRows.length) { const e = document.createElement('div'); e.className = 'rs-empty'; e.innerHTML = '이 항목의 목표를 찾지 못했어요.<br><small>계획표 탭 구조를 확인하세요.</small>'; root.appendChild(e); return; }
+    // 구분별 그룹화
     const groups = {}; const order = [];
-    resultRows.forEach(r => { const g = r.gubun || '湲고?'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(r); });
+    resultRows.forEach(r => { const g = r.gubun || '기타'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(r); });
     order.forEach(g => {
       const wrap = document.createElement('div'); wrap.className = 'rs-group';
       const gt = document.createElement('div'); gt.className = 'rs-group-title'; gt.textContent = g;
@@ -2728,7 +2728,7 @@
         const card = document.createElement('div'); card.className = 'rs-card';
         const head = document.createElement('div'); head.className = 'rs-card-head';
         const goal = document.createElement('div'); goal.className = 'rs-goal';
-        goal.setAttribute('contenteditable', 'true'); goal.dataset.placeholder = '紐⑺몴 ?낅젰';
+        goal.setAttribute('contenteditable', 'true'); goal.dataset.placeholder = '목표 입력';
         if (r.goalHtml) goal.innerHTML = r.goalHtml; else if (r.goal) goal.textContent = r.goal;
         const dot = document.createElement('span'); dot.className = 'rs-dot'; dot.style.marginLeft = '8px';
         const save = debounce(async () => {
@@ -2740,24 +2740,24 @@
         }, 800);
         goal.addEventListener('input', save);
         head.appendChild(goal); head.appendChild(dot);
-        const delBtn = document.createElement('button'); delBtn.className = 'rs-del-btn'; delBtn.textContent = '?뿊'; delBtn.title = '??????젣';
+        const delBtn = document.createElement('button'); delBtn.className = 'rs-del-btn'; delBtn.textContent = '🗑'; delBtn.title = '이 행 삭제';
         delBtn.addEventListener('click', async () => {
-          if (!confirm('??紐⑺몴 ?됱쓣 ?쒗듃?먯꽌 ??젣?좉퉴??\n(湲곕낯쨌誘몄뀡 媛숈? ?됱씠硫???????젣?⑸땲??')) return;
+          if (!confirm('이 목표 행을 시트에서 삭제할까요?\n(기본·미션 같은 행이면 둘 다 삭제됩니다)')) return;
           delBtn.disabled = true;
           const ok = await postResult({ action: 'deleteRow', row: r.row });
-          if (ok) { await loadResultGoals(); } else { delBtn.disabled = false; alert('??젣 ?ㅽ뙣: ?쒗듃 沅뚰븳쨌GAS ?щ같?щ? ?뺤씤?섏꽭??'); }
+          if (ok) { await loadResultGoals(); } else { delBtn.disabled = false; alert('삭제 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
         });
         head.appendChild(delBtn);
         card.appendChild(head);
         wrap.appendChild(card);
       });
-      const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 紐⑺몴 異붽?`;
+      const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 목표 추가`;
       addBtn.addEventListener('click', async () => {
         const afterRow = groups[g][groups[g].length - 1].row;
         const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
-        addBtn.disabled = true; addBtn.textContent = '異붽? 以묅?;
+        addBtn.disabled = true; addBtn.textContent = '추가 중…';
         const ok = await postResult({ action: 'addRow', afterRow, gubun: g, goalCol: mode.goalCol });
-        if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 紐⑺몴 異붽?`; alert('異붽? ?ㅽ뙣: ?쒗듃 沅뚰븳쨌GAS ?щ같?щ? ?뺤씤?섏꽭??'); }
+        if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 목표 추가`; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
       });
       wrap.appendChild(addBtn);
       root.appendChild(wrap);
@@ -2777,13 +2777,13 @@
       });
       const json = await res.json().catch(() => null);
       return !!(json && json.ok);
-    } catch (e) { console.error('寃곌낵???붿껌 ?ㅽ뙣', e); return false; }
+    } catch (e) { console.error('결과표 요청 실패', e); return false; }
   }
   async function postResultUpdate(row, col, value) { return postResult({ action: 'update', row, col, value }); }
   const resultLinkBtn = document.getElementById('resultLinkBtn');
   if (resultLinkBtn) resultLinkBtn.addEventListener('click', async () => {
     const cur = await getResultUrl();
-    const v = prompt('寃곌낵???쒗듃? ?곕룞??GAS ?뱀빋 URL(??exec)???낅젰?섏꽭??\n(result-sheet-sync.gs 諛고룷 ??諛쏆? 二쇱냼)\n\n鍮꾩슦怨??뺤씤?섎㈃ ?곕룞 ?댁젣?⑸땲??', cur);
+    const v = prompt('결과표 시트와 연동할 GAS 웹앱 URL(…/exec)을 입력하세요.\n(result-sheet-sync.gs 배포 후 받은 주소)\n\n비우고 확인하면 연동 해제됩니다.', cur);
     if (v === null) return;
     const url = v.trim();
     await storeSet('settings:resultSheetUrl', url);
@@ -2818,7 +2818,7 @@
       c.addEventListener('click', () => { currentFilter = val; renderFilters(); renderGoals(); });
       return c;
     };
-    root.appendChild(mk(`?꾩껜 ${goals.length}`, 'all'));
+    root.appendChild(mk(`전체 ${goals.length}`, 'all'));
     CATEGORIES.forEach(cat => {
       const cnt = goals.filter(g => g.category === cat).length;
       if (cnt) root.appendChild(mk(`${cat} ${cnt}`, cat));
@@ -2832,7 +2832,7 @@
 
     filtered.forEach(goal => {
       const card = document.createElement('div');
-      const cat = VALID_CATS.has(goal.category) ? goal.category : '湲고?';
+      const cat = VALID_CATS.has(goal.category) ? goal.category : '기타';
       card.className = `goal-card cat-${cat}` + (goal.done ? ' done' : '');
       const realIdx = goals.findIndex(g => g.id === goal.id);
       const num = String(realIdx + 1).padStart(2, '0');
@@ -2849,7 +2849,7 @@
         <div class="gc-purpose">${escapeHTML(goal.purpose)}</div>
         <div class="gc-method">${escapeHTML(goal.method)}</div>
         <div class="gc-note-badge ${(goal.notes && goal.notes.length) ? '' : 'empty'}">
-          ?뱷 吏꾪뻾 湲곕줉 ${(goal.notes && goal.notes.length) || 0}嫄?
+          📝 진행 기록 ${(goal.notes && goal.notes.length) || 0}건
         </div>
       `;
       card.querySelector('.gc-check').addEventListener('click', async (e) => {
@@ -2864,7 +2864,7 @@
 
     const add = document.createElement('div');
     add.className = 'add-goal-card';
-    add.innerHTML = `<span class="plus">+</span><span>紐⑺몴 異붽?</span>`;
+    add.innerHTML = `<span class="plus">+</span><span>목표 추가</span>`;
     add.addEventListener('click', () => openGoalModal());
     root.appendChild(add);
   }
@@ -2879,27 +2879,27 @@
       item.innerHTML = `
         <span class="mission-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg></span>
         <span class="mission-title">${escapeHTML(m.title)}</span>
-        <button class="mission-notes-btn ${noteCount > 0 ? 'has-notes' : ''}" title="吏꾪뻾 湲곕줉">?뱷${noteCount > 0 ? ' ' + noteCount : ''}</button>
-        <button class="mission-remove" title="??젣">??/button>
+        <button class="mission-notes-btn ${noteCount > 0 ? 'has-notes' : ''}" title="진행 기록">📝${noteCount > 0 ? ' ' + noteCount : ''}</button>
+        <button class="mission-remove" title="삭제">✕</button>
       `;
-      // 泥댄겕諛뺤뒪 ?대┃: ?좉?
+      // 체크박스 클릭: 토글
       item.querySelector('.mission-check').addEventListener('click', async (e) => {
         e.stopPropagation();
         m.done = !m.done;
         await saveMissions();
         renderMissions();
       });
-      // 誘몄뀡 ?쒕ぉ ?대┃: 紐⑤떖 ?닿린
+      // 미션 제목 클릭: 모달 열기
       item.querySelector('.mission-title').addEventListener('click', (e) => {
         e.stopPropagation();
         openMissionModal(m);
       });
-      // 硫붾え 踰꾪듉: 紐⑤떖 ?닿린
+      // 메모 버튼: 모달 열기
       item.querySelector('.mission-notes-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         openMissionModal(m);
       });
-      // ??젣 踰꾪듉
+      // 삭제 버튼
       item.querySelector('.mission-remove').addEventListener('click', async (e) => {
         e.stopPropagation();
         missions = missions.filter(x => x.id !== m.id);
@@ -2931,14 +2931,14 @@
     const notes = (goal.notes || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     document.getElementById('gf-notes-count').textContent = notes.length;
     if (notes.length === 0) {
-      list.innerHTML = `<div class="notes-empty">?꾩쭅 湲곕줉???놁뼱?? ?ㅻ뒛??吏꾪뻾 ?ы빆???곸뼱蹂댁꽭??</div>`;
+      list.innerHTML = `<div class="notes-empty">아직 기록이 없어요. 오늘의 진행 사항을 적어보세요.</div>`;
       return;
     }
     list.innerHTML = notes.map(n => `
       <div class="note-item">
         <span class="note-date">${formatNoteDate(n.date)}</span>
         <span class="note-text">${escapeHTML(n.text)}</span>
-        <button class="note-remove" data-note-id="${n.id}">??/button>
+        <button class="note-remove" data-note-id="${n.id}">✕</button>
       </div>
     `).join('');
     list.querySelectorAll('.note-remove').forEach(btn => {
@@ -2953,17 +2953,17 @@
   }
 
   function formatNoteDate(isoStr) {
-    if (!isoStr) return '??;
+    if (!isoStr) return '—';
     const d = new Date(isoStr);
     if (isNaN(d)) return isoStr;
-    const days = ['??,'??,'??,'??,'紐?,'湲?,'??];
+    const days = ['일','월','화','수','목','금','토'];
     return `${pad(d.getMonth()+1)}/${pad(d.getDate())} (${days[d.getDay()]})`;
   }
 
   function openGoalModal(goal = null) {
     if (shareReadOnly) return;
     editingGoalId = goal ? goal.id : null;
-    document.getElementById('goalModalTitle').textContent = goal ? '紐⑺몴 ?몄쭛' : '??遺꾧린 紐⑺몴';
+    document.getElementById('goalModalTitle').textContent = goal ? '목표 편집' : '새 분기 목표';
     document.getElementById('goalDeleteBtn').style.display = goal ? 'inline-flex' : 'none';
     document.getElementById('gf-title').value = goal?.title || '';
     document.getElementById('gf-category').value = goal?.category || 'AI';
@@ -2971,7 +2971,7 @@
     document.getElementById('gf-purpose').value = goal?.purpose || '';
     document.getElementById('gf-method').value = goal?.method || '';
 
-    // 吏꾪뻾 湲곕줉 ?뱀뀡? 湲곗〈 紐⑺몴 ?몄쭛 ?쒖뿉留?
+    // 진행 기록 섹션은 기존 목표 편집 시에만
     const notesSection = document.getElementById('gf-notes-section');
     if (goal) {
       notesSection.style.display = 'block';
@@ -3011,7 +3011,7 @@
     await saveGoals();
     closeGoalModal();
     renderFilters(); renderGoals();
-    if (createdGoal) pushGoalToSheet(createdGoal); // ??紐⑺몴留??쒗듃??湲곕줉
+    if (createdGoal) pushGoalToSheet(createdGoal); // 새 목표만 시트에 기록
   });
   document.getElementById('goalDeleteBtn').addEventListener('click', async () => {
     if (!editingGoalId) return;
@@ -3020,7 +3020,7 @@
     closeGoalModal();
     renderFilters(); renderGoals();
   });
-  // 遺꾧린 紐⑺몴 硫붾え 異붽?
+  // 분기 목표 메모 추가
   document.getElementById('gf-note-add').addEventListener('click', async () => {
     if (!editingGoalId) return;
     const goal = goals.find(g => g.id === editingGoalId);
@@ -3035,7 +3035,7 @@
     renderGoalNotes();
     renderGoals();
   });
-  // Ctrl+Enter濡?硫붾え 異붽?
+  // Ctrl+Enter로 메모 추가
   document.getElementById('gf-note-text').addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
@@ -3054,14 +3054,14 @@
     const notes = (m.notes || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     document.getElementById('mf-notes-count').textContent = notes.length;
     if (notes.length === 0) {
-      list.innerHTML = `<div class="notes-empty">?꾩쭅 湲곕줉???놁뼱??</div>`;
+      list.innerHTML = `<div class="notes-empty">아직 기록이 없어요.</div>`;
       return;
     }
     list.innerHTML = notes.map(n => `
       <div class="note-item">
         <span class="note-date">${formatNoteDate(n.date)}</span>
         <span class="note-text">${escapeHTML(n.text)}</span>
-        <button class="note-remove" data-note-id="${n.id}">??/button>
+        <button class="note-remove" data-note-id="${n.id}">✕</button>
       </div>
     `).join('');
     list.querySelectorAll('.note-remove').forEach(btn => {
@@ -3082,13 +3082,13 @@
       check.style.background = 'var(--success)';
       check.style.borderColor = 'var(--success)';
       check.querySelector('svg').style.opacity = '1';
-      label.textContent = '?꾨즺';
+      label.textContent = '완료';
       label.style.color = 'var(--success)';
     } else {
       check.style.background = 'white';
       check.style.borderColor = 'var(--border)';
       check.querySelector('svg').style.opacity = '0';
-      label.textContent = '吏꾪뻾以?;
+      label.textContent = '진행중';
       label.style.color = 'var(--text-grey)';
     }
   }
@@ -3099,7 +3099,7 @@
     if (shareReadOnly) return;
     editingMissionId = m.id;
     missionEditDraft = { title: m.title, done: !!m.done };
-    document.getElementById('missionModalTitle').textContent = '誘몄뀡 吏꾪뻾 湲곕줉';
+    document.getElementById('missionModalTitle').textContent = '미션 진행 기록';
     document.getElementById('mf-title').value = m.title;
     updateMissionStatusUI(missionEditDraft.done);
     document.getElementById('mf-note-date').value = todayKey();
@@ -3112,7 +3112,7 @@
   document.getElementById('missionCancelBtn').addEventListener('click', closeMissionModal);
   missionModal.addEventListener('click', (e) => { if (e.target === missionModal) closeMissionModal(); });
 
-  // ?곹깭 ?좉?
+  // 상태 토글
   document.getElementById('mf-status-check').addEventListener('click', () => {
     missionEditDraft.done = !missionEditDraft.done;
     updateMissionStatusUI(missionEditDraft.done);
@@ -3122,7 +3122,7 @@
     updateMissionStatusUI(missionEditDraft.done);
   });
 
-  // 硫붾え 異붽?
+  // 메모 추가
   document.getElementById('mf-note-add').addEventListener('click', async () => {
     if (!editingMissionId) return;
     const m = missions.find(x => x.id === editingMissionId);
@@ -3144,7 +3144,7 @@
     }
   });
 
-  // ???(?쒕ぉ쨌?곹깭)
+  // 저장 (제목·상태)
   document.getElementById('missionSaveBtn').addEventListener('click', async () => {
     if (!editingMissionId) return;
     const m = missions.find(x => x.id === editingMissionId);
@@ -3156,7 +3156,7 @@
     closeMissionModal();
     renderMissions();
   });
-  // ??젣
+  // 삭제
   document.getElementById('missionDeleteBtn').addEventListener('click', async () => {
     if (!editingMissionId) return;
     missions = missions.filter(x => x.id !== editingMissionId);
@@ -3174,7 +3174,7 @@
     document.getElementById('syncStatusText').textContent = text;
   }
 
-  // Sync modal events (遺숈뿬?ｊ린 ?꾩슜)
+  // Sync modal events (붙여넣기 전용)
   const syncModal = document.getElementById('syncModalBackdrop');
   function openSyncModal() {
     syncModal.classList.add('open');
@@ -3192,18 +3192,18 @@
 
   document.getElementById('parsePasteBtn').addEventListener('click', () => {
     const text = document.getElementById('pasteInput').value.trim();
-    if (!text) { alert('遺숈뿬?ｌ쓣 ?댁슜???놁뒿?덈떎.'); return; }
+    if (!text) { alert('붙여넣을 내용이 없습니다.'); return; }
     try {
       const parsed = parseSheetData(text);
       pendingSyncData = parsed;
       renderPreview('pastePreview', parsed);
       document.getElementById('applySyncBtn').disabled = parsed.goals.length === 0 && parsed.missions.length === 0;
     } catch (e) {
-      alert('?뚯떛 ?ㅽ뙣: ' + e.message);
+      alert('파싱 실패: ' + e.message);
     }
   });
 
-  // CSV/TSV ??goals + missions
+  // CSV/TSV → goals + missions
   function parseSheetData(text) {
     const isTsv = text.includes('\t');
     const result = Papa.parse(text, {
@@ -3219,17 +3219,17 @@
     let goalCounter = 0;
     let missionCounter = 0;
 
-    // Step 1: 媛濡??몃줈 ?덉씠?꾩썐 ?먮룞 媛먯?
-    // 媛濡? 媛숈? ?됱뿉 "湲곕낯?낅Т"? "誘몄뀡?낅Т"媛 紐⑤몢 ?덉쓬
+    // Step 1: 가로/세로 레이아웃 자동 감지
+    // 가로: 같은 행에 "기본업무"와 "미션업무"가 모두 있음
     let missionColumnIndex = -1;
     let isHorizontal = false;
     for (let i = 0; i < Math.min(3, rows.length); i++) {
       const row = rows[i] || [];
       const joined = row.join(' ');
-      if (joined.includes('誘몄뀡?낅Т') && (joined.includes('湲곕낯?낅Т') || joined.includes('援? 遺?) || joined.includes('援щ텇'))) {
+      if (joined.includes('미션업무') && (joined.includes('기본업무') || joined.includes('구  분') || joined.includes('구분'))) {
         isHorizontal = true;
         for (let j = 0; j < row.length; j++) {
-          if (String(row[j] || '').trim().includes('誘몄뀡?낅Т')) {
+          if (String(row[j] || '').trim().includes('미션업무')) {
             missionColumnIndex = j;
             break;
           }
@@ -3239,8 +3239,8 @@
     }
     console.log('[parseSheetData] layout:', isHorizontal ? 'HORIZONTAL' : 'VERTICAL', 'missionCol:', missionColumnIndex);
 
-    // ?ㅻ뜑???띿뒪??泥댄겕 (誘몄뀡?쇰줈 ?섎せ ?ㅼ뼱媛??寃?諛⑹?)
-    const HEADER_WORDS = ['誘몄뀡?낅Т', '湲곕낯?낅Т', '援? 遺?, '援щ텇', '紐? ??, '紐⑺몴', '?낅Т ?깃툒', '?낅Т?깃툒', '?꾩옱 ?덈꺼', '紐⑺몴 ?덈꺼', '?붿껌?덉궛', '?덉궛諛섏쁺', '吏꾨룄??, '?곗꽑?쒖쐞'];
+    // 헤더성 텍스트 체크 (미션으로 잘못 들어가는 것 방지)
+    const HEADER_WORDS = ['미션업무', '기본업무', '구  분', '구분', '목  표', '목표', '업무 등급', '업무등급', '현재 레벨', '목표 레벨', '요청예산', '예산반영', '진도율', '우선순위'];
     function isHeaderText(s) {
       const t = String(s || '').trim();
       if (!t || t.length < 2) return true;
@@ -3272,7 +3272,7 @@
       }
       if (!category && !grade) return null;
       if (!body || body.length < 8) return null;
-      if (!category) category = '湲고?';
+      if (!category) category = '기타';
       if (!grade) grade = 'C';
 
       const lines = body.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
@@ -3289,24 +3289,24 @@
     }
 
     if (isHorizontal) {
-      // 媛濡??덉씠?꾩썐: 媛??됱뿉??遺꾧린 紐⑺몴? 誘몄뀡???숈떆??異붿텧
+      // 가로 레이아웃: 각 행에서 분기 목표와 미션을 동시에 추출
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         if (!row || row.length === 0) continue;
         const joined = row.join(' ').trim();
         if (!joined) continue;
-        // ?ㅻ뜑 ???ㅽ궢
-        if (joined.includes('誘몄뀡?낅Т') || joined.includes('湲곕낯?낅Т')) continue;
-        if (/^[\s]*(援?s*遺?紐?s*???낅Т\s*?깃툒|?꾩옱\s*?덈꺼|紐⑺몴\s*?덈꺼)/.test(joined)) continue;
+        // 헤더 행 스킵
+        if (joined.includes('미션업무') || joined.includes('기본업무')) continue;
+        if (/^[\s]*(구\s*분|목\s*표|업무\s*등급|현재\s*레벨|목표\s*레벨)/.test(joined)) continue;
 
-        // 遺꾧린 紐⑺몴 異붿텧
+        // 분기 목표 추출
         const goalData = extractGoal(row);
         if (goalData) {
           goalCounter++;
           newGoals.push({ id: `g${Date.now()}-${goalCounter}`, ...goalData, done: false });
         }
 
-        // 誘몄뀡 異붿텧 (誘몄뀡 而щ읆?먯꽌)
+        // 미션 추출 (미션 컬럼에서)
         if (missionColumnIndex >= 0 && missionColumnIndex < row.length) {
           const missionCell = String(row[missionColumnIndex] || '').trim();
           if (missionCell && missionCell.length > 1 && !isHeaderText(missionCell)) {
@@ -3316,10 +3316,10 @@
         }
       }
     } else {
-      // ?몃줈 ?덉씠?꾩썐
+      // 세로 레이아웃
       let inMissionMode = false;
-      const MISSION_TRIGGERS = ['誘몄뀡?낅Т', '異붽?誘몄뀡', '異붽? 誘몄뀡', 'missions'];
-      const HEADER_TRIGGERS = ['湲곕낯?낅Т', '湲곕낯 ?낅Т', '遺꾧린紐⑺몴', '遺꾧린 紐⑺몴', '1遺꾧린 紐⑺몴', '2遺꾧린 紐⑺몴', '3遺꾧린 紐⑺몴', '4遺꾧린 紐⑺몴'];
+      const MISSION_TRIGGERS = ['미션업무', '추가미션', '추가 미션', 'missions'];
+      const HEADER_TRIGGERS = ['기본업무', '기본 업무', '분기목표', '분기 목표', '1분기 목표', '2분기 목표', '3분기 목표', '4분기 목표'];
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -3327,7 +3327,7 @@
         const joined = row.join(' ').trim();
         if (!joined) continue;
 
-        // ?뺥솗???쇱튂?섍굅???⑥뼱 ?⑥쐞濡??쒖옉?섎뒗 寃쎌슦留??몃━嫄?留ㅼ튂
+        // 정확히 일치하거나 단어 단위로 시작하는 경우만 트리거 매치
         const isMissionHeader = MISSION_TRIGGERS.some(t => joined === t || joined.startsWith(t + ' ') || joined.startsWith(t + '\t'));
         if (isMissionHeader) { inMissionMode = true; continue; }
         const isQuarterHeader = HEADER_TRIGGERS.some(t => joined === t || joined.startsWith(t + ' ') || joined.startsWith(t + '\t'));
@@ -3360,21 +3360,21 @@
   function renderPreview(containerId, parsed) {
     const c = document.getElementById(containerId);
     if (!parsed || (parsed.goals.length === 0 && parsed.missions.length === 0)) {
-      c.innerHTML = `<div class="preview-table"><div class="empty">?뚯떛???곗씠?곌? ?놁뒿?덈떎.</div></div>`;
+      c.innerHTML = `<div class="preview-table"><div class="empty">파싱된 데이터가 없습니다.</div></div>`;
       return;
     }
     let html = '<div class="preview-table">';
     if (parsed.goals.length) {
-      html += `<div class="row" style="background:#E0E7FF; font-weight:700; color:#4338CA;">遺꾧린 紐⑺몴 ${parsed.goals.length}媛?/div>`;
+      html += `<div class="row" style="background:#E0E7FF; font-weight:700; color:#4338CA;">분기 목표 ${parsed.goals.length}개</div>`;
       parsed.goals.forEach((g, i) => {
         html += `<div class="row">
           <div class="row-title">${i+1}. [${escapeHTML(g.category)}/${escapeHTML(g.grade)}] ${escapeHTML(g.title)}</div>
-          <div class="row-meta">${escapeHTML((g.purpose || '').slice(0, 60))}${(g.purpose||'').length>60?'??:''}</div>
+          <div class="row-meta">${escapeHTML((g.purpose || '').slice(0, 60))}${(g.purpose||'').length>60?'…':''}</div>
         </div>`;
       });
     }
     if (parsed.missions.length) {
-      html += `<div class="row" style="background:#FEF3C7; font-weight:700; color:#92400E;">異붽? 誘몄뀡 ${parsed.missions.length}媛?/div>`;
+      html += `<div class="row" style="background:#FEF3C7; font-weight:700; color:#92400E;">추가 미션 ${parsed.missions.length}개</div>`;
       parsed.missions.forEach((m, i) => {
         html += `<div class="row"><div class="row-title">${i+1}. ${escapeHTML(m.title)}</div></div>`;
       });
@@ -3385,9 +3385,9 @@
 
   document.getElementById('applySyncBtn').addEventListener('click', async () => {
     if (!pendingSyncData) return;
-    // sandboxed iframe?먯꽌??confirm()??李⑤떒?섎?濡?諛붾줈 ?곸슜
+    // sandboxed iframe에서는 confirm()이 차단되므로 바로 적용
 
-    // done ?곹깭 蹂댁〈
+    // done 상태 보존
     const oldDone = {}; goals.forEach(g => oldDone[g.title] = g.done);
     const oldMDone = {}; missions.forEach(m => oldMDone[m.title] = m.done);
 
@@ -3400,7 +3400,7 @@
     closeSyncModal();
 
     const t = new Date().toTimeString().slice(0, 5);
-    showSyncStatus(`??媛?몄삤湲??꾨즺 쨌 紐⑺몴 ${goals.length}媛? 誘몄뀡 ${missions.length}媛?쨌 ${t}`, '');
+    showSyncStatus(`✓ 가져오기 완료 · 목표 ${goals.length}개, 미션 ${missions.length}개 · ${t}`, '');
   });
 
   // ---------- Tabs (Quick Links) ----------
@@ -3421,7 +3421,7 @@
     { id: 'sheets', label: 'Sheets' }, { id: 'github', label: 'GitHub' },
     { id: 'claude', label: 'Claude' }, { id: 'chatgpt', label: 'ChatGPT' },
     { id: 'python', label: 'Python' }, { id: 'kakao', label: 'KakaoTalk' },
-    { id: 'powershell', label: 'PowerShell' }, { id: 'other', label: '湲고?' }
+    { id: 'powershell', label: 'PowerShell' }, { id: 'other', label: '기타' }
   ];
   const TOOL_MAP = Object.fromEntries(TOOL_OPTIONS.map(t => [t.id, t]));
 
@@ -3468,13 +3468,13 @@
     root.innerHTML = '';
     const addCard = document.createElement('div');
     addCard.className = 'ai-add-card';
-    addCard.innerHTML = `<span class="plus">+</span><span>???꾨줈?앺듃</span>`;
+    addCard.innerHTML = `<span class="plus">+</span><span>새 프로젝트</span>`;
     addCard.addEventListener('click', () => openModal());
     root.appendChild(addCard);
     if (projectIndex.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'ai-empty';
-      empty.innerHTML = `?꾩쭅 ?묒꽦???꾨줈?앺듃媛 ?놁뼱??<br>"+ ???꾨줈?앺듃"瑜??뚮윭 異붽???蹂댁꽭??`;
+      empty.innerHTML = `아직 작성된 프로젝트가 없어요.<br>"+ 새 프로젝트"를 눌러 추가해 보세요.`;
       root.appendChild(empty); return;
     }
     const projects = [];
@@ -3507,8 +3507,8 @@
     }
     card.appendChild(photoEl);
     const body = document.createElement('div'); body.className = 'ai-body';
-    const title = document.createElement('div'); title.className = 'ai-title'; title.textContent = p.name || '?쒕ぉ ?놁쓬'; body.appendChild(title);
-    const content = document.createElement('div'); content.className = 'ai-content'; content.textContent = p.content || '?댁슜 ?놁쓬'; body.appendChild(content);
+    const title = document.createElement('div'); title.className = 'ai-title'; title.textContent = p.name || '제목 없음'; body.appendChild(title);
+    const content = document.createElement('div'); content.className = 'ai-content'; content.textContent = p.content || '내용 없음'; body.appendChild(content);
     const tags = document.createElement('div'); tags.className = 'ai-tags';
     (p.tools || []).slice(0, 3).forEach(tid => {
       const t = TOOL_MAP[tid]; if (!t) return;
@@ -3523,9 +3523,9 @@
     const foot = document.createElement('div'); foot.className = 'ai-foot';
     const dateEl = document.createElement('span'); dateEl.className = 'ai-date'; dateEl.textContent = shortDate(p.date); foot.appendChild(dateEl);
     const linksMini = document.createElement('div'); linksMini.className = 'ai-links-mini';
-    if (p.sheetLink) linksMini.appendChild(makeMiniLink(p.sheetLink, '?뱤'));
-    if (p.gasLink) linksMini.appendChild(makeMiniLink(p.gasLink, '?숋툘'));
-    if (p.extraLink) linksMini.appendChild(makeMiniLink(p.extraLink, '?뵕'));
+    if (p.sheetLink) linksMini.appendChild(makeMiniLink(p.sheetLink, '📊'));
+    if (p.gasLink) linksMini.appendChild(makeMiniLink(p.gasLink, '⚙️'));
+    if (p.extraLink) linksMini.appendChild(makeMiniLink(p.extraLink, '🔗'));
     foot.appendChild(linksMini);
     body.appendChild(foot);
     card.appendChild(body);
@@ -3563,7 +3563,7 @@
     previewGrid.innerHTML = '';
     pendingImages.forEach((dataUrl, idx) => {
       const item = document.createElement('div'); item.className = 'preview-item'; item.style.backgroundImage = `url('${dataUrl}')`;
-      const rm = document.createElement('button'); rm.className = 'preview-remove'; rm.textContent = '??;
+      const rm = document.createElement('button'); rm.className = 'preview-remove'; rm.textContent = '✕';
       rm.addEventListener('click', () => { pendingImages.splice(idx, 1); renderImagePreview(); });
       item.appendChild(rm); previewGrid.appendChild(item);
     });
@@ -3571,7 +3571,7 @@
   function openModal(project = null) {
     if (shareReadOnly) return;
     currentEditingId = project ? project.id : null;
-    document.getElementById('modalTitle').textContent = project ? '?꾨줈?앺듃 ?몄쭛' : '??AI ?꾨줈?앺듃';
+    document.getElementById('modalTitle').textContent = project ? '프로젝트 편집' : '새 AI 프로젝트';
     deleteBtn.style.display = project ? 'inline-flex' : 'none';
     fNameEl.value = project?.name || ''; fContentEl.value = project?.content || '';
     fSheetEl.value = project?.sheetLink || ''; fGasEl.value = project?.gasLink || '';
@@ -3617,7 +3617,7 @@
       updatedAt: new Date().toISOString()
     };
     const saved = await saveProject(project);
-    if (!saved) { alert('????ㅽ뙣'); return; }
+    if (!saved) { alert('저장 실패'); return; }
     if (!projectIndex.includes(id)) { projectIndex.push(id); await saveProjectIndex(); }
     closeModal(); await renderGallery();
   });
@@ -3626,7 +3626,7 @@
     await deleteProjectStore(currentEditingId); closeModal(); await renderGallery();
   });
 
-  // ---------- ?됱긽 ?ㅼ?移?怨듭슜 ----------
+  // ---------- 색상 스와치 공용 ----------
   function renderColorSwatches(containerId, selected, onPick) {
     const c = document.getElementById(containerId);
     c.innerHTML = '';
@@ -3658,11 +3658,11 @@
       row.className = 'tk-link-row';
       row.innerHTML = `
         <div class="tk-link-icon">
-          <input data-f="icon" maxlength="4" placeholder="?? value="${escapeHTML(l.icon || '')}">
-          <button type="button" class="emoji-pick-btn tk-emoji-mini" title="?대え吏 ?좏깮">??</button>
+          <input data-f="icon" maxlength="4" placeholder="↗" value="${escapeHTML(l.icon || '')}">
+          <button type="button" class="emoji-pick-btn tk-emoji-mini" title="이모지 선택">😀</button>
         </div>
-        <input data-f="url" placeholder="https://?? value="${escapeHTML(l.url || '')}">
-        <button class="tk-link-del" title="??젣">??/button>`;
+        <input data-f="url" placeholder="https://…" value="${escapeHTML(l.url || '')}">
+        <button class="tk-link-del" title="삭제">✕</button>`;
       row.querySelector('[data-f="icon"]').addEventListener('input', e => tkLinks[i].icon = e.target.value);
       row.querySelector('[data-f="url"]').addEventListener('input', e => tkLinks[i].url = e.target.value);
       row.querySelector('.tk-link-del').addEventListener('click', () => { tkLinks.splice(i, 1); renderTkLinks(); });
@@ -3672,14 +3672,14 @@
   function openTaskModal(type, task = null) {
     editingTask = { type, id: task ? task.id : null };
     document.getElementById('taskModalTitle').textContent =
-      (type === 'daily' ? '留ㅼ씪 ???? : '二?1??) + (task ? ' ?몄쭛' : ' 異붽?');
+      (type === 'daily' ? '매일 할 일' : '주 1회') + (task ? ' 편집' : ' 추가');
     document.getElementById('tk-icon').value = task?.icon || '';
     document.getElementById('tk-title').value = task?.title || '';
     document.getElementById('tk-desc').value = task?.desc || '';
     document.getElementById('tk-meta').value = task?.meta || '';
     tkColor = task?.color || 'g-blue';
     renderColorSwatches('tk-colors', tkColor, k => tkColor = k);
-    tkLinks = (task?.links || []).map(l => ({ icon: l.icon || '??, url: l.url || '' }));
+    tkLinks = (task?.links || []).map(l => ({ icon: l.icon || '↗', url: l.url || '' }));
     renderTkLinks();
     document.getElementById('taskDeleteBtn').style.display = task ? 'inline-flex' : 'none';
     taskModal.classList.add('open');
@@ -3689,19 +3689,19 @@
   document.getElementById('taskCloseBtn').addEventListener('click', closeTaskModal);
   document.getElementById('taskCancelBtn').addEventListener('click', closeTaskModal);
   taskModal.addEventListener('click', (e) => { if (e.target === taskModal) closeTaskModal(); });
-  document.getElementById('tk-add-link').addEventListener('click', () => { tkLinks.push({ icon: '??, url: '' }); renderTkLinks(); });
+  document.getElementById('tk-add-link').addEventListener('click', () => { tkLinks.push({ icon: '↗', url: '' }); renderTkLinks(); });
   document.getElementById('taskSaveBtn').addEventListener('click', async () => {
     const titleEl = document.getElementById('tk-title');
     const title = titleEl.value.trim();
     if (!title) { titleEl.focus(); titleEl.style.borderColor = 'var(--danger)'; return; }
     const data = {
-      icon: document.getElementById('tk-icon').value.trim() || '??,
+      icon: document.getElementById('tk-icon').value.trim() || '✅',
       color: tkColor,
       title,
       desc: document.getElementById('tk-desc').value.trim(),
       meta: document.getElementById('tk-meta').value.trim(),
       links: tkLinks.filter(l => l.url && l.url.trim())
-        .map(l => ({ icon: (l.icon || '??).trim() || '??, url: l.url.trim() })),
+        .map(l => ({ icon: (l.icon || '↗').trim() || '↗', url: l.url.trim() })),
     };
     const list = editingTask.type === 'daily' ? dailyTasks : weeklyTasks;
     if (editingTask.id) {
@@ -3734,7 +3734,7 @@
   function openLinkModal(tab, link = null) {
     editingLink = { tab, id: link ? link.id : null };
     document.getElementById('linkModalTitle').textContent =
-      (tab === 'work' ? '?낅Т?? : '議고쉶??) + ' 留곹겕' + (link ? ' ?몄쭛' : ' 異붽?');
+      (tab === 'work' ? '업무용' : '조회용') + ' 링크' + (link ? ' 편집' : ' 추가');
     document.getElementById('lk-icon').value = link?.icon || '';
     document.getElementById('lk-name').value = link?.name || '';
     document.getElementById('lk-meta').value = link?.meta || '';
@@ -3756,7 +3756,7 @@
     const url = urlEl.value.trim();
     if (!name) { nameEl.focus(); nameEl.style.borderColor = 'var(--danger)'; return; }
     if (!url) { urlEl.focus(); urlEl.style.borderColor = 'var(--danger)'; return; }
-    const data = { icon: document.getElementById('lk-icon').value.trim() || '?뵕', color: lkColor, name, meta: document.getElementById('lk-meta').value.trim(), url };
+    const data = { icon: document.getElementById('lk-icon').value.trim() || '🔗', color: lkColor, name, meta: document.getElementById('lk-meta').value.trim(), url };
     const list = quickLinks[editingLink.tab];
     if (editingLink.id) {
       const idx = list.findIndex(l => l.id === editingLink.id);
@@ -3776,7 +3776,7 @@
     renderQuickLinks();
   });
 
-  // ?뱀뀡 "+ 異붽?" 踰꾪듉
+  // 섹션 "+ 추가" 버튼
   document.getElementById('addDailyBtn').addEventListener('click', () => openTaskModal('daily'));
   document.getElementById('addWeeklyBtn').addEventListener('click', () => openTaskModal('weekly'));
   document.getElementById('addLinkBtn').addEventListener('click', () => {
@@ -3787,7 +3787,7 @@
   // ---------- Settings / Sync Modal ----------
   const settingsModal = document.getElementById('settingsModalBackdrop');
   function openSettings() {
-    if (SUPA_MODE) return; // Supabase 紐⑤뱶?먯꽑 ?ㅼ젙 ???濡쒓렇?꾩썐 ?ъ슜
+    if (SUPA_MODE) return; // Supabase 모드에선 설정 대신 로그아웃 사용
     document.getElementById('set-userId').value = USER_ID;
     document.getElementById('set-syncUrl').value = SYNC_URL;
     const st = document.getElementById('set-status');
@@ -3804,14 +3804,14 @@
     const url = document.getElementById('set-syncUrl').value.trim();
     const uid = document.getElementById('set-userId').value.trim() || 'test';
     const st = document.getElementById('set-status');
-    if (!url) { st.style.color = 'var(--danger)'; st.textContent = '癒쇱? ?쒕쾭 URL???낅젰?섏꽭??'; return; }
-    st.style.color = 'var(--text-grey)'; st.textContent = '?곌껐 ?뺤씤 以묅?;
+    if (!url) { st.style.color = 'var(--danger)'; st.textContent = '먼저 서버 URL을 입력하세요.'; return; }
+    st.style.color = 'var(--text-grey)'; st.textContent = '연결 확인 중…';
     try {
       const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'userId=' + encodeURIComponent(uid) + '&t=' + Date.now());
       const j = await res.json();
-      if (j && j.ok) { st.style.color = 'var(--success)'; st.textContent = '???곌껐 ?깃났! ??????숆린?뷀븯?몄슂.'; }
-      else { st.style.color = 'var(--danger)'; st.textContent = '?묐떟 ?뺤떇???щ컮瑜댁? ?딆뒿?덈떎.'; }
-    } catch (e) { st.style.color = 'var(--danger)'; st.textContent = '?곌껐 ?ㅽ뙣: ' + e.message; }
+      if (j && j.ok) { st.style.color = 'var(--success)'; st.textContent = '✓ 연결 성공! 저장 후 동기화하세요.'; }
+      else { st.style.color = 'var(--danger)'; st.textContent = '응답 형식이 올바르지 않습니다.'; }
+    } catch (e) { st.style.color = 'var(--danger)'; st.textContent = '연결 실패: ' + e.message; }
   });
   document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
     const uidEl = document.getElementById('set-userId');
@@ -3827,8 +3827,8 @@
     await reloadAll();
   });
 
-  // ---------- ?꾩껜 ?щ줈??----------
-  // ===================== 酉??꾪솚 + ?덉씠?꾩썐 ?ш뎄??=====================
+  // ---------- 전체 재로딩 ----------
+  // ===================== 뷰 전환 + 레이아웃 재구성 =====================
   const LS_VIEW = 'dashboard:view';
   function organizeViews() {
     const board = document.getElementById('view-board');
@@ -3841,10 +3841,10 @@
     if (grid && miniCal) board.insertBefore(grid, miniCal);
     if (quarter) goals.appendChild(quarter);
     if (ai) goals.appendChild(ai);
-    setupSideDock(); // 鍮좊Ⅸ留곹겕/誘몃땲罹섎┛??硫붾え瑜??ъ씠???앹뾽?쇰줈 ?대룞
+    setupSideDock(); // 빠른링크/미니캘린더/메모를 사이드 팝업으로 이동
   }
 
-  // 鍮좊Ⅸ留곹겕 쨌 誘몃땲罹섎┛??쨌 媛꾪렪硫붾え瑜??ъ씠?????앹뾽?쇰줈
+  // 빠른링크 · 미니캘린더 · 간편메모를 사이드 독 팝업으로
   let sideDockReady = false;
   function setupSideDock() {
     const host = document.getElementById('flyoutHost');
@@ -3866,40 +3866,26 @@
       e.stopPropagation();
       if (openPanel === b.dataset.panel) closePanel(); else showPanel(b.dataset.panel);
     }));
-    // 諛붽묑 ?대┃ ?リ린??mousedown?쇰줈 媛먯?(?대┃ ?쒖젏???대? ?붿냼媛 ?щ젋?붾릺???щ씪吏硫??ㅽ뙋?섎?濡?
+    // 바깥 클릭 닫기는 mousedown으로 감지(클릭 시점에 내부 요소가 재렌더되어 사라지면 오판하므로)
     document.addEventListener('mousedown', (e) => {
       if (host.classList.contains('open') && !host.contains(e.target) && !dock.contains(e.target)) closePanel();
     });
   }
-  async function switchView(view) {
+  function switchView(view) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
     lsSet(LS_VIEW, view);
     if (view === 'calendar') renderCalendar();
-    if (view === 'goals') {
-      if (shareReadOnly) resultModeOn(false);
-      await loadGoals();
-      renderFilters();
-      renderGoals();
-      setTimeout(() => {
-        try {
-          renderFilters();
-          renderGoals();
-        } catch (e) {
-          console.error('goals rerender failed', e);
-        }
-      }, 60);
-    }
   }
   document.querySelectorAll('.nav-tab').forEach(t => t.addEventListener('click', () => switchView(t.dataset.view)));
 
-  // ===================== ?대え吏 ?좏깮湲?=====================
+  // ===================== 이모지 선택기 =====================
   const EMOJI_SETS = [
-    { label:'?낅Т쨌臾몄꽌', items:['?뱥','?뱤','?뱢','?뱣','?뾺截?,'?뱚','?뱛','?뱷','?륅툘','?뻿截?,'?뱦','?뱨','?뵔','?뱟','?뿎截?,'??,'??,'??,'?묕툘','?뷂툘','?뱾','?뱿','?벀','?㎨','?뮳','?뿋截?,'?뱶','?뻼截?] },
-    { label:'?뚰넻쨌誘몃뵒??, items:['?뮠','?뮡','?뱽','?뱼','?뵒','?됵툘','?벁','?뱸','?롳툘','?벑','?뮲','?뼢截?,'?⑨툘','?뼮截?,'?렗','?벜','?벝','?렏','?럺截?,'?렒','?벟','?벢','?뵕','?뙋'] },
-    { label:'?댟룸ℓ異?, items:['?뮥','?뮫','?뮪','?뮯','?룱','?뮩','?㎜','?첌','?쨷','?뮰','?룲','?뱢'] },
-    { label:'?щ엺쨌?μ냼', items:['?룫','?룧','?룷','?룵','?뿺截?,'?뱧','?슅','?덌툘','?쭛?랅윊?,'?뫁','?쩃','?솇','?몝','?렞','?뢾','??','?㎛','?썛截?] },
-    { label:'?곹깭쨌湲고?', items:['狩?,'?뙚','??,'?뵦','?뮕','??,'?ㅿ툘','?㎕','?뮎','?뮍','?뮋','?뮏','?럦','?럞','?룇','?쪍','?숋툘','?뵩','?썱截?,'?뵎','?㎥','?쭬','?뱻','?쨼','?截?,'?뙔','?뙂','??,'?띂截?,'?깗','?렓','?㎦'] },
+    { label:'업무·문서', items:['📋','📊','📈','📉','🗂️','📁','📂','📝','✏️','🖊️','📌','📎','🔖','📅','🗓️','⏰','⏳','✅','☑️','✔️','📤','📥','📦','🧾','💼','🗒️','📜','🖇️'] },
+    { label:'소통·미디어', items:['💬','💭','📣','📢','🔔','✉️','📧','📞','☎️','📱','💻','🖥️','⌨️','🖱️','🎬','📷','📸','🎥','🎙️','🎧','📺','📻','🔗','🌐'] },
+    { label:'돈·매출', items:['💰','💵','💴','💸','🏦','💳','🧮','🪙','🤑','💹','🏧','📈'] },
+    { label:'사람·장소', items:['🏢','🏠','🏬','🏪','🗺️','📍','🚗','✈️','🧑‍💼','👥','🤝','🙋','👋','🎯','🏁','🚀','🧭','🛎️'] },
+    { label:'상태·기타', items:['⭐','🌟','✨','🔥','💡','⚡','❤️','🧡','💛','💚','💙','💜','🎉','🎁','🏆','🥇','⚙️','🔧','🛠️','🔑','🧩','🧠','📡','🤖','☀️','🌙','🌈','☕','🍽️','🃏','🎨','🧪'] },
   ];
   let emojiTargetInput = null;
   function buildEmojiPop() {
@@ -3939,7 +3925,7 @@
     if (!e.target.closest('#emojiPop')) closeEmojiPop();
   });
 
-  // ===================== ?쒕옒洹??뺣젹 (怨듭슜) =====================
+  // ===================== 드래그 정렬 (공용) =====================
   function enableDragReorder(container, itemSelector, getArray, onReorder) {
     let dragEl = null;
     container.querySelectorAll(itemSelector).forEach(el => {
@@ -3982,33 +3968,33 @@
     });
   }
 
-  // ===================== 罹섎┛??=====================
+  // ===================== 캘린더 =====================
   const CAL_CATS = [
-    { id:'monthly', label:'留ㅼ썡?먭?', color:'#3B82F6' },
-    { id:'recontract_s', label:'?ш퀎??S??, color:'#F59E0B' },
-    { id:'recontract_ss', label:'?ш퀎??SS??, color:'#7C3AED' },
-    { id:'vacation', label:'?닿?', color:'#10B981' },
+    { id:'monthly', label:'매월점검', color:'#3B82F6' },
+    { id:'recontract_s', label:'재계약 S↓', color:'#F59E0B' },
+    { id:'recontract_ss', label:'재계약 SS↑', color:'#7C3AED' },
+    { id:'vacation', label:'휴가', color:'#10B981' },
   ];
   const CAL_CAT_MAP = Object.fromEntries(CAL_CATS.map(c => [c.id, c]));
-  CAL_CAT_MAP['recontract'] = { id:'recontract', label:'?ш퀎??, color:'#F97316' }; // ?덇굅???덉쟾 ?쇱젙 ?됱긽)
-  // ??쒕?援?怨듯쑕??(2026~2027, ?泥닿났?댁씪 ?ы븿 쨌 洹쇱궗移?
+  CAL_CAT_MAP['recontract'] = { id:'recontract', label:'재계약', color:'#F97316' }; // 레거시(예전 일정 색상)
+  // 대한민국 공휴일 (2026~2027, 대체공휴일 포함 · 근사치)
   const HOLIDAYS = {
-    '2026-01-01':'?좎젙',
-    '2026-02-16':'?ㅻ궇','2026-02-17':'?ㅻ궇','2026-02-18':'?ㅻ궇',
-    '2026-03-01':'?쇱씪??,'2026-03-02':'?泥닿났?댁씪',
-    '2026-05-05':'?대┛?대궇','2026-05-24':'遺泥섎떂?ㅼ떊??,'2026-05-25':'?泥닿났?댁씪',
-    '2026-06-06':'?꾩땐??,
-    '2026-08-15':'愿묐났??,'2026-08-17':'?泥닿났?댁씪',
-    '2026-09-24':'異붿꽍','2026-09-25':'異붿꽍','2026-09-26':'異붿꽍',
-    '2026-10-03':'媛쒖쿇??,'2026-10-05':'?泥닿났?댁씪','2026-10-09':'?쒓???,
-    '2026-12-25':'?깊깂??,
-    '2027-01-01':'?좎젙',
-    '2027-02-06':'?ㅻ궇','2027-02-07':'?ㅻ궇','2027-02-08':'?ㅻ궇','2027-02-09':'?泥닿났?댁씪',
-    '2027-03-01':'?쇱씪??,'2027-05-05':'?대┛?대궇','2027-05-13':'遺泥섎떂?ㅼ떊??,
-    '2027-06-06':'?꾩땐??,'2027-08-15':'愿묐났??,'2027-08-16':'?泥닿났?댁씪',
-    '2027-09-14':'異붿꽍','2027-09-15':'異붿꽍','2027-09-16':'異붿꽍',
-    '2027-10-03':'媛쒖쿇??,'2027-10-04':'?泥닿났?댁씪','2027-10-09':'?쒓???,
-    '2027-12-25':'?깊깂??,
+    '2026-01-01':'신정',
+    '2026-02-16':'설날','2026-02-17':'설날','2026-02-18':'설날',
+    '2026-03-01':'삼일절','2026-03-02':'대체공휴일',
+    '2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-05-25':'대체공휴일',
+    '2026-06-06':'현충일',
+    '2026-08-15':'광복절','2026-08-17':'대체공휴일',
+    '2026-09-24':'추석','2026-09-25':'추석','2026-09-26':'추석',
+    '2026-10-03':'개천절','2026-10-05':'대체공휴일','2026-10-09':'한글날',
+    '2026-12-25':'성탄절',
+    '2027-01-01':'신정',
+    '2027-02-06':'설날','2027-02-07':'설날','2027-02-08':'설날','2027-02-09':'대체공휴일',
+    '2027-03-01':'삼일절','2027-05-05':'어린이날','2027-05-13':'부처님오신날',
+    '2027-06-06':'현충일','2027-08-15':'광복절','2027-08-16':'대체공휴일',
+    '2027-09-14':'추석','2027-09-15':'추석','2027-09-16':'추석',
+    '2027-10-03':'개천절','2027-10-04':'대체공휴일','2027-10-09':'한글날',
+    '2027-12-25':'성탄절',
   };
   function ymd(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
@@ -4024,7 +4010,7 @@
     else calEvents = [];
   }
   async function saveCalendar() { await storeSet('calendar-events', JSON.stringify(calEvents)); }
-  // ?뱀젙 ?좎쭨???쇱젙 ?꾨즺 ?щ? (諛섎났 ?쇱젙? ?좎쭨蹂꾨줈 ?꾨즺 愿由?
+  // 특정 날짜의 일정 완료 여부 (반복 일정은 날짜별로 완료 관리)
   function isOccDone(ev, ds) { return !!(ev.doneDates && ev.doneDates.includes(ds)); }
   function toggleOccDone(ev, ds) {
     if (!ev.doneDates) ev.doneDates = [];
@@ -4032,21 +4018,21 @@
     if (i >= 0) ev.doneDates.splice(i, 1); else ev.doneDates.push(ds);
   }
 
-  // 諛섎났 ?쇱젙: ?대떦 ?좎쭨?????쇱젙???쒖떆?섎뒗吏
+  // 반복 일정: 해당 날짜에 이 일정이 표시되는지
   function eventOccursOn(e, dateObj, ds) {
     const rep = e.repeat || 'none';
     if (rep === 'none') return e.date === ds;
-    if (ds < e.date) return false; // ?쒖옉???댁쟾
+    if (ds < e.date) return false; // 시작일 이전
     const start = new Date(e.date + 'T00:00:00');
     if (rep === 'weekly') return dateObj.getDay() === start.getDay();
     if (rep === 'monthly') return dateObj.getDate() === start.getDate();
     if (rep === 'yearly') return dateObj.getDate() === start.getDate() && dateObj.getMonth() === start.getMonth();
     return e.date === ds;
   }
-  const REPEAT_LABEL = { weekly: '留ㅼ＜', monthly: '留ㅼ썡', yearly: '留ㅻ뀈' };
+  const REPEAT_LABEL = { weekly: '매주', monthly: '매월', yearly: '매년' };
 
   function renderDowRow(rootId) {
-    const dows = ['??,'??,'??,'??,'紐?,'湲?,'??];
+    const dows = ['일','월','화','수','목','금','토'];
     document.getElementById(rootId).innerHTML =
       dows.map((d, i) => `<div class="cal-dow ${i===0?'sun':i===6?'sat':''}">${d}</div>`).join('');
   }
@@ -4061,7 +4047,7 @@
       b.addEventListener('click', () => onPick(id));
       return b;
     };
-    root.appendChild(mk('all', '?꾩껜', null));
+    root.appendChild(mk('all', '전체', null));
     CAL_CATS.forEach(c => root.appendChild(mk(c.id, c.label, c.color)));
   }
   function buildMonthGrid(grid, cursor, filter, mini) {
@@ -4099,12 +4085,12 @@
           const done = isOccDone(ev, ds);
           const chip = document.createElement('div'); chip.className = 'cal-ev' + (done ? ' done' : '');
           chip.style.background = (CAL_CAT_MAP[ev.cat] || {}).color || '#888';
-          chip.textContent = (done ? '??' : '') + (ev.time ? ev.time + ' ' : '') + ev.title + (ev.repeat && ev.repeat !== 'none' ? ' ?? : '');
+          chip.textContent = (done ? '✓ ' : '') + (ev.time ? ev.time + ' ' : '') + ev.title + (ev.repeat && ev.repeat !== 'none' ? ' ↻' : '');
           chip.addEventListener('click', (e) => { e.stopPropagation(); openEventModal(ev, ds); });
           cell.appendChild(chip);
         });
         if (dayEvents.length > 3) {
-          const m = document.createElement('div'); m.className = 'cal-more'; m.textContent = `+${dayEvents.length - 3}嫄??붾낫湲?;
+          const m = document.createElement('div'); m.className = 'cal-more'; m.textContent = `+${dayEvents.length - 3}건 더보기`;
           m.addEventListener('click', (e) => { e.stopPropagation(); openDayModal(ds); });
           cell.appendChild(m);
         }
@@ -4115,7 +4101,7 @@
   }
   function renderCalendar() {
     renderDowRow('calDowRow');
-    document.getElementById('calMonthTitle').textContent = `${calCursor.getFullYear()}??${calCursor.getMonth()+1}??;
+    document.getElementById('calMonthTitle').textContent = `${calCursor.getFullYear()}년 ${calCursor.getMonth()+1}월`;
     buildCalCatTabs('calCatTabs', calFilter, (f) => { calFilter = f; renderCalendar(); });
     buildMonthGrid(document.getElementById('calGrid'), calCursor, calFilter, false);
   }
@@ -4141,7 +4127,7 @@
     if (!ev || !modalOccDate) { btn.style.display = 'none'; return; }
     const done = isOccDone(ev, modalOccDate);
     btn.style.display = 'inline-flex';
-    btn.textContent = done ? '???꾨즺??(痍⑥냼)' : '???꾨즺濡??쒖떆';
+    btn.textContent = done ? '✓ 완료됨 (취소)' : '✓ 완료로 표시';
     btn.classList.toggle('btn-primary', done);
   }
   function buildEvCats(active) {
@@ -4157,8 +4143,8 @@
   }
   function openEventModal(ev = null, presetDate = null, presetCat = 'monthly') {
     editingEventId = ev ? ev.id : null;
-    modalOccDate = ev ? (presetDate || ev.date) : null; // ?대┃??洹??좎쭨(諛섎났?쇱젙 ?꾨즺 湲곗?)
-    document.getElementById('eventModalTitle').textContent = ev ? '?쇱젙 ?섏젙' : '?쇱젙 異붽?';
+    modalOccDate = ev ? (presetDate || ev.date) : null; // 클릭한 그 날짜(반복일정 완료 기준)
+    document.getElementById('eventModalTitle').textContent = ev ? '일정 수정' : '일정 추가';
     evCat = ev ? ev.cat : presetCat;
     buildEvCats(evCat);
     document.getElementById('ev-date').value = ev ? ev.date : (presetDate || ymd(new Date()));
@@ -4208,7 +4194,7 @@
     renderCalendar(); renderMini();
   });
 
-  // ---------- 罹섎┛???쒗듃 ?낅줈??(CSV/TSV 遺숈뿬?ｊ린) ----------
+  // ---------- 캘린더 시트 업로드 (CSV/TSV 붙여넣기) ----------
   const importModal = document.getElementById('importModalBackdrop');
   let importParsed = [];
   function normDate(s) {
@@ -4216,7 +4202,7 @@
     if (!s) return '';
     let m = s.match(/(\d{4})[.\-\/]\s*(\d{1,2})[.\-\/]\s*(\d{1,2})/); // 2026-06-01 / 2026.6.1
     if (m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
-    m = s.match(/^(\d{1,2})[.\-\/](\d{1,2})$/); // 6/1 ???ы빐
+    m = s.match(/^(\d{1,2})[.\-\/](\d{1,2})$/); // 6/1 → 올해
     if (m) return `${new Date().getFullYear()}-${pad(+m[1])}-${pad(+m[2])}`;
     return s;
   }
@@ -4227,9 +4213,9 @@
   }
   function mapRepeat(s) {
     s = String(s || '').trim();
-    if (/二?.test(s) || /week/i.test(s)) return 'weekly';
-    if (/??.test(s) || /month/i.test(s)) return 'monthly';
-    if (/????.test(s) || /year/i.test(s)) return 'yearly';
+    if (/주/.test(s) || /week/i.test(s)) return 'weekly';
+    if (/월/.test(s) || /month/i.test(s)) return 'monthly';
+    if (/년|해/.test(s) || /year/i.test(s)) return 'yearly';
     return 'none';
   }
   function pick(row, names) {
@@ -4243,40 +4229,40 @@
     const text = document.getElementById('importText').value.trim();
     const prev = document.getElementById('importPreview');
     importParsed = [];
-    if (!text) { prev.textContent = '?댁슜??遺숈뿬?ｌ뼱 二쇱꽭??'; return; }
-    if (!(window.Papa && Papa.parse)) { prev.textContent = '?뚯꽌瑜?遺덈윭?ㅼ? 紐삵뻽?듬땲??'; return; }
+    if (!text) { prev.textContent = '내용을 붙여넣어 주세요.'; return; }
+    if (!(window.Papa && Papa.parse)) { prev.textContent = '파서를 불러오지 못했습니다.'; return; }
     const res = Papa.parse(text, { header: true, skipEmptyLines: true });
     (res.data || []).forEach(row => {
-      const date = normDate(pick(row, ['?좎쭨', 'date', '?쇱옄']));
-      const title = String(pick(row, ['?쒕ぉ', 'title', '?댁슜', '?쇱젙']) || '').trim();
+      const date = normDate(pick(row, ['날짜', 'date', '일자']));
+      const title = String(pick(row, ['제목', 'title', '내용', '일정']) || '').trim();
       if (!date || !title) return;
       importParsed.push({
         date, title,
-        cat: mapCat(pick(row, ['遺꾨쪟', 'cat', 'category', '援щ텇'])),
-        time: String(pick(row, ['?쒓컙', 'time']) || '').trim(),
-        repeat: mapRepeat(pick(row, ['諛섎났', 'repeat']))
+        cat: mapCat(pick(row, ['분류', 'cat', 'category', '구분'])),
+        time: String(pick(row, ['시간', 'time']) || '').trim(),
+        repeat: mapRepeat(pick(row, ['반복', 'repeat']))
       });
     });
-    if (!importParsed.length) { prev.innerHTML = '?몄떇???쇱젙???놁뒿?덈떎. <strong>?좎쭨쨌?쒕ぉ</strong> 而щ읆???덈뒗吏 ?뺤씤?섏꽭??'; return; }
-    const sample = importParsed.slice(0, 4).map(e => `쨌 ${e.date} ${e.time || ''} ${e.title}${e.repeat !== 'none' ? ' (' + REPEAT_LABEL[e.repeat] + ')' : ''}`).join('<br>');
-    prev.innerHTML = `<strong>${importParsed.length}嫄?/strong> ?몄떇??<br>${sample}${importParsed.length > 4 ? '<br>?? : ''}`;
-    document.getElementById('importDoBtn').textContent = `${importParsed.length}嫄?異붽?`;
+    if (!importParsed.length) { prev.innerHTML = '인식된 일정이 없습니다. <strong>날짜·제목</strong> 컬럼이 있는지 확인하세요.'; return; }
+    const sample = importParsed.slice(0, 4).map(e => `· ${e.date} ${e.time || ''} ${e.title}${e.repeat !== 'none' ? ' (' + REPEAT_LABEL[e.repeat] + ')' : ''}`).join('<br>');
+    prev.innerHTML = `<strong>${importParsed.length}건</strong> 인식됨:<br>${sample}${importParsed.length > 4 ? '<br>…' : ''}`;
+    document.getElementById('importDoBtn').textContent = `${importParsed.length}건 추가`;
   }
-  function openImport() { document.getElementById('importText').value = ''; document.getElementById('importPreview').textContent = ''; document.getElementById('importDoBtn').textContent = '誘몃━蹂닿린'; importParsed = []; importModal.classList.add('open'); }
+  function openImport() { document.getElementById('importText').value = ''; document.getElementById('importPreview').textContent = ''; document.getElementById('importDoBtn').textContent = '미리보기'; importParsed = []; importModal.classList.add('open'); }
   function closeImport() { importModal.classList.remove('open'); }
   document.getElementById('importEventBtn')?.addEventListener('click', openImport);
   document.getElementById('importCloseBtn').addEventListener('click', closeImport);
   document.getElementById('importCancelBtn').addEventListener('click', closeImport);
   importModal.addEventListener('click', (e) => { if (e.target === importModal) closeImport(); });
   document.getElementById('importDoBtn').addEventListener('click', async () => {
-    if (!importParsed.length) { parseImport(); return; }   // 1李? 誘몃━蹂닿린, 2李? 異붽?
+    if (!importParsed.length) { parseImport(); return; }   // 1차: 미리보기, 2차: 추가
     importParsed.forEach((e, i) => calEvents.push({ id: 'ev' + Date.now() + i, ...e }));
     await saveCalendar();
     closeImport();
     renderCalendar(); renderMini();
   });
 
-  // ===================== ?뚰궧留?.xlsx) 媛?몄삤湲?=====================
+  // ===================== 워킹맵(.xlsx) 가져오기 =====================
   const workmapModal = document.getElementById('workmapModalBackdrop');
   function openWorkmap() { document.getElementById('wm-result').innerHTML = ''; workmapModal.classList.add('open'); }
   function closeWorkmap() { workmapModal.classList.remove('open'); }
@@ -4284,7 +4270,7 @@
   document.getElementById('workmapCloseBtn').addEventListener('click', closeWorkmap);
   document.getElementById('workmapDoneBtn').addEventListener('click', closeWorkmap);
   workmapModal.addEventListener('click', (e) => { if (e.target === workmapModal) closeWorkmap(); });
-  // XLSX ?뚯꽌媛 ?놁쑝硫??щ윭 CDN?먯꽌 ?쒖감 濡쒕뱶
+  // XLSX 파서가 없으면 여러 CDN에서 순차 로드
   function ensureXLSX() {
     if (window.XLSX) return Promise.resolve();
     if (window._xlsxLoading) return window._xlsxLoading;
@@ -4297,7 +4283,7 @@
       let i = 0;
       const tryNext = () => {
         if (window.XLSX) return resolve();
-        if (i >= urls.length) return reject(new Error('?묒? ?뚯꽌瑜?遺덈윭?ㅼ? 紐삵뻽?댁슂(?명꽣???뺤씤).'));
+        if (i >= urls.length) return reject(new Error('엑셀 파서를 불러오지 못했어요(인터넷 확인).'));
         const s = document.createElement('script');
         s.src = urls[i++];
         s.onload = () => window.XLSX ? resolve() : tryNext();
@@ -4323,19 +4309,19 @@
     });
   }
   const RECONTRACT_SRC = 'workmap-recontract';
-  // ?ш퀎?? L=怨꾩빟醫낅즺?? ?쒕ぉ=M(嫄곕옒泥섎챸)+O(?깃툒), 嫄곕옒泥??좎쭨 以묐났?쒓굅, ?⑤컻
+  // 재계약: L=계약종료일, 제목=M(거래처명)+O(등급), 거래처+날짜 중복제거, 단발
   function parseRecontractWorkmap(rows) {
     const out = [], seen = new Set();
     rows.slice(1).forEach(r => {
-      const lraw = String(r[11] || '');            // L 怨꾩빟醫낅즺?꾩썡??
-      const company = String(r[12] || '').trim();  // M 嫄곕옒泥섎챸
-      const grade = String(r[14] || '').trim();    // O ?깃툒
+      const lraw = String(r[11] || '');            // L 계약종료년월일
+      const company = String(r[12] || '').trim();  // M 거래처명
+      const grade = String(r[14] || '').trim();    // O 등급
       const m = lraw.match(/(\d{2})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
       if (!m || !company) return;
       const date = `20${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
       const title = company + (grade ? ` (${grade})` : '');
       const gN = grade.toUpperCase().replace(/[^A-Z]/g, '');
-      const cat = (gN === 'SS' || gN === 'SSS') ? 'recontract_ss' : 'recontract_s'; // SS?댁긽 / S?댄븯
+      const cat = (gN === 'SS' || gN === 'SSS') ? 'recontract_ss' : 'recontract_s'; // SS이상 / S이하
       const key = company + '|' + date;
       if (seen.has(key)) return; seen.add(key);
       out.push({ cat, date, time: '', title, repeat: 'none', src: RECONTRACT_SRC });
@@ -4344,42 +4330,42 @@
   }
   async function handleWorkmapFile(file) {
     const result = document.getElementById('wm-result');
-    result.innerHTML = '?뚯씪 ?쎈뒗 以묅?;
+    result.innerHTML = '파일 읽는 중…';
     let rows;
     try { rows = await readXlsxRows(file); }
-    catch (e) { result.innerHTML = '<span style="color:var(--danger)">?쎄린 ?ㅽ뙣: ' + (e.message || e) + '</span>'; return; }
+    catch (e) { result.innerHTML = '<span style="color:var(--danger)">읽기 실패: ' + (e.message || e) + '</span>'; return; }
     const parsed = parseRecontractWorkmap(rows);
-    if (!parsed.length) { result.innerHTML = '<span style="color:var(--danger)">?몄떇????ぉ???놁뼱?? ?ш퀎???뚰궧留??먮낯 ?뚯씪??留욌뒗吏 ?뺤씤??二쇱꽭??</span>'; return; }
+    if (!parsed.length) { result.innerHTML = '<span style="color:var(--danger)">인식된 항목이 없어요. 재계약 워킹맵 원본 파일이 맞는지 확인해 주세요.</span>'; return; }
     const prevCnt = calEvents.filter(e => e.src === RECONTRACT_SRC).length;
-    const sample = parsed.slice(0, 5).map(e => `쨌 ${e.date} ??${e.title}`).join('<br>');
-    const ok = confirm(`?ш퀎??${parsed.length}嫄댁쓣 罹섎┛?붿뿉 ?깅줉?좉퉴??` + (prevCnt ? `\n(湲곗〈 ?ш퀎???먮룞?깅줉 ${prevCnt}嫄댁? 援먯껜?⑸땲??` : ''));
+    const sample = parsed.slice(0, 5).map(e => `· ${e.date} — ${e.title}`).join('<br>');
+    const ok = confirm(`재계약 ${parsed.length}건을 캘린더에 등록할까요?` + (prevCnt ? `\n(기존 재계약 자동등록 ${prevCnt}건은 교체됩니다)` : ''));
     if (!ok) { result.innerHTML = ''; return; }
-    calEvents = calEvents.filter(e => e.src !== RECONTRACT_SRC); // ?댁쟾 ?먮룞?깅줉 援먯껜
+    calEvents = calEvents.filter(e => e.src !== RECONTRACT_SRC); // 이전 자동등록 교체
     parsed.forEach((e, i) => calEvents.push({ id: 'wm' + Date.now() + i, ...e }));
     await saveCalendar();
     renderCalendar(); renderMini();
-    result.innerHTML = `<strong style="color:var(--success)">???ш퀎??${parsed.length}嫄??깅줉 ?꾨즺</strong><br><span style="color:var(--text-grey);font-size:12px;">${sample}${parsed.length > 5 ? '<br>?? : ''}</span>`;
+    result.innerHTML = `<strong style="color:var(--success)">✓ 재계약 ${parsed.length}건 등록 완료</strong><br><span style="color:var(--text-grey);font-size:12px;">${sample}${parsed.length > 5 ? '<br>…' : ''}</span>`;
   }
   document.getElementById('wm-recontract-btn').addEventListener('click', () => document.getElementById('wm-recontract-file').click());
   document.getElementById('wm-recontract-file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) handleWorkmapFile(f); e.target.value = ''; });
   document.getElementById('wm-cancel-btn').addEventListener('click', async () => {
     const cnt = calEvents.filter(e => e.src === RECONTRACT_SRC).length;
-    if (!cnt) { document.getElementById('wm-result').innerHTML = '痍⑥냼???먮룞?깅줉 ?ш퀎???쇱젙???놁뼱??'; return; }
-    if (!confirm(`?먮룞?깅줉???ш퀎???쇱젙 ${cnt}嫄댁쓣 紐⑤몢 ??젣?좉퉴??\n(吏곸젒 異붽????쇱젙? 洹몃?濡??좎??⑸땲??`)) return;
+    if (!cnt) { document.getElementById('wm-result').innerHTML = '취소할 자동등록 재계약 일정이 없어요.'; return; }
+    if (!confirm(`자동등록된 재계약 일정 ${cnt}건을 모두 삭제할까요?\n(직접 추가한 일정은 그대로 유지됩니다)`)) return;
     calEvents = calEvents.filter(e => e.src !== RECONTRACT_SRC);
     await saveCalendar();
     renderCalendar(); renderMini();
-    document.getElementById('wm-result').innerHTML = `<strong style="color:var(--danger)">?뿊 ?ш퀎??${cnt}嫄??깅줉 痍⑥냼 ?꾨즺</strong>`;
+    document.getElementById('wm-result').innerHTML = `<strong style="color:var(--danger)">🗑 재계약 ${cnt}건 등록 취소 완료</strong>`;
   });
 
-  // ===================== ?섎（ ?쇱젙 ?붾낫湲?=====================
+  // ===================== 하루 일정 더보기 =====================
   const dayModal = document.getElementById('dayModalBackdrop');
   let dayModalDs = null;
-  const DOW_KR = ['??, '??, '??, '??, '紐?, '湲?, '??];
+  const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
   function openDayModal(ds) {
     dayModalDs = ds;
     const dt = new Date(ds + 'T00:00:00');
-    document.getElementById('dayModalTitle').textContent = `${dt.getMonth() + 1}??${dt.getDate()}??(${DOW_KR[dt.getDay()]})`;
+    document.getElementById('dayModalTitle').textContent = `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW_KR[dt.getDay()]})`;
     renderDayList();
     dayModal.classList.add('open');
   }
@@ -4388,16 +4374,16 @@
     const root = document.getElementById('dayEventList'); root.innerHTML = '';
     if (HOLIDAYS[ds]) {
       const h = document.createElement('div'); h.className = 'day-ev-row holiday';
-      h.innerHTML = `<span class="day-ev-dot" style="background:var(--danger)"></span><span class="day-ev-title">${escapeHTML(HOLIDAYS[ds])} 쨌 怨듯쑕??/span>`;
+      h.innerHTML = `<span class="day-ev-dot" style="background:var(--danger)"></span><span class="day-ev-title">${escapeHTML(HOLIDAYS[ds])} · 공휴일</span>`;
       root.appendChild(h);
     }
     const list = calEvents.filter(e => eventOccursOn(e, dt, ds) && (calFilter === 'all' || e.cat === calFilter));
-    if (!list.length && !HOLIDAYS[ds]) { root.innerHTML = '<div style="color:var(--text-grey); padding:10px 4px;">?쇱젙???놁뒿?덈떎.</div>'; return; }
+    if (!list.length && !HOLIDAYS[ds]) { root.innerHTML = '<div style="color:var(--text-grey); padding:10px 4px;">일정이 없습니다.</div>'; return; }
     list.forEach(ev => {
       const done = isOccDone(ev, ds);
       const row = document.createElement('div'); row.className = 'day-ev-row' + (done ? ' done' : '');
       const color = (CAL_CAT_MAP[ev.cat] || {}).color || '#888';
-      row.innerHTML = `<span class="day-ev-dot" style="background:${color}"></span><span class="day-ev-title">${done ? '??' : ''}${ev.time ? escapeHTML(ev.time) + ' ' : ''}${escapeHTML(ev.title)}${ev.repeat && ev.repeat !== 'none' ? ' ?? : ''}</span>`;
+      row.innerHTML = `<span class="day-ev-dot" style="background:${color}"></span><span class="day-ev-title">${done ? '✓ ' : ''}${ev.time ? escapeHTML(ev.time) + ' ' : ''}${escapeHTML(ev.title)}${ev.repeat && ev.repeat !== 'none' ? ' ↻' : ''}</span>`;
       row.addEventListener('click', () => { dayModal.classList.remove('open'); openEventModal(ev, ds); });
       root.appendChild(row);
     });
@@ -4407,7 +4393,7 @@
   dayModal.addEventListener('click', (e) => { if (e.target === dayModal) dayModal.classList.remove('open'); });
   document.getElementById('dayAddBtn').addEventListener('click', () => { dayModal.classList.remove('open'); openEventModal(null, dayModalDs, calFilter === 'all' ? 'monthly' : calFilter); });
 
-  // ===================== 媛꾪렪 硫붾え??(mini-Notion) =====================
+  // ===================== 간편 메모장 (mini-Notion) =====================
   let memoBlocks = [];
   async function loadMemo() {
     const raw = await storeGet('memo-blocks');
@@ -4431,14 +4417,14 @@
       row.className = 'memo-block' + (b.done ? ' done' : '') + (b.collapsed ? ' collapsed' : '');
       row.dataset.id = b.id; row.dataset.type = b.type;
       let marker = '';
-      if (b.type === 'bullet') marker = '<span class="memo-marker">??/span>';
+      if (b.type === 'bullet') marker = '<span class="memo-marker">•</span>';
       else if (b.type === 'numbered') marker = `<span class="memo-marker">${num}.</span>`;
       row.innerHTML = `
-        <span class="mb-gutter"><span class="drag-handle" title="?쒕옒洹몃줈 ?쒖꽌 蹂寃?>??/span><button class="mb-del" title="??젣">??/button></span>
-        ${b.type === 'toggle' ? '<span class="memo-toggle-caret">??/span>' : ''}
+        <span class="mb-gutter"><span class="drag-handle" title="드래그로 순서 변경">⠿</span><button class="mb-del" title="삭제">✕</button></span>
+        ${b.type === 'toggle' ? '<span class="memo-toggle-caret">▼</span>' : ''}
         ${b.type === 'todo' ? '<span class="memo-tcheck">' + CHECK_SVG + '</span>' : ''}
         ${marker}
-        <div class="memo-content" contenteditable="true" data-ph="${b.type === 'toggle' ? '?좉? ?쒕ぉ' : '?낅젰?섏꽭?붴?}"></div>
+        <div class="memo-content" contenteditable="true" data-ph="${b.type === 'toggle' ? '토글 제목' : '입력하세요…'}"></div>
       `;
       const content = row.querySelector('.memo-content');
       content.textContent = b.text || '';
@@ -4456,7 +4442,7 @@
         const body = document.createElement('div');
         body.className = 'memo-toggle-body'; if (b.collapsed) body.hidden = true;
         const bc = document.createElement('div');
-        bc.className = 'memo-content'; bc.contentEditable = 'true'; bc.dataset.ph = '?댁슜???낅젰?섏꽭?붴?;
+        bc.className = 'memo-content'; bc.contentEditable = 'true'; bc.dataset.ph = '내용을 입력하세요…';
         bc.textContent = b.body || '';
         bc.addEventListener('input', () => { b.body = bc.textContent; saveMemo(); });
         body.appendChild(bc);
@@ -4504,7 +4490,7 @@
     memoBlocks.push(nb); saveMemo(); renderMemo(); focusBlock(nb.id);
   });
 
-  // ===================== ?먮룞????=====================
+  // ===================== 자동화 앱 =====================
   let autoApps = [];
   async function loadApps() {
     const raw = await storeGet('automation-apps');
@@ -4518,20 +4504,20 @@
     if (!autoApps.length) {
       const empty = document.createElement('div');
       empty.className = 'apps-empty';
-      empty.innerHTML = '?꾩쭅 ?깅줉???깆씠 ?놁뼱??<br>"+ ??異붽?"濡??꾩꽦???먮룞???깆쓣 紐⑥븘蹂댁꽭??';
+      empty.innerHTML = '아직 등록한 앱이 없어요.<br>"+ 앱 추가"로 완성한 자동화 앱을 모아보세요.';
       grid.appendChild(empty);
     }
     autoApps.forEach(a => {
       const card = document.createElement('div');
       card.className = 'app-card';
       card.innerHTML = `
-        <div class="app-icon" style="background:${gradOf(a.color)}">${escapeHTML(a.icon || '??')}</div>
+        <div class="app-icon" style="background:${gradOf(a.color)}">${escapeHTML(a.icon || '🚀')}</div>
         <div class="app-name">${escapeHTML(a.name)}</div>
         ${a.image ? `<img class="app-thumb" src="${a.image}" alt="">` : ''}
         <div class="app-desc">${escapeHTML(a.desc || '')}</div>
         <div class="app-foot">
-          ${a.url ? `<a class="app-open" href="${escapeHTML(a.url)}" target="_blank" rel="noopener">?닿린 ??/a>` : '<span></span>'}
-          <button class="app-edit">???몄쭛</button>
+          ${a.url ? `<a class="app-open" href="${escapeHTML(a.url)}" target="_blank" rel="noopener">열기 ↗</a>` : '<span></span>'}
+          <button class="app-edit">✎ 편집</button>
         </div>`;
       card.querySelector('.app-edit').addEventListener('click', () => openAppModal(a));
       const open = card.querySelector('.app-open');
@@ -4540,7 +4526,7 @@
     });
     const add = document.createElement('div');
     add.className = 'app-add-card';
-    add.innerHTML = '<span class="plus">+</span><span>??異붽?</span>';
+    add.innerHTML = '<span class="plus">+</span><span>앱 추가</span>';
     add.addEventListener('click', () => openAppModal());
     grid.appendChild(add);
   }
@@ -4553,7 +4539,7 @@
     if (apImage) { prev.src = apImage; prev.style.display = ''; clr.style.display = ''; }
     else { prev.removeAttribute('src'); prev.style.display = 'none'; clr.style.display = 'none'; }
   }
-  // ?ъ쭊??罹붾쾭?ㅻ줈 異뺤냼/?뺤텞?댁꽌 data URL濡?(????⑸웾 ?덇컧)
+  // 사진을 캔버스로 축소/압축해서 data URL로 (저장 용량 절감)
   function compressImage(file, maxW = 900, quality = 0.82) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -4573,7 +4559,7 @@
   }
   function openAppModal(a = null) {
     editingAppId = a ? a.id : null;
-    document.getElementById('appModalTitle').textContent = a ? '???몄쭛' : '??異붽?';
+    document.getElementById('appModalTitle').textContent = a ? '앱 편집' : '앱 추가';
     document.getElementById('ap-icon').value = a?.icon || '';
     document.getElementById('ap-name').value = a?.name || '';
     document.getElementById('ap-desc').value = a?.desc || '';
@@ -4596,16 +4582,16 @@
   async function handlePhotoFile(file) {
     if (!file) return;
     const btn = document.getElementById('ap-photo-btn'); const orig = btn.textContent;
-    btn.textContent = '泥섎━ 以묅?; btn.disabled = true;
+    btn.textContent = '처리 중…'; btn.disabled = true;
     try { setApPhoto(await compressImage(file)); }
-    catch (err) { alert('?ъ쭊??遺덈윭?ㅼ? 紐삵뻽?댁슂. ?ㅻⅨ ?대?吏瑜??쒕룄??二쇱꽭??'); }
+    catch (err) { alert('사진을 불러오지 못했어요. 다른 이미지를 시도해 주세요.'); }
     finally { btn.textContent = orig; btn.disabled = false; }
   }
   document.getElementById('ap-photo-file').addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if (file) handlePhotoFile(file);
   });
-  // 罹≪쿂 ??遺숈뿬?ｊ린(Ctrl+V) ??紐⑤떖 ?대젮?덉쓣 ??
+  // 캡처 후 붙여넣기(Ctrl+V) — 모달 열려있을 때
   document.addEventListener('paste', (e) => {
     if (!appModal.classList.contains('open')) return;
     const items = (e.clipboardData && e.clipboardData.items) || [];
@@ -4616,7 +4602,7 @@
       }
     }
   });
-  // ?뚯뼱???볤린
+  // 끌어다 놓기
   const apPhotoRow = document.querySelector('.ap-photo-row');
   if (apPhotoRow) {
     ['dragover', 'dragenter'].forEach(ev => apPhotoRow.addEventListener(ev, (e) => { e.preventDefault(); apPhotoRow.style.opacity = '0.6'; }));
@@ -4632,7 +4618,7 @@
     const name = nameEl.value.trim();
     if (!name) { nameEl.focus(); nameEl.style.borderColor = 'var(--danger)'; return; }
     const data = {
-      icon: document.getElementById('ap-icon').value.trim() || '??',
+      icon: document.getElementById('ap-icon').value.trim() || '🚀',
       color: apColor, name,
       desc: document.getElementById('ap-desc').value.trim(),
       url: document.getElementById('ap-url').value.trim(),
@@ -4652,7 +4638,7 @@
     await saveApps(); closeAppModal(); renderApps();
   });
 
-  // ===================== 濡쒓렇??/ ????좉? / 愿由ъ옄 (Supabase) =====================
+  // ===================== 로그인 / 팀원 토글 / 관리자 (Supabase) =====================
   const TEAM_LIST = ['A', 'B', 'C', 'D'];
   function showLoginGate() {
     const gate = document.getElementById('authGate');
@@ -4665,17 +4651,17 @@
     const err = document.getElementById('login-err');
     const id = document.getElementById('login-id').value.trim();
     const pw = document.getElementById('login-pw').value;
-    if (!SUPA) { err.textContent = 'Supabase ?ㅼ젙???꾩슂?⑸땲??'; return; }
-    if (!id || !pw) { err.textContent = '?꾩씠?붿? 鍮꾨?踰덊샇瑜??낅젰?섏꽭??'; return; }
-    err.textContent = '濡쒓렇??以묅?; err.style.color = 'var(--text-grey)';
+    if (!SUPA) { err.textContent = 'Supabase 설정이 필요합니다.'; return; }
+    if (!id || !pw) { err.textContent = '아이디와 비밀번호를 입력하세요.'; return; }
+    err.textContent = '로그인 중…'; err.style.color = 'var(--text-grey)';
     try {
       const r = await supaRpc('app_login', { p_username: id, p_pw: pw });
-      if (!r || !r.ok) { err.style.color = 'var(--danger)'; err.textContent = '?꾩씠???먮뒗 鍮꾨?踰덊샇媛 ?щ컮瑜댁? ?딆뒿?덈떎.'; return; }
+      if (!r || !r.ok) { err.style.color = 'var(--danger)'; err.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.'; return; }
       TOKEN = r.token; lsSet(LS_TOKEN, TOKEN);
       MY = { username: r.username, team: r.team || '', role: r.role || 'member', isAdmin: r.role === 'admin', members: r.members || [] };
       hideLoginGate();
       await startApp();
-    } catch (e) { err.style.color = 'var(--danger)'; err.textContent = '濡쒓렇???ㅻ쪟: ' + (e.message || e); }
+    } catch (e) { err.style.color = 'var(--danger)'; err.textContent = '로그인 오류: ' + (e.message || e); }
   }
   document.getElementById('loginBtn').addEventListener('click', doLogin);
   document.getElementById('login-pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
@@ -4684,7 +4670,7 @@
   function setupSupaTopbar() {
     const s = document.getElementById('settingsBtn'); if (s) s.style.display = 'none';
     const a = document.getElementById('adminBtn'); if (a && MY.isAdmin) a.style.display = '';
-    const u = document.getElementById('userBadge'); if (u) u.title = '?대┃?섎㈃ 濡쒓렇?꾩썐';
+    const u = document.getElementById('userBadge'); if (u) u.title = '클릭하면 로그아웃';
     setSyncState('ok');
   }
   async function doLogout() {
@@ -4692,7 +4678,7 @@
     lsSet(LS_TOKEN, ''); location.reload();
   }
 
-  // ???蹂닿린 ?좉? (遺꾧린紐⑺몴 + ?먮룞?붿빋 = share ?ㅼ퐫??
+  // 팀원 보기 토글 (분기목표 + 자동화앱 = share 스코프)
   function injectMemberBars() {
     if (!SUPA_MODE) return;
     const goalsView = document.getElementById('view-goals');
@@ -4713,7 +4699,7 @@
   function renderMemberBars() {
     if (!SUPA_MODE) return;
     const others = (MY.members || []).filter(m => m.username !== MY.username);
-    const people = [{ username: MY.username, label: MY.username + ' (??' }]
+    const people = [{ username: MY.username, label: MY.username + ' (나)' }]
       .concat(others.map(m => ({ username: m.username, label: m.username })));
     const sel = shareScopeUser || MY.username;
     ['goalsMemberBar', 'appsMemberBar'].forEach(id => {
@@ -4733,11 +4719,11 @@
   }
   function applyShareReadOnly() {
     document.body.classList.toggle('share-ro', shareReadOnly);
-    const name = shareScopeUser || '???;
+    const name = shareScopeUser || '팀원';
     ['goalsRoBanner', 'appsRoBanner'].forEach(id => {
       const b = document.getElementById(id); if (!b) return;
       b.classList.toggle('show', shareReadOnly);
-      b.textContent = `?? ${name} ?섏쓽 蹂대뱶瑜?蹂대뒗 以묒엯?덈떎 (蹂닿린 ?꾩슜). ?몄쭛?섎젮硫?"??瑜??좏깮?섏꽭??`;
+      b.textContent = `👀 ${name} 님의 보드를 보는 중입니다 (보기 전용). 편집하려면 "나"를 선택하세요.`;
     });
   }
   async function setShareMember(username) {
@@ -4754,10 +4740,10 @@
     renderMemberBars(); applyShareReadOnly();
   }
 
-  // 愿由ъ옄 ?⑤꼸
+  // 관리자 패널
   const adminModal = document.getElementById('adminModalBackdrop');
   function fillTeamSelect(sel, val) {
-    sel.innerHTML = '<option value="">? ?놁쓬</option>' + TEAM_LIST.map(t => `<option value="${t}" ${val === t ? 'selected' : ''}>${t}?</option>`).join('');
+    sel.innerHTML = '<option value="">팀 없음</option>' + TEAM_LIST.map(t => `<option value="${t}" ${val === t ? 'selected' : ''}>${t}팀</option>`).join('');
   }
   function openAdmin() { adminModal.classList.add('open'); fillTeamSelect(document.getElementById('newAcc-team'), ''); loadAdminUsers(); }
   function closeAdmin() { adminModal.classList.remove('open'); }
@@ -4772,31 +4758,31 @@
     const pw = document.getElementById('newAcc-pw').value.trim();
     const team = document.getElementById('newAcc-team').value;
     const role = document.getElementById('newAcc-role').value;
-    if (!id || !pw) { msg.style.color = 'var(--danger)'; msg.textContent = '?꾩씠?붿? 珥덇린 鍮꾨?踰덊샇瑜??낅젰?섏꽭??'; return; }
-    msg.style.color = 'var(--text-grey)'; msg.textContent = '?앹꽦 以묅?;
+    if (!id || !pw) { msg.style.color = 'var(--danger)'; msg.textContent = '아이디와 초기 비밀번호를 입력하세요.'; return; }
+    msg.style.color = 'var(--text-grey)'; msg.textContent = '생성 중…';
     try {
       const r = await supaRpc('app_admin_create', { p_token: TOKEN, p_username: id, p_pw: pw, p_team: team, p_role: role });
-      if (r && r.ok) { msg.style.color = 'var(--success)'; msg.textContent = `??'${id}' 怨꾩젙 ?앹꽦??(珥덇린 鍮꾨쾲: ${pw})`;
+      if (r && r.ok) { msg.style.color = 'var(--success)'; msg.textContent = `✓ '${id}' 계정 생성됨 (초기 비번: ${pw})`;
         document.getElementById('newAcc-id').value = ''; document.getElementById('newAcc-pw').value = ''; loadAdminUsers(); }
-      else { msg.style.color = 'var(--danger)'; msg.textContent = r && r.error === 'exists' ? '?대? ?덈뒗 ?꾩씠?붿엯?덈떎.' : '?앹꽦 ?ㅽ뙣'; }
-    } catch (e) { msg.style.color = 'var(--danger)'; msg.textContent = '?ㅻ쪟: ' + (e.message || e); }
+      else { msg.style.color = 'var(--danger)'; msg.textContent = r && r.error === 'exists' ? '이미 있는 아이디입니다.' : '생성 실패'; }
+    } catch (e) { msg.style.color = 'var(--danger)'; msg.textContent = '오류: ' + (e.message || e); }
   });
   async function loadAdminUsers() {
     const root = document.getElementById('adminUserList');
-    root.innerHTML = '<div class="notes-empty">遺덈윭?ㅻ뒗 以묅?/div>';
+    root.innerHTML = '<div class="notes-empty">불러오는 중…</div>';
     let res;
     try { res = await supaRpc('app_admin_list', { p_token: TOKEN }); }
-    catch (e) { root.innerHTML = '<div class="notes-empty">遺덈윭?ㅺ린 ?ㅽ뙣: ' + (e.message || e) + '</div>'; return; }
-    if (!res || !res.ok) { root.innerHTML = '<div class="notes-empty">沅뚰븳???녾굅???ㅻ쪟?낅땲??</div>'; return; }
-    let html = `<div class="admin-row head"><span>?꾩씠??/span><span>?</span><span>??븷</span><span>鍮꾨쾲</span><span></span></div>`;
+    catch (e) { root.innerHTML = '<div class="notes-empty">불러오기 실패: ' + (e.message || e) + '</div>'; return; }
+    if (!res || !res.ok) { root.innerHTML = '<div class="notes-empty">권한이 없거나 오류입니다.</div>'; return; }
+    let html = `<div class="admin-row head"><span>아이디</span><span>팀</span><span>역할</span><span>비번</span><span></span></div>`;
     res.users.forEach(u => {
-      const teamOpts = '<option value="">-</option>' + TEAM_LIST.map(t => `<option value="${t}" ${u.team === t ? 'selected' : ''}>${t}?</option>`).join('');
+      const teamOpts = '<option value="">-</option>' + TEAM_LIST.map(t => `<option value="${t}" ${u.team === t ? 'selected' : ''}>${t}팀</option>`).join('');
       html += `<div class="admin-row" data-username="${escapeHTML(u.username)}">
         <span class="a-email" title="${escapeHTML(u.username)}">${escapeHTML(u.username)}</span>
         <select class="a-team">${teamOpts}</select>
-        <select class="a-role"><option value="member" ${u.role === 'member' ? 'selected' : ''}>硫ㅻ쾭</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>愿由ъ옄</option></select>
-        <button class="a-reset" title="鍮꾨?踰덊샇 珥덇린??>?뵎 珥덇린??/button>
-        <span><button class="a-save">???/button> <button class="a-del" title="??젣">?뿊</button></span>
+        <select class="a-role"><option value="member" ${u.role === 'member' ? 'selected' : ''}>멤버</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>관리자</option></select>
+        <button class="a-reset" title="비밀번호 초기화">🔑 초기화</button>
+        <span><button class="a-save">저장</button> <button class="a-del" title="삭제">🗑</button></span>
       </div>`;
     });
     root.innerHTML = html;
@@ -4805,20 +4791,20 @@
       row.querySelector('.a-save').addEventListener('click', async () => {
         const team = row.querySelector('.a-team').value;
         const role = row.querySelector('.a-role').value;
-        const btn = row.querySelector('.a-save'); btn.textContent = '???以묅?;
-        try { const r = await supaRpc('app_admin_update', { p_token: TOKEN, p_username: username, p_team: team, p_role: role }); btn.textContent = r && r.ok ? '?? : '?ㅽ뙣'; }
-        catch (e) { btn.textContent = '?ㅽ뙣'; }
-        setTimeout(() => { btn.textContent = '???; }, 1500);
+        const btn = row.querySelector('.a-save'); btn.textContent = '저장 중…';
+        try { const r = await supaRpc('app_admin_update', { p_token: TOKEN, p_username: username, p_team: team, p_role: role }); btn.textContent = r && r.ok ? '✓' : '실패'; }
+        catch (e) { btn.textContent = '실패'; }
+        setTimeout(() => { btn.textContent = '저장'; }, 1500);
       });
       row.querySelector('.a-reset').addEventListener('click', async () => {
-        const np = prompt(`'${username}' ?????꾩떆 鍮꾨?踰덊샇瑜??낅젰?섏꽭??`);
+        const np = prompt(`'${username}' 의 새 임시 비밀번호를 입력하세요:`);
         if (!np) return;
-        try { const r = await supaRpc('app_admin_resetpw', { p_token: TOKEN, p_username: username, p_pw: np }); alert(r && r.ok ? `'${username}' 鍮꾨?踰덊샇媛 '${np}' 濡?蹂寃쎈릱?듬땲??` : '?ㅽ뙣'); }
-        catch (e) { alert('?ㅻ쪟: ' + (e.message || e)); }
+        try { const r = await supaRpc('app_admin_resetpw', { p_token: TOKEN, p_username: username, p_pw: np }); alert(r && r.ok ? `'${username}' 비밀번호가 '${np}' 로 변경됐습니다.` : '실패'); }
+        catch (e) { alert('오류: ' + (e.message || e)); }
       });
       row.querySelector('.a-del').addEventListener('click', async () => {
-        if (!confirm(username + ' 怨꾩젙????젣?좉퉴??')) return;
-        try { const r = await supaRpc('app_admin_delete', { p_token: TOKEN, p_username: username }); if (r && !r.ok && r.error === 'self') alert('蹂몄씤 怨꾩젙? ??젣?????놁뒿?덈떎.'); loadAdminUsers(); } catch (e) {}
+        if (!confirm(username + ' 계정을 삭제할까요?')) return;
+        try { const r = await supaRpc('app_admin_delete', { p_token: TOKEN, p_username: username }); if (r && !r.ok && r.error === 'self') alert('본인 계정은 삭제할 수 없습니다.'); loadAdminUsers(); } catch (e) {}
       });
     });
   }
@@ -4844,7 +4830,7 @@
     if (typeof loadResultGoals === 'function') await loadResultGoals();
   }
 
-  // 濡쒓렇???깃났/?몄뀡 蹂듭썝 ?????쒖옉
+  // 로그인 성공/세션 복원 후 앱 시작
   let appStarted = false;
   async function startApp() {
     if (appStarted) return;
@@ -4863,7 +4849,7 @@
     switchView(lsGet(LS_VIEW) || 'board');
   }
 
-  // 鍮?Supabase(?덇굅?? 紐⑤뱶濡??쒖옉
+  // 비-Supabase(레거시) 모드로 시작
   async function startLegacy() {
     await initStore();
     updateUserBadge();
@@ -4877,11 +4863,11 @@
   // Init
   (async function init() {
     if (!SUPA) {
-      // Supabase 誘몄꽕????湲곗〈(?덇굅?? 諛⑹떇?쇰줈 ?숈옉
+      // Supabase 미설정 → 기존(레거시) 방식으로 동작
       await startLegacy();
       return;
     }
-    // ??λ맂 ?좏겙?쇰줈 ?몄뀡 蹂듭썝 ?쒕룄
+    // 저장된 토큰으로 세션 복원 시도
     if (TOKEN) {
       try {
         const me = await supaRpc('app_me', { p_token: TOKEN });
@@ -4890,12 +4876,12 @@
           await startApp();
           return;
         }
-      } catch (e) { console.error('?몄뀡 蹂듭썝 ?ㅽ뙣', e); }
+      } catch (e) { console.error('세션 복원 실패', e); }
       lsSet(LS_TOKEN, ''); TOKEN = '';
     }
     showLoginGate();
   })();
-  // ?ъ슜??硫붾돱 (鍮꾨?踰덊샇 蹂寃?/ 濡쒓렇?꾩썐)
+  // 사용자 메뉴 (비밀번호 변경 / 로그아웃)
   let userMenuEl = null;
   function closeUserMenu() { if (userMenuEl) { userMenuEl.remove(); userMenuEl = null; } }
   function toggleUserMenu() {
@@ -4906,19 +4892,19 @@
     m.className = 'user-menu';
     m.style.top = (rect.bottom + 6) + 'px';
     m.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
-    m.innerHTML = `<button data-act="pw">?뵎 鍮꾨?踰덊샇 蹂寃?/button><button data-act="out">?슞 濡쒓렇?꾩썐</button>`;
+    m.innerHTML = `<button data-act="pw">🔑 비밀번호 변경</button><button data-act="out">🚪 로그아웃</button>`;
     document.body.appendChild(m);
     userMenuEl = m;
     m.querySelector('[data-act="pw"]').addEventListener('click', async () => {
       closeUserMenu();
-      const oldp = prompt('?꾩옱 鍮꾨?踰덊샇:'); if (!oldp) return;
-      const newp = prompt('??鍮꾨?踰덊샇:'); if (!newp) return;
+      const oldp = prompt('현재 비밀번호:'); if (!oldp) return;
+      const newp = prompt('새 비밀번호:'); if (!newp) return;
       try {
         const r = await supaRpc('app_change_pw', { p_token: TOKEN, p_old: oldp, p_new: newp });
-        alert(r && r.ok ? '鍮꾨?踰덊샇媛 蹂寃쎈릱?듬땲??' : (r && r.error === 'wrongpw' ? '?꾩옱 鍮꾨?踰덊샇媛 ?由쎈땲??' : '蹂寃??ㅽ뙣'));
-      } catch (e) { alert('?ㅻ쪟: ' + (e.message || e)); }
+        alert(r && r.ok ? '비밀번호가 변경됐습니다.' : (r && r.error === 'wrongpw' ? '현재 비밀번호가 틀립니다.' : '변경 실패'));
+      } catch (e) { alert('오류: ' + (e.message || e)); }
     });
-    m.querySelector('[data-act="out"]').addEventListener('click', () => { closeUserMenu(); if (confirm('濡쒓렇?꾩썐 ?섏떆寃좎뼱??')) doLogout(); });
+    m.querySelector('[data-act="out"]').addEventListener('click', () => { closeUserMenu(); if (confirm('로그아웃 하시겠어요?')) doLogout(); });
   }
   document.addEventListener('click', (e) => { if (userMenuEl && !userMenuEl.contains(e.target) && e.target.id !== 'userBadge') closeUserMenu(); });
   document.getElementById('userBadge').addEventListener('click', () => { if (SUPA_MODE) toggleUserMenu(); });

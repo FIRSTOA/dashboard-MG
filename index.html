@@ -1025,11 +1025,9 @@
     border-radius: 10px; padding: 8px 14px; font-size: 12.5px; margin-bottom: 14px; display: none; }
   .ro-banner.show { display: block; }
   /* 팀원 보기(읽기 전용) 시 편집 요소 숨김 */
-  body.share-ro .add-goal-card, body.share-ro .ai-add-card, body.share-ro .app-add-card,
-  body.share-ro #addGoalBtn, body.share-ro #addProjectBtn, body.share-ro #addAppBtn,
-  body.share-ro #syncBtn, body.share-ro .mission-add-row, body.share-ro .gc-check,
-  body.share-ro .mission-remove, body.share-ro .mission-notes-btn, body.share-ro .app-edit { display: none !important; }
-  body.share-ro .mission-check, body.share-ro .gc-card { pointer-events: none; }
+  body.share-ro .ai-add-card, body.share-ro .app-add-card,
+  body.share-ro #addProjectBtn, body.share-ro #addAppBtn,
+  body.share-ro .app-edit { display: none !important; }
 
   /* ===== Admin list ===== */
   .admin-row { display: grid; grid-template-columns: 1.6fr 0.8fr 1fr 0.9fr auto; gap: 8px; align-items: center;
@@ -1863,7 +1861,7 @@
     return data;
   }
 
-  // 스코프별 캐시: priv(개인) / share(분기목표·자동화앱·AI작업) / team(캘린더)
+  // 스코프별 캐시: priv(개인) / share(자동화앱·AI작업) / team(캘린더)
   let PRIV = {}, SHARE = {}, TEAM = {};
   let shareReadOnly = false;    // 다른 팀원의 공유 데이터를 보는 중인지
   let shareScopeUser = null;    // 현재 SHARE 캐시 주인 (null = 나)
@@ -1871,8 +1869,7 @@
 
   function scopeOf(key) {
     if (key === 'calendar-events') return 'team';
-    if (key.indexOf('quarter-goals') === 0 || key.indexOf('quarter-missions') === 0
-        || key === 'automation-apps' || key.indexOf('ai-project') === 0) return 'share';
+    if (key === 'automation-apps' || key.indexOf('ai-project') === 0) return 'share';
     return 'priv';
   }
   function cacheFor(scope) { return scope === 'team' ? TEAM : scope === 'share' ? SHARE : PRIV; }
@@ -1933,6 +1930,25 @@
       if (scope === 'team') TEAM = obj; else if (scope === 'share') SHARE = obj; else PRIV = obj;
       setSyncState('ok');
     } catch (e) { console.error('load', scope, e); setSyncState('error'); }
+  }
+  async function migrateQuarterDataToPriv() {
+    if (!SUPA_MODE) return;
+    let changed = false;
+    Object.keys(SHARE || {}).forEach(key => {
+      const isQuarter = key.indexOf('quarter-goals:') === 0 || key.indexOf('quarter-missions:') === 0;
+      if (!isQuarter) return;
+      const existing = PRIV[key];
+      if (existing && existing !== '[]') return;
+      PRIV[key] = SHARE[key];
+      changed = true;
+    });
+    if (changed) {
+      try {
+        await saveScopeData(scopeKeyStr('priv'), PRIV);
+      } catch (e) {
+        console.error('quarter migration failed', e);
+      }
+    }
   }
 
   function syncEnabled() { return !!(SYNC_URL && USER_ID); }
@@ -2025,6 +2041,7 @@
       shareScopeUser = null; shareReadOnly = false;
       await loadScopeInto('priv');
       await loadScopeInto('share');
+      await migrateQuarterDataToPriv();
       await loadScopeInto('team');
       return;
     }
@@ -2429,6 +2446,7 @@
   let planMode = 'basic';
   let resultTab = 'quarter';
   let tabGidCache = null; // [{name,gid}]
+  let resultLoadSeq = 0;
   function curTab() { return RESULT_TABS.find(x => x.key === resultTab) || RESULT_TABS[0]; }
   async function resolveGid(t) {
     if (t.gid) return t.gid;
@@ -2470,7 +2488,9 @@
     const rl = document.getElementById('resultLinkBtn'); if (rl) rl.textContent = active ? '🔗 연동됨' : '🔗 결과표 연동';
   }
   async function loadResultGoals() {
+    const seq = ++resultLoadSeq;
     const url = await getResultUrl();
+    if (seq !== resultLoadSeq) return;
     if (!url) { resultModeOn(false); return; }
     resultModeOn(true);
     renderResultTabs();
@@ -2479,10 +2499,12 @@
     const t = curTab();
     try {
       activeGid = await resolveGid(t);
+      if (seq !== resultLoadSeq) return;
       if (t.type === 'card') {
         const q = url + (url.includes('?') ? '&' : '?') + 'action=card&quarter=' + cardQuarter + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
+        if (seq !== resultLoadSeq) return;
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         renderCardTable(json);
       } else if (t.type === 'plan') {
@@ -2490,6 +2512,7 @@
         const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&goalCol=' + mode.goalCol + '&noMonths=1' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
+        if (seq !== resultLoadSeq) return;
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
         renderPlanTable();
@@ -2497,11 +2520,13 @@
         const q = url + (url.includes('?') ? '&' : '?') + 'action=goals' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
+        if (seq !== resultLoadSeq) return;
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
         renderResultTable();
       }
     } catch (e) {
+      if (seq !== resultLoadSeq) return;
       root.innerHTML = '<div class="rs-empty">불러오기 실패: ' + (e.message || e) + '<br><small>연동 URL과 GAS 배포(액세스: 모든 사용자)를 확인하세요. 탭을 못 찾으면 시트 탭 이름을 확인하세요.</small></div>';
     }
   }
@@ -4678,16 +4703,9 @@
     lsSet(LS_TOKEN, ''); location.reload();
   }
 
-  // 팀원 보기 토글 (분기목표 + 자동화앱 = share 스코프)
+  // 팀원 보기 토글 (자동화앱 = share 스코프, 분기목표 = priv 스코프)
   function injectMemberBars() {
     if (!SUPA_MODE) return;
-    const goalsView = document.getElementById('view-goals');
-    if (goalsView && !document.getElementById('goalsMemberBar')) {
-      const bar = document.createElement('div'); bar.id = 'goalsMemberBar'; bar.className = 'member-bar';
-      const ro = document.createElement('div'); ro.id = 'goalsRoBanner'; ro.className = 'ro-banner';
-      goalsView.insertBefore(ro, goalsView.firstChild);
-      goalsView.insertBefore(bar, goalsView.firstChild);
-    }
     const appsSection = document.querySelector('#view-apps .apps-section');
     if (appsSection && !document.getElementById('appsMemberBar')) {
       const bar = document.createElement('div'); bar.id = 'appsMemberBar'; bar.className = 'member-bar';
@@ -4702,7 +4720,7 @@
     const people = [{ username: MY.username, label: MY.username + ' (나)' }]
       .concat(others.map(m => ({ username: m.username, label: m.username })));
     const sel = shareScopeUser || MY.username;
-    ['goalsMemberBar', 'appsMemberBar'].forEach(id => {
+    ['appsMemberBar'].forEach(id => {
       const bar = document.getElementById(id); if (!bar) return;
       bar.innerHTML = '';
       if (people.length <= 1) { bar.style.display = 'none'; return; }
@@ -4720,7 +4738,7 @@
   function applyShareReadOnly() {
     document.body.classList.toggle('share-ro', shareReadOnly);
     const name = shareScopeUser || '팀원';
-    ['goalsRoBanner', 'appsRoBanner'].forEach(id => {
+    ['appsRoBanner'].forEach(id => {
       const b = document.getElementById(id); if (!b) return;
       b.classList.toggle('show', shareReadOnly);
       b.textContent = `👀 ${name} 님의 보드를 보는 중입니다 (보기 전용). 편집하려면 "나"를 선택하세요.`;

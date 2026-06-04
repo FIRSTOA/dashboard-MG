@@ -1109,10 +1109,11 @@
   <div class="view active" data-view="board" id="view-board">
     <!-- 캘린더 미니 -->
     <div class="widget" id="miniCalWidget" style="margin-bottom:16px">
-      <div class="w-head" style="margin-bottom:14px">
+      <div class="w-head" style="margin-bottom:14px; flex-wrap:wrap">
         <div class="w-icon" style="background:var(--g-cyan)">🗓️</div>
         <div class="w-title">캘린더 미니</div>
-        <div class="cal-cat-tabs" id="miniCatTabs" style="margin-left:auto"></div>
+        <div class="cal-cat-tabs" id="miniScopeToggle" style="margin-left:auto"></div>
+        <div class="cal-cat-tabs" id="miniCatTabs"></div>
       </div>
       <div class="cal-head" style="margin-bottom:10px">
         <button class="cal-nav-btn" id="miniPrev">‹</button>
@@ -1166,6 +1167,7 @@
         <div class="cal-month-title" id="calMonthTitle" style="color:white">—</div>
         <button class="cal-nav-btn" id="calNext">›</button>
         <button class="cal-nav-btn" id="calToday" style="width:auto;padding:0 12px;font-size:12.5px;font-weight:700">오늘</button>
+        <div class="cal-cat-tabs" id="calScopeToggle" style="margin-left:8px"></div>
         <div class="cal-cat-tabs" id="calCatTabs" style="margin-left:8px"></div>
         <button class="btn-white-small" id="addEventBtn" style="margin-left:auto">+ 일정</button>
         <button class="btn-white-small" id="workmapBtn" style="margin-left:6px">📍 재계약 가져오기</button>
@@ -4023,18 +4025,21 @@
   };
   function ymd(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
-  let calEvents = [];
+  // 캘린더 두 종류: team(모두에게 공유) / priv(개인 전용 — 본인만 조회)
+  const CAL = { team: [], priv: [] };
+  let calScope = 'team';                                              // 지금 보고/편집 중인 종류
+  const CAL_KEY = { team: 'calendar-events', priv: 'calendar-events-priv' };
   let calCursor = new Date();
   let calFilter = 'all';
   let miniCursor = new Date();
   let miniFilter = 'all';
 
+  function parseEvents(raw) { if (!raw) return []; try { const v = JSON.parse(raw); return Array.isArray(v) ? v : []; } catch { return []; } }
   async function loadCalendar() {
-    const raw = await storeGet('calendar-events');
-    if (raw) { try { calEvents = JSON.parse(raw); } catch { calEvents = []; } }
-    else calEvents = [];
+    CAL.team = parseEvents(await storeGet(CAL_KEY.team));
+    CAL.priv = parseEvents(await storeGet(CAL_KEY.priv));
   }
-  async function saveCalendar() { await storeSet('calendar-events', JSON.stringify(calEvents)); }
+  async function saveCalendar() { await storeSet(CAL_KEY[calScope], JSON.stringify(CAL[calScope])); }
   // 특정 날짜의 일정 완료 여부 (반복 일정은 날짜별로 완료 관리)
   function isOccDone(ev, ds) { return !!(ev.doneDates && ev.doneDates.includes(ds)); }
   function toggleOccDone(ev, ds) {
@@ -4090,7 +4095,7 @@
       const cell = document.createElement('div');
       cell.className = 'cal-cell' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '')
         + (HOLIDAYS[ds] ? ' holiday' : '') + (ds === todayStr ? ' today' : '');
-      const dayEvents = calEvents.filter(e => eventOccursOn(e, date, ds) && (filter === 'all' || e.cat === filter));
+      const dayEvents = CAL[calScope].filter(e => eventOccursOn(e, date, ds) && (filter === 'all' || e.cat === filter));
       if (mini) {
         cell.innerHTML = `<div class="cal-daynum">${d}</div>`;
         if (HOLIDAYS[ds]) { const h = document.createElement('div'); h.className = 'mini-ev holiday'; h.textContent = HOLIDAYS[ds]; cell.appendChild(h); }
@@ -4124,15 +4129,33 @@
       grid.appendChild(cell);
     }
   }
+  // 공유/개인 토글: 두 종류 캘린더를 전환 (전체·미니 어디서 눌러도 같이 바뀜)
+  function buildScopeToggle(rootId) {
+    const root = document.getElementById(rootId);
+    if (!root) return;
+    root.innerHTML = '';
+    const mk = (id, label) => {
+      const b = document.createElement('div');
+      b.className = 'cal-cat-tab' + (calScope === id ? ' active' : '');
+      b.textContent = label;
+      if (calScope === id) b.style.background = id === 'priv' ? '#6B6C8C' : 'var(--bg)';
+      b.addEventListener('click', () => { if (calScope !== id) { calScope = id; renderCalendar(); renderMini(); } });
+      return b;
+    };
+    root.appendChild(mk('team', '👥 공유'));
+    root.appendChild(mk('priv', '🔒 개인'));
+  }
   function renderCalendar() {
     renderDowRow('calDowRow');
     document.getElementById('calMonthTitle').textContent = `${calCursor.getFullYear()}년 ${calCursor.getMonth()+1}월`;
+    buildScopeToggle('calScopeToggle');
     buildCalCatTabs('calCatTabs', calFilter, (f) => { calFilter = f; renderCalendar(); });
     buildMonthGrid(document.getElementById('calGrid'), calCursor, calFilter, false);
   }
   function renderMini() {
     renderDowRow('miniDowRow');
     document.getElementById('miniMonthTitle').textContent = `${miniCursor.getFullYear()}.${pad(miniCursor.getMonth()+1)}`;
+    buildScopeToggle('miniScopeToggle');
     buildCalCatTabs('miniCatTabs', miniFilter, (f) => { miniFilter = f; renderMini(); });
     buildMonthGrid(document.getElementById('miniCalGrid'), miniCursor, miniFilter, true);
   }
@@ -4193,10 +4216,10 @@
     if (!title) { titleEl.focus(); titleEl.style.borderColor = 'var(--danger)'; return; }
     const data = { cat: evCat, date, time: document.getElementById('ev-time').value.trim(), title, repeat: document.getElementById('ev-repeat').value };
     if (editingEventId) {
-      const i = calEvents.findIndex(e => e.id === editingEventId);
-      if (i >= 0) calEvents[i] = { ...calEvents[i], ...data };
+      const i = CAL[calScope].findIndex(e => e.id === editingEventId);
+      if (i >= 0) CAL[calScope][i] = { ...CAL[calScope][i], ...data };
     } else {
-      calEvents.push({ id: 'ev' + Date.now(), ...data });
+      CAL[calScope].push({ id: 'ev' + Date.now(), ...data });
     }
     await saveCalendar();
     closeEventModal();
@@ -4204,7 +4227,7 @@
   });
   document.getElementById('eventDoneBtn').addEventListener('click', async () => {
     if (!editingEventId || !modalOccDate) return;
-    const ev = calEvents.find(e => e.id === editingEventId);
+    const ev = CAL[calScope].find(e => e.id === editingEventId);
     if (!ev) return;
     toggleOccDone(ev, modalOccDate);
     await saveCalendar();
@@ -4213,7 +4236,7 @@
   });
   document.getElementById('eventDeleteBtn').addEventListener('click', async () => {
     if (!editingEventId) return;
-    calEvents = calEvents.filter(e => e.id !== editingEventId);
+    CAL[calScope] = CAL[calScope].filter(e => e.id !== editingEventId);
     await saveCalendar();
     closeEventModal();
     renderCalendar(); renderMini();
@@ -4281,7 +4304,7 @@
   importModal.addEventListener('click', (e) => { if (e.target === importModal) closeImport(); });
   document.getElementById('importDoBtn').addEventListener('click', async () => {
     if (!importParsed.length) { parseImport(); return; }   // 1차: 미리보기, 2차: 추가
-    importParsed.forEach((e, i) => calEvents.push({ id: 'ev' + Date.now() + i, ...e }));
+    importParsed.forEach((e, i) => CAL[calScope].push({ id: 'ev' + Date.now() + i, ...e }));
     await saveCalendar();
     closeImport();
     renderCalendar(); renderMini();
@@ -4346,7 +4369,8 @@
       const date = `20${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
       const title = company + (grade ? ` (${grade})` : '');
       const gN = grade.toUpperCase().replace(/[^A-Z]/g, '');
-      const cat = (gN === 'SS' || gN === 'SSS') ? 'recontract_ss' : 'recontract_s'; // SS이상 / S이하
+      // SS·SSS·V급(VIP/VVIP 포함)은 'SS↑', 그 외(S·A·B…)는 'S↓'
+      const cat = (gN === 'SS' || gN === 'SSS' || gN.charAt(0) === 'V') ? 'recontract_ss' : 'recontract_s';
       const key = company + '|' + date;
       if (seen.has(key)) return; seen.add(key);
       out.push({ cat, date, time: '', title, repeat: 'none', src: RECONTRACT_SRC });
@@ -4361,12 +4385,12 @@
     catch (e) { result.innerHTML = '<span style="color:var(--danger)">읽기 실패: ' + (e.message || e) + '</span>'; return; }
     const parsed = parseRecontractWorkmap(rows);
     if (!parsed.length) { result.innerHTML = '<span style="color:var(--danger)">인식된 항목이 없어요. 재계약 워킹맵 원본 파일이 맞는지 확인해 주세요.</span>'; return; }
-    const prevCnt = calEvents.filter(e => e.src === RECONTRACT_SRC).length;
+    const prevCnt = CAL[calScope].filter(e => e.src === RECONTRACT_SRC).length;
     const sample = parsed.slice(0, 5).map(e => `· ${e.date} — ${e.title}`).join('<br>');
     const ok = confirm(`재계약 ${parsed.length}건을 캘린더에 등록할까요?` + (prevCnt ? `\n(기존 재계약 자동등록 ${prevCnt}건은 교체됩니다)` : ''));
     if (!ok) { result.innerHTML = ''; return; }
-    calEvents = calEvents.filter(e => e.src !== RECONTRACT_SRC); // 이전 자동등록 교체
-    parsed.forEach((e, i) => calEvents.push({ id: 'wm' + Date.now() + i, ...e }));
+    CAL[calScope] = CAL[calScope].filter(e => e.src !== RECONTRACT_SRC); // 이전 자동등록 교체
+    parsed.forEach((e, i) => CAL[calScope].push({ id: 'wm' + Date.now() + i, ...e }));
     await saveCalendar();
     renderCalendar(); renderMini();
     result.innerHTML = `<strong style="color:var(--success)">✓ 재계약 ${parsed.length}건 등록 완료</strong><br><span style="color:var(--text-grey);font-size:12px;">${sample}${parsed.length > 5 ? '<br>…' : ''}</span>`;
@@ -4374,10 +4398,10 @@
   document.getElementById('wm-recontract-btn').addEventListener('click', () => document.getElementById('wm-recontract-file').click());
   document.getElementById('wm-recontract-file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) handleWorkmapFile(f); e.target.value = ''; });
   document.getElementById('wm-cancel-btn').addEventListener('click', async () => {
-    const cnt = calEvents.filter(e => e.src === RECONTRACT_SRC).length;
+    const cnt = CAL[calScope].filter(e => e.src === RECONTRACT_SRC).length;
     if (!cnt) { document.getElementById('wm-result').innerHTML = '취소할 자동등록 재계약 일정이 없어요.'; return; }
     if (!confirm(`자동등록된 재계약 일정 ${cnt}건을 모두 삭제할까요?\n(직접 추가한 일정은 그대로 유지됩니다)`)) return;
-    calEvents = calEvents.filter(e => e.src !== RECONTRACT_SRC);
+    CAL[calScope] = CAL[calScope].filter(e => e.src !== RECONTRACT_SRC);
     await saveCalendar();
     renderCalendar(); renderMini();
     document.getElementById('wm-result').innerHTML = `<strong style="color:var(--danger)">🗑 재계약 ${cnt}건 등록 취소 완료</strong>`;
@@ -4402,7 +4426,7 @@
       h.innerHTML = `<span class="day-ev-dot" style="background:var(--danger)"></span><span class="day-ev-title">${escapeHTML(HOLIDAYS[ds])} · 공휴일</span>`;
       root.appendChild(h);
     }
-    const list = calEvents.filter(e => eventOccursOn(e, dt, ds) && (calFilter === 'all' || e.cat === calFilter));
+    const list = CAL[calScope].filter(e => eventOccursOn(e, dt, ds) && (calFilter === 'all' || e.cat === calFilter));
     if (!list.length && !HOLIDAYS[ds]) { root.innerHTML = '<div style="color:var(--text-grey); padding:10px 4px;">일정이 없습니다.</div>'; return; }
     list.forEach(ev => {
       const done = isOccDone(ev, ds);

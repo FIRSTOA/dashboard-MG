@@ -1182,12 +1182,13 @@
         <button class="cal-nav-btn" id="calToday" style="width:auto;padding:0 12px;font-size:12.5px;font-weight:700">오늘</button>
         <div class="cal-cat-tabs" id="calScopeToggle" style="margin-left:8px"></div>
         <div class="cal-cat-tabs" id="calCatTabs" style="margin-left:8px"></div>
-        <div class="cal-search-wrap" style="margin-left:8px">
-          <input type="text" class="cal-search" id="calSearch" placeholder="🔍 거래처·일정 검색" autocomplete="off">
+        <button class="cal-nav-btn" id="calSearchToggle" title="거래처·일정 검색" style="margin-left:auto">🔍</button>
+        <div class="cal-search-wrap" id="calSearchWrap" style="display:none">
+          <input type="text" class="cal-search" id="calSearch" placeholder="거래처·일정 검색" autocomplete="off">
           <div class="cal-search-results" id="calSearchResults"></div>
         </div>
-        <button class="btn-white-small" id="addEventBtn" style="margin-left:auto">+ 일정</button>
-        <button class="btn-white-small" id="workmapBtn" style="margin-left:6px">📍 재계약 가져오기</button>
+        <button class="btn-white-small" id="addEventBtn">+ 일정</button>
+        <button class="cal-nav-btn" id="workmapBtn" title="재계약 워킹맵 가져오기">📍</button>
       </div>
       <div class="cal-grid" id="calDowRow" style="margin-bottom:4px"></div>
       <div class="cal-grid" id="calGrid"></div>
@@ -4024,21 +4025,25 @@
     { id:'recontract_ss', label:'재계약 SS↑', color:'#7C3AED' },
     { id:'vacation', label:'휴가', color:'#10B981' },
   ];
-  // 개인(priv) 캘린더는 업무 분류 대신 '색깔'로만 구분
-  const CAL_CATS_PRIV = [
-    { id:'p-blue',   label:'🔵 파랑', color:'#3B82F6' },
-    { id:'p-green',  label:'🟢 초록', color:'#10B981' },
-    { id:'p-amber',  label:'🟡 노랑', color:'#F59E0B' },
-    { id:'p-red',    label:'🔴 빨강', color:'#EF4444' },
-    { id:'p-purple', label:'🟣 보라', color:'#7C3AED' },
-    { id:'p-gray',   label:'⚪ 회색', color:'#6B7280' },
-  ];
-  function catsFor(scope) { return scope === 'priv' ? CAL_CATS_PRIV : CAL_CATS; }
-  function defaultCatFor(scope) { return scope === 'priv' ? CAL_CATS_PRIV[0].id : 'monthly'; }
+  // 개인(priv) 캘린더: 사용자가 직접 분류(이름+색)를 만들고 추가/삭제. 기본은 '전체'만 노출.
+  let CAL_PRIV_CATS = [];
+  function parseCats(raw) { try { const v = JSON.parse(raw); return Array.isArray(v) ? v : []; } catch { return []; } }
+  async function savePrivCats() { await storeSet('calendar-cats-priv', JSON.stringify(CAL_PRIV_CATS)); }
+  function catsFor(scope) { return scope === 'priv' ? CAL_PRIV_CATS : CAL_CATS; }
+  function defaultCatFor(scope) { return scope === 'priv' ? (CAL_PRIV_CATS[0] ? CAL_PRIV_CATS[0].id : '') : 'monthly'; }
   const CAL_CAT_MAP = Object.fromEntries(CAL_CATS.map(c => [c.id, c]));
   CAL_CAT_MAP['recontract'] = { id:'recontract', label:'재계약', color:'#F97316' }; // 레거시(예전 일정 색상)
-  // 색상 조회용 통합 맵 (공유 + 개인색 + 레거시)
-  const CAL_CAT_MAP_ALL = Object.assign({}, CAL_CAT_MAP, Object.fromEntries(CAL_CATS_PRIV.map(c => [c.id, c])));
+  const LEGACY_PRIV_COLORS = { 'p-blue':'#3B82F6','p-green':'#10B981','p-amber':'#F59E0B','p-red':'#EF4444','p-purple':'#7C3AED','p-gray':'#6B7280' };
+  // 일정 색상 조회 (공유 분류 / 개인 사용자분류 / 레거시 / 직접 hex / 미분류)
+  function catColorOf(catId) {
+    if (!catId) return '#94A3B8';
+    if (CAL_CAT_MAP[catId]) return CAL_CAT_MAP[catId].color;
+    const p = CAL_PRIV_CATS.find(c => c.id === catId);
+    if (p) return p.color;
+    if (LEGACY_PRIV_COLORS[catId]) return LEGACY_PRIV_COLORS[catId];
+    if (/^#[0-9a-fA-F]{3,8}$/.test(catId)) return catId;
+    return '#94A3B8';
+  }
   // 대한민국 공휴일 (2026~2027, 대체공휴일 포함 · 근사치)
   const HOLIDAYS = {
     '2026-01-01':'신정',
@@ -4073,6 +4078,7 @@
   async function loadCalendar() {
     CAL.team = parseEvents(await storeGet(CAL_KEY.team));
     CAL.priv = parseEvents(await storeGet(CAL_KEY.priv));
+    CAL_PRIV_CATS = parseCats(await storeGet('calendar-cats-priv'));
   }
   async function saveCalendar() { await storeSet(CAL_KEY[calScope], JSON.stringify(CAL[calScope])); }
   // 특정 날짜의 일정 완료 여부 (반복 일정은 날짜별로 완료 관리)
@@ -4136,7 +4142,7 @@
         if (HOLIDAYS[ds]) { const h = document.createElement('div'); h.className = 'mini-ev holiday'; h.textContent = HOLIDAYS[ds]; cell.appendChild(h); }
         dayEvents.slice(0, 2).forEach(ev => {
           const c = document.createElement('div'); c.className = 'mini-ev' + (isOccDone(ev, ds) ? ' done' : '');
-          c.style.background = (CAL_CAT_MAP_ALL[ev.cat] || {}).color || '#888';
+          c.style.background = catColorOf(ev.cat);
           c.textContent = ev.title;
           cell.appendChild(c);
         });
@@ -4149,7 +4155,7 @@
         dayEvents.slice(0, 3).forEach(ev => {
           const done = isOccDone(ev, ds);
           const chip = document.createElement('div'); chip.className = 'cal-ev' + (done ? ' done' : '');
-          chip.style.background = (CAL_CAT_MAP_ALL[ev.cat] || {}).color || '#888';
+          chip.style.background = catColorOf(ev.cat);
           chip.textContent = (done ? '✓ ' : '') + (ev.time ? ev.time + ' ' : '') + ev.title + (ev.repeat && ev.repeat !== 'none' ? ' ↻' : '');
           chip.addEventListener('click', (e) => { e.stopPropagation(); openEventModal(ev, ds); });
           cell.appendChild(chip);
@@ -4205,7 +4211,13 @@
   // ---------- 캘린더 검색 (거래처·일정 이름으로 찾기) ----------
   const calSearchInput = document.getElementById('calSearch');
   const calSearchResults = document.getElementById('calSearchResults');
+  const calSearchWrap = document.getElementById('calSearchWrap');
   function closeCalSearch() { calSearchResults.classList.remove('open'); }
+  document.getElementById('calSearchToggle').addEventListener('click', () => {
+    const showing = calSearchWrap.style.display !== 'none';
+    if (showing) { calSearchWrap.style.display = 'none'; calSearchInput.value = ''; closeCalSearch(); }
+    else { calSearchWrap.style.display = ''; calSearchInput.focus(); }
+  });
   function runCalSearch() {
     const q = calSearchInput.value.trim().toLowerCase();
     if (!q) { closeCalSearch(); return; }
@@ -4220,7 +4232,7 @@
     }
     matches.forEach(ev => {
       const done = isOccDone(ev, ev.date);
-      const color = (CAL_CAT_MAP_ALL[ev.cat] || {}).color || '#888';
+      const color = catColorOf(ev.cat);
       const row = document.createElement('div');
       row.className = 'cal-sr-item' + (done ? ' done' : '');
       row.innerHTML = `<span class="cal-sr-dot" style="background:${color}"></span>`
@@ -4254,14 +4266,74 @@
   }
   function buildEvCats(active) {
     const root = document.getElementById('ev-cats'); root.innerHTML = '';
+    const priv = calScope === 'priv';
+    // 개인 캘린더: 미분류('전체') 선택지 + 사용자 분류 + 삭제 + 새 분류 추가
+    if (priv) {
+      const none = document.createElement('div');
+      none.className = 'chip' + (!active ? ' active' : '');
+      none.textContent = '전체';
+      none.addEventListener('click', () => { evCat = ''; buildEvCats(''); });
+      root.appendChild(none);
+    }
     catsFor(calScope).forEach(c => {
       const chip = document.createElement('div');
       chip.className = 'chip' + (active === c.id ? ' active' : '');
-      chip.textContent = c.label;
       if (active === c.id) { chip.style.background = c.color; chip.style.color = 'white'; }
+      else if (priv) { chip.style.boxShadow = `inset 4px 0 0 ${c.color}`; } // 색 미리보기
       chip.addEventListener('click', () => { evCat = c.id; buildEvCats(c.id); });
+      chip.appendChild(document.createTextNode(c.label));
+      if (priv) {
+        const del = document.createElement('span');
+        del.textContent = '×';
+        del.style.cssText = 'margin-left:7px;opacity:0.55;font-weight:700;';
+        del.title = '이 분류 삭제';
+        del.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm(`'${c.label}' 분류를 삭제할까요?\n(이 분류로 된 일정은 '미분류'로 남아요)`)) return;
+          CAL_PRIV_CATS = CAL_PRIV_CATS.filter(x => x.id !== c.id);
+          await savePrivCats();
+          if (evCat === c.id) evCat = '';
+          buildEvCats(evCat);
+          renderCalendar(); renderMini();
+        });
+        chip.appendChild(del);
+      }
       root.appendChild(chip);
     });
+    if (priv) {
+      const addChip = document.createElement('div');
+      addChip.className = 'chip';
+      addChip.textContent = '+ 분류 추가';
+      addChip.style.cssText = 'border:1.5px dashed var(--border);background:transparent;';
+      addChip.addEventListener('click', () => showAddPrivCat(root));
+      root.appendChild(addChip);
+    }
+  }
+  // 개인 분류 추가용 인라인 폼 (이름 + 색 선택)
+  function showAddPrivCat(root) {
+    if (root.querySelector('.new-cat-form')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'new-cat-form';
+    wrap.style.cssText = 'display:flex;gap:6px;align-items:center;width:100%;margin-top:6px;';
+    wrap.innerHTML = `<input type="text" class="input" placeholder="분류 이름 (예: 미팅)" style="flex:1;min-width:0;height:36px;">`
+      + `<input type="color" value="#3B82F6" style="width:42px;height:36px;border:1px solid var(--border);border-radius:8px;background:none;cursor:pointer;padding:2px;">`
+      + `<button class="btn btn-primary" style="height:36px;">추가</button>`;
+    root.appendChild(wrap);
+    const nameEl = wrap.querySelector('input[type=text]');
+    const colorEl = wrap.querySelector('input[type=color]');
+    nameEl.focus();
+    const doAdd = async () => {
+      const label = nameEl.value.trim();
+      if (!label) { nameEl.focus(); return; }
+      const id = 'pc' + Date.now();
+      CAL_PRIV_CATS.push({ id, label, color: colorEl.value });
+      await savePrivCats();
+      evCat = id;
+      buildEvCats(id);
+      renderCalendar(); renderMini();
+    };
+    wrap.querySelector('button').addEventListener('click', doAdd);
+    nameEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
   }
   function openEventModal(ev = null, presetDate = null, presetCat = 'monthly') {
     editingEventId = ev ? ev.id : null;
@@ -4547,7 +4619,7 @@
     list.forEach(ev => {
       const done = isOccDone(ev, ds);
       const row = document.createElement('div'); row.className = 'day-ev-row' + (done ? ' done' : '');
-      const color = (CAL_CAT_MAP_ALL[ev.cat] || {}).color || '#888';
+      const color = catColorOf(ev.cat);
       row.innerHTML = `<span class="day-ev-dot" style="background:${color}"></span><span class="day-ev-title">${done ? '✓ ' : ''}${ev.time ? escapeHTML(ev.time) + ' ' : ''}${escapeHTML(ev.title)}${ev.repeat && ev.repeat !== 'none' ? ' ↻' : ''}</span>`;
       row.addEventListener('click', () => { dayModal.classList.remove('open'); openEventModal(ev, ds); });
       root.appendChild(row);
@@ -4556,7 +4628,7 @@
   document.getElementById('dayCloseBtn').addEventListener('click', () => dayModal.classList.remove('open'));
   document.getElementById('dayCloseBtn2').addEventListener('click', () => dayModal.classList.remove('open'));
   dayModal.addEventListener('click', (e) => { if (e.target === dayModal) dayModal.classList.remove('open'); });
-  document.getElementById('dayAddBtn').addEventListener('click', () => { dayModal.classList.remove('open'); openEventModal(null, dayModalDs, calFilter === 'all' ? 'monthly' : calFilter); });
+  document.getElementById('dayAddBtn').addEventListener('click', () => { dayModal.classList.remove('open'); openEventModal(null, dayModalDs, calFilter === 'all' ? defaultCatFor(calScope) : calFilter); });
 
   // ===================== 간편 메모장 (mini-Notion) =====================
   let memoBlocks = [];

@@ -60,8 +60,9 @@ function doGet(e) {
 
 // 모든 탭(시트) 이름·gid 목록 — 계획표 등 탭 자동 인식용
 function listTabs_() {
-  var shs = ss_().getSheets();
-  return { ok: true, tabs: shs.map(function (s) { return { name: s.getName(), gid: String(s.getSheetId()) }; }) };
+  var ss = ss_();
+  var shs = ss.getSheets();
+  return { ok: true, ssUrl: ss.getUrl(), ssId: ss.getId(), tabs: shs.map(function (s) { return { name: s.getName(), gid: String(s.getSheetId()) }; }) };
 }
 
 // gid(시트ID)로 탭 찾기. 없으면 기본 TAB_NAME 사용

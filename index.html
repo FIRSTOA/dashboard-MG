@@ -1271,7 +1271,7 @@
   <div class="quarter-section">
     <div class="quarter-head">
       <div class="quarter-title"><div class="icon">🏁</div>분기 목표
-        <a class="head-shortcut" href="https://docs.google.com/spreadsheets/d/1IbcagsyTIBPfSQrD9L4Fr5ajBk2E56LaN5Fl4c749WU/edit?gid=74381469#gid=74381469" target="_blank" rel="noopener" title="골든미팅카드 시트 바로가기">🃏</a>
+        <a class="head-shortcut" id="goldenShortcut" href="#" target="_blank" rel="noopener" title="골든미팅카드 시트 바로가기">🃏</a>
       </div>
       <div class="quarter-actions">
         <span class="quarter-tag" id="quarterPeriod">—</span>
@@ -2525,8 +2525,18 @@
   let planMode = 'basic';
   let resultTab = 'quarter';
   let tabGidCache = null; // [{name,gid}]
+  let resultSsUrl = '';   // 연결된 결과표 스프레드시트 주소 (바로가기 동적 갱신용)
   let resultLoadSeq = 0;
   function curTab() { return RESULT_TABS.find(x => x.key === resultTab) || RESULT_TABS[0]; }
+  // 분기목표 옆 🃏 바로가기를 '연결된 결과표 시트의 골든미팅카드 탭'으로 갱신
+  function updateGoldenShortcut() {
+    const a = document.getElementById('goldenShortcut');
+    if (!a) return;
+    if (!resultSsUrl) { a.style.display = 'none'; return; }   // 결과표 미연결 시 숨김
+    const card = (tabGidCache || []).find(x => ['골든', '미팅', '카드'].some(k => x.name.includes(k)));
+    a.href = resultSsUrl.split('#')[0] + (card ? '#gid=' + card.gid : '');
+    a.style.display = '';
+  }
   async function resolveGid(t) {
     if (t.gid) return t.gid;
     if (!t.nameKw) return '';
@@ -2534,7 +2544,8 @@
       try {
         const url = await getResultUrl();
         const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'action=tabs&t=' + Date.now());
-        const j = await res.json(); tabGidCache = (j && j.tabs) || [];
+        const j = await res.json(); tabGidCache = (j && j.tabs) || []; resultSsUrl = (j && j.ssUrl) || '';
+        updateGoldenShortcut();
       } catch { tabGidCache = []; }
     }
     const ex = t.nameExclude || [];
@@ -2570,7 +2581,7 @@
     const seq = ++resultLoadSeq;
     const url = await getResultUrl();
     if (seq !== resultLoadSeq) return;
-    if (!url) { resultModeOn(false); return; }
+    if (!url) { resultModeOn(false); updateGoldenShortcut(); return; }
     resultModeOn(true);
     renderResultTabs();
     const root = document.getElementById('resultSection');

@@ -308,22 +308,50 @@ function goalsToText_(data, title) {
   return lines.join('\n');
 }
 
-// 골든카드에서 기준 예시 추출: 1분기를 최우선으로(없으면 다른 작성된 분기). 대상 분기는 제외.
+// 한 스프레드시트(ssObj)의 골든카드에서 예시 추출. skipQ 분기는 제외(''면 제외 없음). 1분기 우선.
+function cardExampleFrom_(ssObj, cardGid, skipQ) {
+  var saved = TARGET_SS;
+  TARGET_SS = ssObj;
+  try {
+    var order = ['1', '2', '3', '4'];
+    for (var i = 0; i < order.length; i++) {
+      var qs = order[i];
+      if (qs === skipQ) continue;
+      var c = readCard_(cardGid, qs);
+      if (!c.ok || !c.questions) continue;
+      var has = c.questions.some(function (qq) { return (qq.cells || []).some(function (cl) { return cl.text && cl.text.trim(); }); });
+      if (!has) continue;
+      var lines = ['[기준 예시: ' + qs + '분기 — 이 문체·길이·구성을 그대로 따라 쓸 것]'];
+      c.questions.forEach(function (qq) {
+        lines.push('● ' + qq.label);
+        (qq.cells || []).forEach(function (cl) { if (cl.text && cl.text.trim()) lines.push('   [' + cl.cat + '] ' + cl.text); });
+      });
+      return lines.join('\n');
+    }
+    return null;
+  } finally { TARGET_SS = saved; }
+}
+// 스프레드시트에서 골든카드 탭의 gid 찾기
+function findCardGid_(ssObj) {
+  var shs = ssObj.getSheets();
+  for (var i = 0; i < shs.length; i++) {
+    var n = shs[i].getName();
+    if (n.indexOf('골든') >= 0 || n.indexOf('카드') >= 0 || n.indexOf('미팅') >= 0) return String(shs[i].getSheetId());
+  }
+  return '';
+}
+// 기준 예시: ① 현재(직원) 시트의 다른 분기 → 없으면 ② 기준 시트의 1분기
+//   기준 시트 = REF_CARD_SHEET_ID(속성)로 지정, 없으면 이 스크립트가 붙은 시트(=관리자 시트) 자동 사용
 function cardExampleText_(gid, quarter) {
-  var order = ['1', '2', '3', '4'];   // 1분기를 가장 먼저 기준으로 삼음
-  for (var i = 0; i < order.length; i++) {
-    var qs = order[i];
-    if (qs === quarter) continue;
-    var c = readCard_(gid, qs);
-    if (!c.ok || !c.questions) continue;
-    var has = c.questions.some(function (qq) { return (qq.cells || []).some(function (cl) { return cl.text && cl.text.trim(); }); });
-    if (!has) continue;
-    var lines = ['[기준 예시: ' + qs + '분기 — 이 문체·길이·구성을 그대로 따라 쓸 것]'];
-    c.questions.forEach(function (qq) {
-      lines.push('● ' + qq.label);
-      (qq.cells || []).forEach(function (cl) { if (cl.text && cl.text.trim()) lines.push('   [' + cl.cat + '] ' + cl.text); });
-    });
-    return lines.join('\n');
+  var self = cardExampleFrom_(ss_(), gid, quarter);
+  if (self) return self;
+  var refSs = null;
+  var refId = PropertiesService.getScriptProperties().getProperty('REF_CARD_SHEET_ID');
+  if (refId) { try { refSs = SpreadsheetApp.openById(refId); } catch (e) {} }
+  if (!refSs) { try { refSs = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {} }  // 스크립트가 붙은 관리자 시트
+  if (refSs) {
+    var ref = cardExampleFrom_(refSs, findCardGid_(refSs), '');  // 기준 시트는 1분기부터 사용
+    if (ref) return ref;
   }
   return '(참고 예시 없음)';
 }

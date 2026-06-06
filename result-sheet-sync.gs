@@ -66,23 +66,19 @@ function getSheet_(gid) {
   return ss.getSheetByName(TAB_NAME);
 }
 
-// 분기 구역 찾기: 'N분기' 또는 'NQ'가 '…년' 뒤에 오는 제목/머리글 행을 구역 시작으로 인식.
-// (목표 텍스트에 들어간 '2분기 S급' 같은 건 '년'이 없어 오인식 안 됨)
+// 분기 구역 찾기: 반복되는 '구 분' 머리글 행을 각 분기 구역의 시작으로 보고, 위에서부터 1·2·3·4분기로 인식.
+// (시트에 분기 숫자 텍스트가 없어도 됨. 월 머리글 1/2/3 → 4/5/6 → 7/8/9 → 10/11/12 순서와 일치)
 function findQuarterWindow_(values, n, quarter) {
   var q = Number(quarter); if (!q) return null;
-  function rowQ(i) {
-    var arr = values[i] || [];
-    for (var c = 0; c < arr.length; c++) {
-      var s = String(arr[c] || '');
-      var m = s.match(/년\s*([1-4])\s*분기/) || s.match(/년\s*([1-4])\s*Q(?![A-Za-z])/);
-      if (m) return Number(m[1]);
-    }
-    return 0;
+  var heads = [];
+  for (var i = 0; i < n; i++) {
+    var a = String((values[i][COL.gubun - 1]) || '').replace(/\s/g, '');
+    if (a === '구분') heads.push(i);          // '구 분' 머리글 = 구역 시작
   }
-  var start = -1, end = n;
-  for (var i = 0; i < n; i++) { if (rowQ(i) === q) { start = i; break; } }
-  if (start < 0) return null;                       // 마커 없음 → 전체 읽기로 폴백
-  for (var j = start + 1; j < n; j++) { var rq = rowQ(j); if (rq && rq !== q) { end = j; break; } }
+  if (heads.length < 2) return null;          // 구역이 1개뿐 → 전체 읽기(폴백)
+  if (q > heads.length) return { start: n, end: n }; // 해당 분기 구역 없음 → 빈 결과
+  var start = heads[q - 1];
+  var end = (q < heads.length) ? heads[q] : n;
   return { start: start, end: end };
 }
 

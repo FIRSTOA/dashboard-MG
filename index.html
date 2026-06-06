@@ -4023,6 +4023,7 @@
     { id:'monthly', label:'매월점검', color:'#3B82F6' },
     { id:'recontract_s', label:'재계약 S↓', color:'#F59E0B' },
     { id:'recontract_ss', label:'재계약 SS↑', color:'#7C3AED' },
+    { id:'recontract_other', label:'타분기', color:'#111827' },
     { id:'vacation', label:'휴가', color:'#10B981' },
   ];
   // 개인(priv) 캘린더: 사용자가 직접 분류(이름+색)를 만들고 추가/삭제. 기본은 '전체'만 노출.
@@ -4549,8 +4550,9 @@
       const note = inQuarter ? '' : ` · ${c.mo}월(타분기)`;  // 원래 몇 월인지 제목에 표시
       const title = c.company + (c.grade ? ` (${c.grade})` : '') + note;
       const gN = c.grade.toUpperCase().replace(/[^A-Z]/g, '');
-      // SS·SSS·V급(VIP/VVIP 포함)은 'SS↑', 그 외(S·A·B…)는 'S↓'
-      const cat = (gN === 'SS' || gN === 'SSS' || gN.charAt(0) === 'V') ? 'recontract_ss' : 'recontract_s';
+      // 분기 내: 등급별 색(SS·SSS·V급=SS↑, 그 외=S↓) / 타분기: 검정 별도 분류
+      const cat = !inQuarter ? 'recontract_other'
+        : ((gN === 'SS' || gN === 'SSS' || gN.charAt(0) === 'V') ? 'recontract_ss' : 'recontract_s');
       const key = c.company + '|' + c.mo + '|' + c.dd;  // 원래 월·일 기준 중복제거
       if (seen.has(key)) return; seen.add(key);
       const ev = { cat, date, time: '', title, repeat: 'none', src: RECONTRACT_SRC, offQuarter: !inQuarter };

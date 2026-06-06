@@ -2429,6 +2429,10 @@
   async function saveGoals() { await storeSet(`quarter-goals:${QUARTER}`, JSON.stringify(goals)); }
 
   // ---------- 분기 전환 (1·2·3·4분기 탭) ----------
+  function curQuarterNum() {
+    const m = String(QUARTER).match(/Q(\d)/);
+    return m ? +m[1] : (Math.floor(new Date().getMonth() / 3) + 1);
+  }
   function buildGoalQuarterTabs() {
     const root = document.getElementById('goalQuarterTabs');
     if (!root) return;
@@ -2451,6 +2455,10 @@
     currentFilter = 'all';
     await loadGoals(false); await loadMissions();
     renderFilters(); renderGoals(); renderMissions();
+    // 결과표 연동이 켜져 있으면 그 분기 결과표도 같이 전환
+    cardQuarter = curQuarterNum();
+    const rs = document.getElementById('resultSection');
+    if (rs && rs.style.display !== 'none') loadResultGoals();
   }
 
   // 분기목표 → 내 구글시트 자동 푸시 (개인 설정)
@@ -2567,7 +2575,7 @@
         renderCardTable(json);
       } else if (t.type === 'plan') {
         const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&goalCol=' + mode.goalCol + '&noMonths=1' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&goalCol=' + mode.goalCol + '&noMonths=1&quarter=' + curQuarterNum() + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
         if (seq !== resultLoadSeq) return;
@@ -2575,7 +2583,7 @@
         resultRows = json.rows || [];
         renderPlanTable();
       } else {
-        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals' + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
+        const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&quarter=' + curQuarterNum() + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
         const res = await fetch(q);
         const json = await res.json();
         if (seq !== resultLoadSeq) return;

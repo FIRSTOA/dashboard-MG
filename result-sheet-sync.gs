@@ -42,7 +42,7 @@ var COL = {
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || 'goals';
   var gid = (e && e.parameter && e.parameter.gid) || '';
-  if (action === 'goals') return json_(readGoals_(gid, e.parameter.goalCol, e.parameter.noMonths));
+  if (action === 'goals') return json_(readGoals_(gid, e.parameter.goalCol, e.parameter.noMonths, e.parameter.quarter));
   if (action === 'tabs') return json_(listTabs_());
   if (action === 'card') return json_(readCard_(gid, e.parameter.quarter));
   return json_({ ok: true, msg: '결과표 연동 정상 작동 중' });
@@ -66,7 +66,27 @@ function getSheet_(gid) {
   return ss.getSheetByName(TAB_NAME);
 }
 
-function readGoals_(gid, goalColParam, noMonths) {
+// 분기 구역 찾기: 'N분기' 또는 'NQ'가 '…년' 뒤에 오는 제목/머리글 행을 구역 시작으로 인식.
+// (목표 텍스트에 들어간 '2분기 S급' 같은 건 '년'이 없어 오인식 안 됨)
+function findQuarterWindow_(values, n, quarter) {
+  var q = Number(quarter); if (!q) return null;
+  function rowQ(i) {
+    var arr = values[i] || [];
+    for (var c = 0; c < arr.length; c++) {
+      var s = String(arr[c] || '');
+      var m = s.match(/년\s*([1-4])\s*분기/) || s.match(/년\s*([1-4])\s*Q(?![A-Za-z])/);
+      if (m) return Number(m[1]);
+    }
+    return 0;
+  }
+  var start = -1, end = n;
+  for (var i = 0; i < n; i++) { if (rowQ(i) === q) { start = i; break; } }
+  if (start < 0) return null;                       // 마커 없음 → 전체 읽기로 폴백
+  for (var j = start + 1; j < n; j++) { var rq = rowQ(j); if (rq && rq !== q) { end = j; break; } }
+  return { start: start, end: end };
+}
+
+function readGoals_(gid, goalColParam, noMonths, quarter) {
   var sh = getSheet_(gid);
   if (!sh) return { ok: false, error: '탭을 찾을 수 없습니다 (gid: ' + (gid || TAB_NAME) + ')' };
   var goalCol = Number(goalColParam) || COL.goal; // 계획표: C(3)=기본업무, I(9)=미션업무
@@ -78,10 +98,15 @@ function readGoals_(gid, goalColParam, noMonths) {
   var values = sh.getRange(START_ROW, 1, n, lastCol).getValues();
   var rich = sh.getRange(START_ROW, 1, n, lastCol).getRichTextValues();
 
+  // 분기 구역 한정: quarter가 주어지고 'N분기' 구역이 있으면 그 구역만, 없으면 전체(폴백)
+  var lo = 0, hi = n;
+  var win = findQuarterWindow_(values, n, quarter);
+  if (win) { lo = win.start; hi = win.end; }
+
   // 1) 월 머리글 행 자동 탐지 ('4월','5월'… 또는 '7월','8월'… 분기 바뀌어도 자동 인식)
   var monthCols = [];
   if (!skipMonths) {
-    for (var h = 0; h < n; h++) {
+    for (var h = lo; h < hi; h++) {
       var found = [];
       for (var c = 0; c < lastCol; c++) {
         var hv = String(values[h][c] || '').trim();
@@ -108,7 +133,7 @@ function readGoals_(gid, goalColParam, noMonths) {
   // 2) 데이터 행
   var rows = [];
   var lastGubun = '';
-  for (var i = 0; i < n; i++) {
+  for (var i = lo; i < hi; i++) {
     var gubun = String(values[i][COL.gubun - 1] || '').trim();
     var goal = String(values[i][goalCol - 1] || '').trim();
     var gN = gubun.replace(/\s/g, ''), goN = goal.replace(/\s/g, ''); // '구 분','목 표' 등 띄어쓰기 무시

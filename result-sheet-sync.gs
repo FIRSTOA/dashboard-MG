@@ -39,7 +39,17 @@ var COL = {
 };
 // ==================================================
 
+// 대상 스프레드시트: ?sheetId=... 가 오면 그 시트를 열고(공용 웹앱), 없으면 이 스크립트가 붙은 시트.
+var TARGET_SS = null;
+function ss_() { return TARGET_SS || SpreadsheetApp.getActiveSpreadsheet(); }
+function setTarget_(e) {
+  TARGET_SS = null;
+  var id = e && e.parameter && e.parameter.sheetId;
+  if (id) { TARGET_SS = SpreadsheetApp.openById(id); }  // 직원 시트(회원님에게 공유된)를 ID로 열기
+}
+
 function doGet(e) {
+  try { setTarget_(e); } catch (err) { return json_({ ok: false, error: '시트 열기 실패(공유·ID 확인): ' + err }); }
   var action = (e && e.parameter && e.parameter.action) || 'goals';
   var gid = (e && e.parameter && e.parameter.gid) || '';
   if (action === 'goals') return json_(readGoals_(gid, e.parameter.goalCol, e.parameter.noMonths, e.parameter.quarter));
@@ -50,13 +60,13 @@ function doGet(e) {
 
 // 모든 탭(시트) 이름·gid 목록 — 계획표 등 탭 자동 인식용
 function listTabs_() {
-  var shs = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+  var shs = ss_().getSheets();
   return { ok: true, tabs: shs.map(function (s) { return { name: s.getName(), gid: String(s.getSheetId()) }; }) };
 }
 
 // gid(시트ID)로 탭 찾기. 없으면 기본 TAB_NAME 사용
 function getSheet_(gid) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = ss_();
   if (gid) {
     var shs = ss.getSheets();
     for (var i = 0; i < shs.length; i++) {
@@ -162,7 +172,9 @@ function readGoals_(gid, goalColParam, noMonths, quarter) {
 
 function doPost(e) {
   try {
+    setTarget_(e);   // ?sheetId= (URL 쿼리)로 대상 시트 지정 — 직원 공용 웹앱 지원
     var b = JSON.parse(e.postData.contents || '{}');
+    if (!TARGET_SS && b.sheetId) { TARGET_SS = SpreadsheetApp.openById(b.sheetId); }
     var sh = getSheet_(b.gid);
     if (!sh) return json_({ ok: false, error: '탭 없음 (gid: ' + (b.gid || TAB_NAME) + ')' });
 

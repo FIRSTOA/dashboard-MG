@@ -4547,7 +4547,9 @@
       const mo = inQuarter ? c.mo : firstMo;            // 타분기 건은 분기 첫 달로 모음
       const dd = inQuarter ? c.dd : 1;
       const date = `${curYear}-${pad(mo)}-${pad(dd)}`;
-      const note = inQuarter ? '' : ` · ${c.mo}월(타분기)`;  // 원래 몇 월인지 제목에 표시
+      // 원본 계약종료년월일(YY-MM-DD)을 제목에 표시 + 타분기 표기
+      const endLabel = `${pad(c.origYear % 100)}-${pad(c.mo)}-${pad(c.dd)}`;
+      const note = ` · 종료 ${endLabel}` + (inQuarter ? '' : ' (타분기)');
       const title = c.company + (c.grade ? ` (${c.grade})` : '') + note;
       const gN = c.grade.toUpperCase().replace(/[^A-Z]/g, '');
       // 분기 내: 등급별 색(SS·SSS·V급=SS↑, 그 외=S↓) / 타분기: 검정 별도 분류

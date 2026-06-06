@@ -904,6 +904,19 @@
   .cal-cat-tab { padding: 5px 12px; border-radius: 100px; font-size: 12.5px; font-weight: 600; background: var(--card-soft); color: var(--text-grey); cursor: pointer; border: 1.5px solid transparent; }
   .cal-cat-tab:hover { background: #E9E5FA; }
   .cal-cat-tab.active { color: white; }
+  /* 캘린더 검색 */
+  .cal-search-wrap { position: relative; }
+  .cal-search { width: 180px; padding: 6px 12px; border-radius: 100px; border: 1px solid var(--border); background: white; font-size: 12.5px; color: var(--text); outline: none; }
+  .cal-search:focus { border-color: #A78BFA; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+  .cal-search-results { position: absolute; top: 38px; left: 0; z-index: 40; width: 320px; max-height: 340px; overflow-y: auto; background: white; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 30px rgba(20,14,80,0.18); padding: 6px; display: none; }
+  .cal-search-results.open { display: block; }
+  .cal-sr-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+  .cal-sr-item:hover { background: var(--card-soft); }
+  .cal-sr-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .cal-sr-date { font-size: 11.5px; color: var(--text-grey); font-weight: 700; flex: none; min-width: 74px; }
+  .cal-sr-title { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-sr-item.done .cal-sr-title { text-decoration: line-through; opacity: 0.55; }
+  .cal-sr-empty { padding: 12px; font-size: 12.5px; color: var(--text-grey); text-align: center; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .cal-dow { text-align: center; font-size: 11.5px; font-weight: 700; color: var(--text-light); padding: 4px 0; }
   .cal-dow.sun { color: var(--danger); }
@@ -1152,7 +1165,7 @@
   <div class="view" data-view="apps" id="view-apps">
     <div class="apps-section">
       <div class="apps-head">
-        <div class="ah-title"><div class="icon">🚀</div>완성한 자동화 앱</div>
+        <div class="ah-title"><div class="icon">🚀</div>완성한 자동화 앱<a class="head-shortcut" href="https://docs.google.com/spreadsheets/d/1iL49NTAPSHzOEka5y7TmTgnb17_GKckXAAWSRlKquFY/edit?gid=1826162532#gid=1826162532" target="_blank" rel="noopener" title="자동화진행시트 바로가기">📑</a></div>
         <button class="btn-white-small" id="addAppBtn">+ 앱 추가</button>
       </div>
       <div class="apps-grid" id="appsGrid"></div>
@@ -1169,6 +1182,10 @@
         <button class="cal-nav-btn" id="calToday" style="width:auto;padding:0 12px;font-size:12.5px;font-weight:700">오늘</button>
         <div class="cal-cat-tabs" id="calScopeToggle" style="margin-left:8px"></div>
         <div class="cal-cat-tabs" id="calCatTabs" style="margin-left:8px"></div>
+        <div class="cal-search-wrap" style="margin-left:8px">
+          <input type="text" class="cal-search" id="calSearch" placeholder="🔍 거래처·일정 검색" autocomplete="off">
+          <div class="cal-search-results" id="calSearchResults"></div>
+        </div>
         <button class="btn-white-small" id="addEventBtn" style="margin-left:auto">+ 일정</button>
         <button class="btn-white-small" id="workmapBtn" style="margin-left:6px">📍 재계약 가져오기</button>
       </div>
@@ -2191,7 +2208,12 @@
   let quickLinks = { work: [], lookup: [] };
 
   function checkKey(type, id) { return type === 'daily' ? `check:${TODAY}:${id}` : `check:${WEEK}:${id}`; }
-  function isDone(type, id) { return CACHE[checkKey(type, id)] === 'true'; }
+  // 체크 상태는 storeSet과 같은 저장소에서 읽어야 함 (SUPA 모드: 스코프 캐시 / 로컬: CACHE)
+  function isDone(type, id) {
+    const key = checkKey(type, id);
+    if (SUPA_MODE) return cacheFor(scopeOf(key))[key] === 'true';
+    return CACHE[key] === 'true';
+  }
 
   async function loadTasksAndLinks() {
     const rawD = await storeGet('daily-tasks');
@@ -4002,8 +4024,21 @@
     { id:'recontract_ss', label:'재계약 SS↑', color:'#7C3AED' },
     { id:'vacation', label:'휴가', color:'#10B981' },
   ];
+  // 개인(priv) 캘린더는 업무 분류 대신 '색깔'로만 구분
+  const CAL_CATS_PRIV = [
+    { id:'p-blue',   label:'🔵 파랑', color:'#3B82F6' },
+    { id:'p-green',  label:'🟢 초록', color:'#10B981' },
+    { id:'p-amber',  label:'🟡 노랑', color:'#F59E0B' },
+    { id:'p-red',    label:'🔴 빨강', color:'#EF4444' },
+    { id:'p-purple', label:'🟣 보라', color:'#7C3AED' },
+    { id:'p-gray',   label:'⚪ 회색', color:'#6B7280' },
+  ];
+  function catsFor(scope) { return scope === 'priv' ? CAL_CATS_PRIV : CAL_CATS; }
+  function defaultCatFor(scope) { return scope === 'priv' ? CAL_CATS_PRIV[0].id : 'monthly'; }
   const CAL_CAT_MAP = Object.fromEntries(CAL_CATS.map(c => [c.id, c]));
   CAL_CAT_MAP['recontract'] = { id:'recontract', label:'재계약', color:'#F97316' }; // 레거시(예전 일정 색상)
+  // 색상 조회용 통합 맵 (공유 + 개인색 + 레거시)
+  const CAL_CAT_MAP_ALL = Object.assign({}, CAL_CAT_MAP, Object.fromEntries(CAL_CATS_PRIV.map(c => [c.id, c])));
   // 대한민국 공휴일 (2026~2027, 대체공휴일 포함 · 근사치)
   const HOLIDAYS = {
     '2026-01-01':'신정',
@@ -4078,7 +4113,7 @@
       return b;
     };
     root.appendChild(mk('all', '전체', null));
-    CAL_CATS.forEach(c => root.appendChild(mk(c.id, c.label, c.color)));
+    catsFor(calScope).forEach(c => root.appendChild(mk(c.id, c.label, c.color)));
   }
   function buildMonthGrid(grid, cursor, filter, mini) {
     grid.innerHTML = '';
@@ -4101,7 +4136,7 @@
         if (HOLIDAYS[ds]) { const h = document.createElement('div'); h.className = 'mini-ev holiday'; h.textContent = HOLIDAYS[ds]; cell.appendChild(h); }
         dayEvents.slice(0, 2).forEach(ev => {
           const c = document.createElement('div'); c.className = 'mini-ev' + (isOccDone(ev, ds) ? ' done' : '');
-          c.style.background = (CAL_CAT_MAP[ev.cat] || {}).color || '#888';
+          c.style.background = (CAL_CAT_MAP_ALL[ev.cat] || {}).color || '#888';
           c.textContent = ev.title;
           cell.appendChild(c);
         });
@@ -4114,7 +4149,7 @@
         dayEvents.slice(0, 3).forEach(ev => {
           const done = isOccDone(ev, ds);
           const chip = document.createElement('div'); chip.className = 'cal-ev' + (done ? ' done' : '');
-          chip.style.background = (CAL_CAT_MAP[ev.cat] || {}).color || '#888';
+          chip.style.background = (CAL_CAT_MAP_ALL[ev.cat] || {}).color || '#888';
           chip.textContent = (done ? '✓ ' : '') + (ev.time ? ev.time + ' ' : '') + ev.title + (ev.repeat && ev.repeat !== 'none' ? ' ↻' : '');
           chip.addEventListener('click', (e) => { e.stopPropagation(); openEventModal(ev, ds); });
           cell.appendChild(chip);
@@ -4125,7 +4160,7 @@
           cell.appendChild(m);
         }
       }
-      cell.addEventListener('click', () => openEventModal(null, ds, filter === 'all' ? 'monthly' : filter));
+      cell.addEventListener('click', () => openEventModal(null, ds, filter === 'all' ? defaultCatFor(calScope) : filter));
       grid.appendChild(cell);
     }
   }
@@ -4139,7 +4174,7 @@
       b.className = 'cal-cat-tab' + (calScope === id ? ' active' : '');
       b.textContent = label;
       if (calScope === id) b.style.background = id === 'priv' ? '#6B6C8C' : 'var(--bg)';
-      b.addEventListener('click', () => { if (calScope !== id) { calScope = id; renderCalendar(); renderMini(); } });
+      b.addEventListener('click', () => { if (calScope !== id) { calScope = id; calFilter = 'all'; miniFilter = 'all'; renderCalendar(); renderMini(); } });
       return b;
     };
     root.appendChild(mk('team', '👥 공유'));
@@ -4162,10 +4197,49 @@
   document.getElementById('calPrev').addEventListener('click', () => { calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth()-1, 1); renderCalendar(); });
   document.getElementById('calNext').addEventListener('click', () => { calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth()+1, 1); renderCalendar(); });
   document.getElementById('calToday').addEventListener('click', () => { calCursor = new Date(); renderCalendar(); });
-  document.getElementById('addEventBtn').addEventListener('click', () => openEventModal(null, ymd(new Date()), calFilter === 'all' ? 'monthly' : calFilter));
+  document.getElementById('addEventBtn').addEventListener('click', () => openEventModal(null, ymd(new Date()), calFilter === 'all' ? defaultCatFor(calScope) : calFilter));
   document.getElementById('miniPrev').addEventListener('click', () => { miniCursor = new Date(miniCursor.getFullYear(), miniCursor.getMonth()-1, 1); renderMini(); });
   document.getElementById('miniNext').addEventListener('click', () => { miniCursor = new Date(miniCursor.getFullYear(), miniCursor.getMonth()+1, 1); renderMini(); });
   document.getElementById('miniGoFull').addEventListener('click', () => switchView('calendar'));
+
+  // ---------- 캘린더 검색 (거래처·일정 이름으로 찾기) ----------
+  const calSearchInput = document.getElementById('calSearch');
+  const calSearchResults = document.getElementById('calSearchResults');
+  function closeCalSearch() { calSearchResults.classList.remove('open'); }
+  function runCalSearch() {
+    const q = calSearchInput.value.trim().toLowerCase();
+    if (!q) { closeCalSearch(); return; }
+    const matches = CAL[calScope]
+      .filter(e => (e.title || '').toLowerCase().includes(q))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+      .slice(0, 40);
+    calSearchResults.innerHTML = '';
+    if (!matches.length) {
+      calSearchResults.innerHTML = '<div class="cal-sr-empty">검색 결과가 없어요</div>';
+      calSearchResults.classList.add('open'); return;
+    }
+    matches.forEach(ev => {
+      const done = isOccDone(ev, ev.date);
+      const color = (CAL_CAT_MAP_ALL[ev.cat] || {}).color || '#888';
+      const row = document.createElement('div');
+      row.className = 'cal-sr-item' + (done ? ' done' : '');
+      row.innerHTML = `<span class="cal-sr-dot" style="background:${color}"></span>`
+        + `<span class="cal-sr-date">${ev.date}${ev.repeat && ev.repeat !== 'none' ? ' ↻' : ''}</span>`
+        + `<span class="cal-sr-title">${escapeHTML(ev.title)}</span>`;
+      row.addEventListener('click', () => {
+        const d = new Date(ev.date + 'T00:00:00');
+        if (!isNaN(d.getTime())) { calCursor = new Date(d.getFullYear(), d.getMonth(), 1); renderCalendar(); }
+        closeCalSearch();
+        calSearchInput.value = '';
+        openEventModal(ev, ev.date);
+      });
+      calSearchResults.appendChild(row);
+    });
+    calSearchResults.classList.add('open');
+  }
+  calSearchInput.addEventListener('input', runCalSearch);
+  calSearchInput.addEventListener('focus', () => { if (calSearchInput.value.trim()) runCalSearch(); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('.cal-search-wrap')) closeCalSearch(); });
 
   // Event modal
   const eventModal = document.getElementById('eventModalBackdrop');
@@ -4180,7 +4254,7 @@
   }
   function buildEvCats(active) {
     const root = document.getElementById('ev-cats'); root.innerHTML = '';
-    CAL_CATS.forEach(c => {
+    catsFor(calScope).forEach(c => {
       const chip = document.createElement('div');
       chip.className = 'chip' + (active === c.id ? ' active' : '');
       chip.textContent = c.label;
@@ -4357,25 +4431,59 @@
     });
   }
   const RECONTRACT_SRC = 'workmap-recontract';
-  // 재계약: L=계약종료일, 제목=M(거래처명)+O(등급), 거래처+날짜 중복제거, 단발
+  // 재계약 워킹맵 분기 기준: 1분기 2·3·4 / 2분기 5·6·7 / 3분기 8·9·10 / 4분기 11·12·1
+  const WORKMAP_QUARTERS = [
+    { q: 1, months: [2, 3, 4] },
+    { q: 2, months: [5, 6, 7] },
+    { q: 3, months: [8, 9, 10] },
+    { q: 4, months: [11, 12, 1] },
+  ];
+  function quarterOfMonth(mo) { return WORKMAP_QUARTERS.find(x => x.months.includes(mo)); }
+  // 재계약(계약종료 워킹맵): L=계약종료일, 제목=M(거래처명)+O(등급)
+  //  · 계약종료일이 올해 이전 → 1년 자동연장 처리(올해 이상이 될 때까지 +1년). 예) 2025-6-9 → 2026-6-9
+  //  · 종료일이 올해를 넘어감(내년·후년 등) → 이미 재계약된 것 → 완료(✓) 표시
+  //  · 분기는 파일 내용으로 자동 감지(가장 많은 건이 속한 분기)하고, 그 분기 3개월 건만 등록
   function parseRecontractWorkmap(rows) {
-    const out = [], seen = new Set();
+    const curYear = new Date().getFullYear();
+    // 1차: 행 파싱 + 과거 종료일 자동연장 정규화
+    const cand = [];
     rows.slice(1).forEach(r => {
       const lraw = String(r[11] || '');            // L 계약종료년월일
       const company = String(r[12] || '').trim();  // M 거래처명
       const grade = String(r[14] || '').trim();    // O 등급
       const m = lraw.match(/(\d{2})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
       if (!m || !company) return;
-      const date = `20${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
-      const title = company + (grade ? ` (${grade})` : '');
-      const gN = grade.toUpperCase().replace(/[^A-Z]/g, '');
+      const origYear = 2000 + (+m[1]);
+      const mo = +m[2], dd = +m[3];
+      let year = origYear;
+      while (year < curYear) year++;               // 과거 종료일 = 1년 자동연장
+      cand.push({ origYear, year, mo, dd, company, grade });
+    });
+    // 분기 자동 감지: 가장 많은 건이 속한 분기를 이번 워킹맵 분기로 판단
+    const tally = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    cand.forEach(c => { const q = quarterOfMonth(c.mo); if (q) tally[q.q]++; });
+    let targetQ = 1, best = -1;
+    [1, 2, 3, 4].forEach(q => { if (tally[q] > best) { best = tally[q]; targetQ = q; } });
+    const months = WORKMAP_QUARTERS.find(x => x.q === targetQ).months;
+    // 2차: 감지된 분기의 달에 해당하는 건만 등록
+    const out = [], seen = new Set();
+    const stats = { quarter: targetQ, months, active: 0, renewed: 0, done: 0, skippedMonth: 0 };
+    cand.forEach(c => {
+      if (!months.includes(c.mo)) { stats.skippedMonth++; return; }
+      const date = `${c.year}-${pad(c.mo)}-${pad(c.dd)}`;
+      const title = c.company + (c.grade ? ` (${c.grade})` : '');
+      const gN = c.grade.toUpperCase().replace(/[^A-Z]/g, '');
       // SS·SSS·V급(VIP/VVIP 포함)은 'SS↑', 그 외(S·A·B…)는 'S↓'
       const cat = (gN === 'SS' || gN === 'SSS' || gN.charAt(0) === 'V') ? 'recontract_ss' : 'recontract_s';
-      const key = company + '|' + date;
+      const key = c.company + '|' + date;
       if (seen.has(key)) return; seen.add(key);
-      out.push({ cat, date, time: '', title, repeat: 'none', src: RECONTRACT_SRC });
+      const ev = { cat, date, time: '', title, repeat: 'none', src: RECONTRACT_SRC };
+      if (c.origYear > curYear) { ev.doneDates = [date]; stats.done++; } // 올해 넘김 = 이미 재계약 완료
+      else if (c.origYear < curYear) stats.renewed++;                   // 자동연장
+      else stats.active++;                                              // 올해 종료(신규 대상)
+      out.push(ev);
     });
-    return out;
+    return { events: out, stats };
   }
   async function handleWorkmapFile(file) {
     const result = document.getElementById('wm-result');
@@ -4383,17 +4491,21 @@
     let rows;
     try { rows = await readXlsxRows(file); }
     catch (e) { result.innerHTML = '<span style="color:var(--danger)">읽기 실패: ' + (e.message || e) + '</span>'; return; }
-    const parsed = parseRecontractWorkmap(rows);
-    if (!parsed.length) { result.innerHTML = '<span style="color:var(--danger)">인식된 항목이 없어요. 재계약 워킹맵 원본 파일이 맞는지 확인해 주세요.</span>'; return; }
+    const { events: parsed, stats } = parseRecontractWorkmap(rows);
+    if (!parsed.length) { result.innerHTML = '<span style="color:var(--danger)">인식된 재계약 건이 없어요. 재계약 워킹맵 원본 파일이 맞는지 확인해 주세요.</span>'; return; }
     const prevCnt = CAL[calScope].filter(e => e.src === RECONTRACT_SRC).length;
-    const sample = parsed.slice(0, 5).map(e => `· ${e.date} — ${e.title}`).join('<br>');
-    const ok = confirm(`재계약 ${parsed.length}건을 캘린더에 등록할까요?` + (prevCnt ? `\n(기존 재계약 자동등록 ${prevCnt}건은 교체됩니다)` : ''));
+    const qLabel = `${stats.quarter}분기(${stats.months.join('·')}월)`;
+    const summary = `${qLabel} · 올해 종료 ${stats.active}건 · 자동연장 ${stats.renewed}건 · 이미완료 ${stats.done}건`
+      + (stats.skippedMonth ? ` · 분기 외 제외 ${stats.skippedMonth}건` : '');
+    const sample = parsed.slice(0, 5).map(e => `· ${e.date} — ${e.title}${e.doneDates ? ' ✓완료' : ''}`).join('<br>');
+    const ok = confirm(`재계약 ${parsed.length}건을 캘린더에 등록할까요?\n(${summary})` + (prevCnt ? `\n\n기존 재계약 자동등록 ${prevCnt}건은 교체됩니다.` : ''));
     if (!ok) { result.innerHTML = ''; return; }
     CAL[calScope] = CAL[calScope].filter(e => e.src !== RECONTRACT_SRC); // 이전 자동등록 교체
     parsed.forEach((e, i) => CAL[calScope].push({ id: 'wm' + Date.now() + i, ...e }));
     await saveCalendar();
     renderCalendar(); renderMini();
-    result.innerHTML = `<strong style="color:var(--success)">✓ 재계약 ${parsed.length}건 등록 완료</strong><br><span style="color:var(--text-grey);font-size:12px;">${sample}${parsed.length > 5 ? '<br>…' : ''}</span>`;
+    result.innerHTML = `<strong style="color:var(--success)">✓ 재계약 ${parsed.length}건 등록 완료</strong><br>`
+      + `<span style="color:var(--text-grey);font-size:12px;">${summary}<br>${sample}${parsed.length > 5 ? '<br>…' : ''}</span>`;
   }
   document.getElementById('wm-recontract-btn').addEventListener('click', () => document.getElementById('wm-recontract-file').click());
   document.getElementById('wm-recontract-file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) handleWorkmapFile(f); e.target.value = ''; });
@@ -4431,7 +4543,7 @@
     list.forEach(ev => {
       const done = isOccDone(ev, ds);
       const row = document.createElement('div'); row.className = 'day-ev-row' + (done ? ' done' : '');
-      const color = (CAL_CAT_MAP[ev.cat] || {}).color || '#888';
+      const color = (CAL_CAT_MAP_ALL[ev.cat] || {}).color || '#888';
       row.innerHTML = `<span class="day-ev-dot" style="background:${color}"></span><span class="day-ev-title">${done ? '✓ ' : ''}${ev.time ? escapeHTML(ev.time) + ' ' : ''}${escapeHTML(ev.title)}${ev.repeat && ev.repeat !== 'none' ? ' ↻' : ''}</span>`;
       row.addEventListener('click', () => { dayModal.classList.remove('open'); openEventModal(ev, ds); });
       root.appendChild(row);

@@ -174,6 +174,26 @@ function doPost(e) {
       return json_({ ok: true });
     }
 
+    if (b.action === 'updateRich') {
+      // 글자색 포함 저장: runs = [{text, color}] → 셀에 RichText로 기록
+      var rcol = Number(b.col); if (!rcol || !b.row) return json_({ ok: false, error: 'bad params' });
+      var runs = b.runs || [];
+      var full = ''; for (var ri = 0; ri < runs.length; ri++) full += String(runs[ri].text || '');
+      if (full === '') { sh.getRange(Number(b.row), rcol).setValue(''); return json_({ ok: true }); }
+      var builder = SpreadsheetApp.newRichTextValue().setText(full);
+      var pos = 0;
+      for (var rj = 0; rj < runs.length; rj++) {
+        var rt = String(runs[rj].text || ''); var len = rt.length; if (!len) continue;
+        var color = runs[rj].color;
+        if (color) {
+          try { builder.setTextStyle(pos, pos + len, SpreadsheetApp.newTextStyle().setForegroundColor(color).build()); } catch (e) {}
+        }
+        pos += len;
+      }
+      sh.getRange(Number(b.row), rcol).setRichTextValue(builder.build());
+      return json_({ ok: true });
+    }
+
     if (b.action === 'mergeMonths') {
       // 한 행의 월 칸들을 가로로 통합(병합)
       var mc = Number(b.col), mcnt = Number(b.count);

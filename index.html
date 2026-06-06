@@ -230,6 +230,16 @@
   .rs-add-btn { width: 100%; border: 1.5px dashed var(--border); background: transparent; color: var(--text-grey); border-radius: 10px; padding: 9px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 2px; }
   .rs-add-btn:hover { border-color: var(--bg); color: var(--bg); background: var(--card-soft); }
   .rs-add-btn:disabled { opacity: 0.5; cursor: default; }
+  /* 구분(카테고리) 추가 버튼들 */
+  .rs-cat-add { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 10px; border: 1.5px dashed var(--border); border-radius: 10px; }
+  .rs-cat-add-label { font-size: 12.5px; font-weight: 800; color: var(--text-grey); margin-right: 2px; }
+  .rs-cat-chip { border: 1px solid var(--border); background: white; color: var(--text); border-radius: 100px; padding: 5px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .rs-cat-chip:hover { background: var(--bg); color: white; border-color: var(--bg); }
+  .rs-cat-chip:disabled { opacity: 0.5; cursor: default; }
+  /* 글자색 팔레트 */
+  .rs-colorbar { display: flex; gap: 6px; align-items: center; margin: 2px 0 8px; }
+  .rs-color-sw { width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 1px var(--border); cursor: pointer; padding: 0; }
+  .rs-color-sw:hover { transform: scale(1.15); }
   .rs-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .rs-month-label { font-size: 11.5px; font-weight: 700; color: var(--text-grey); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
   .rs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex: none; }
@@ -2600,48 +2610,101 @@
     }
   }
   function autoGrowTextarea(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(60, ta.scrollHeight + 2) + 'px'; }
-  // 빈 분기 구역에서 첫 목표를 바로 추가하는 버튼 (구분 입력 → 해당 분기 구역에 새 행 삽입)
-  function makeFirstAddBtn(goalCol) {
-    const b = document.createElement('button');
-    b.className = 'rs-add-btn'; b.textContent = '+ 목표 추가';
-    b.addEventListener('click', async () => {
-      if (!resultAnchor) { alert('추가 위치를 찾지 못했어요. 새로고침 후 다시 시도하세요.'); return; }
-      const gubun = (prompt('구분(분류)을 입력하세요.\n예: AI, 자기개발, 매출증대\n(비우면 미분류)', '') || '').trim();
-      b.disabled = true; b.textContent = '추가 중…';
-      const ok = await postResult({ action: 'addRow', afterRow: resultAnchor, gubun: gubun, goalCol: goalCol });
-      if (ok) { await loadResultGoals(); }
-      else { b.disabled = false; b.textContent = '+ 목표 추가'; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
+  // 결과표/계획표 구분(카테고리)
+  const RESULT_CATS = ['매출안정', '매출증대', '효율성', '비용절감', '자기개발', '소통', 'AI'];
+  // 분기 구역에 새 목표를 추가하는 카테고리 버튼들
+  function appendCategoryAdder(root, goalCol) {
+    const wrap = document.createElement('div'); wrap.className = 'rs-cat-add';
+    const lbl = document.createElement('span'); lbl.className = 'rs-cat-add-label'; lbl.textContent = '+ 목표 추가:';
+    wrap.appendChild(lbl);
+    RESULT_CATS.forEach(cat => {
+      const b = document.createElement('button'); b.className = 'rs-cat-chip'; b.textContent = cat;
+      b.addEventListener('click', async () => {
+        if (!resultAnchor) { alert('추가 위치를 찾지 못했어요. 새로고침 후 다시 시도하세요.'); return; }
+        b.disabled = true;
+        const ok = await postResult({ action: 'addRow', afterRow: resultAnchor, gubun: cat, goalCol: goalCol });
+        if (ok) { await loadResultGoals(); } else { b.disabled = false; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
+      });
+      wrap.appendChild(b);
     });
-    return b;
+    root.appendChild(wrap);
+  }
+  // ----- 글자색 (시트 RichText 연동) -----
+  const RS_COLORS = [['검정', '#111827'], ['빨강', '#EF4444'], ['파랑', '#2563EB'], ['초록', '#16A34A'], ['주황', '#F59E0B'], ['회색', '#6B7280']];
+  function rgbToHex(c) {
+    c = String(c || '').trim(); if (!c) return '';
+    if (c[0] === '#') return c.length === 4 ? '#' + c[1]+c[1]+c[2]+c[2]+c[3]+c[3] : c;
+    const m = c.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (m) { const h = n => (+n).toString(16).padStart(2, '0'); return '#' + h(m[1]) + h(m[2]) + h(m[3]); }
+    return '';
+  }
+  // contenteditable 내용을 [{text,color}] 런으로 변환 (시트 RichText 저장용)
+  function serializeRuns(el) {
+    const runs = [];
+    const push = (t, color) => { if (t === '') return; const last = runs[runs.length - 1]; if (last && last.color === color) last.text += t; else runs.push({ text: t, color: color }); };
+    (function walk(node, color) {
+      node.childNodes.forEach(ch => {
+        if (ch.nodeType === 3) push(ch.nodeValue, color);
+        else if (ch.nodeName === 'BR') push('\n', color);
+        else {
+          if (/^(DIV|P)$/.test(ch.nodeName) && runs.length) push('\n', '');
+          let c = color;
+          const sc = (ch.style && ch.style.color) ? ch.style.color : (ch.getAttribute && ch.getAttribute('color'));
+          if (sc) { const hex = rgbToHex(sc); if (hex) c = hex; }
+          walk(ch, c);
+        }
+      });
+    })(el, '');
+    return runs;
+  }
+  // 글자색 팔레트 바 (선택 영역에 색 적용 → onApply로 저장)
+  function makeColorBar(box, onApply) {
+    const bar = document.createElement('div'); bar.className = 'rs-colorbar';
+    RS_COLORS.forEach(([name, hex]) => {
+      const sw = document.createElement('button'); sw.type = 'button'; sw.className = 'rs-color-sw'; sw.title = name + ' 글자색'; sw.style.background = hex;
+      sw.addEventListener('mousedown', e => e.preventDefault());   // 선택영역 유지
+      sw.addEventListener('click', e => {
+        e.preventDefault(); box.focus();
+        const sel = window.getSelection();
+        if (!sel.rangeCount || sel.isCollapsed) { const r = document.createRange(); r.selectNodeContents(box); sel.removeAllRanges(); sel.addRange(r); }
+        try { document.execCommand('styleWithCSS', false, true); } catch (_) {}
+        document.execCommand('foreColor', false, hex);
+        onApply();
+      });
+      bar.appendChild(sw);
+    });
+    return bar;
   }
   function renderResultTable() {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
     if (!resultRows.length) {
       const e = document.createElement('div'); e.className = 'rs-empty';
-      e.innerHTML = '이 분기 결과표가 아직 비어 있어요. 아래 버튼으로 목표를 바로 추가하세요.';
-      root.appendChild(e); root.appendChild(makeFirstAddBtn(2)); return;
+      e.innerHTML = '이 분기 결과표가 아직 비어 있어요. 아래에서 구분을 골라 목표를 바로 추가하세요.';
+      root.appendChild(e); appendCategoryAdder(root, 2); return;
     }
-    // 구분(A)별로 그룹화
+    // 구분(A)별로 그룹화 (구분 없으면 제목 없이 표시)
     const groups = {};
     const order = [];
-    resultRows.forEach(r => { const g = r.gubun || '기타'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(r); });
+    resultRows.forEach(r => { const g = r.gubun || ''; if (!(g in groups)) { groups[g] = []; order.push(g); } groups[g].push(r); });
     order.forEach(g => {
       const wrap = document.createElement('div'); wrap.className = 'rs-group';
-      const gt = document.createElement('div'); gt.className = 'rs-group-title'; gt.textContent = g;
-      wrap.appendChild(gt);
+      if (g) { const gt = document.createElement('div'); gt.className = 'rs-group-title'; gt.textContent = g; wrap.appendChild(gt); }
       groups[g].forEach(r => wrap.appendChild(buildResultCard(r)));
-      const rowsInG = groups[g];
-      const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 목표 추가`;
-      addBtn.addEventListener('click', async () => {
-        const afterRow = rowsInG[rowsInG.length - 1].row;
-        addBtn.disabled = true; addBtn.textContent = '추가 중…';
-        const ok = await postResult({ action: 'addRow', afterRow, gubun: g });
-        if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 목표 추가`; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
-      });
-      wrap.appendChild(addBtn);
+      if (g) {
+        const rowsInG = groups[g];
+        const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 목표 추가`;
+        addBtn.addEventListener('click', async () => {
+          const afterRow = rowsInG[rowsInG.length - 1].row;
+          addBtn.disabled = true; addBtn.textContent = '추가 중…';
+          const ok = await postResult({ action: 'addRow', afterRow, gubun: g });
+          if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 목표 추가`; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
+        });
+        wrap.appendChild(addBtn);
+      }
       root.appendChild(wrap);
     });
+    appendCategoryAdder(root, 2);   // 다른 구분 목표 추가
     requestAnimationFrame(() => root.querySelectorAll('.rs-month textarea').forEach(autoGrowTextarea));
   }
   function buildResultCard(r) {
@@ -2655,7 +2718,7 @@
     if (r.goalHtml) goal.innerHTML = r.goalHtml;        // 목표(B): 줄바꿈+색상 그대로
     else if (r.goal) goal.textContent = r.goal;
     const goalSave = debounce(async () => {
-      const ok = await postResultUpdate(r.row, 2, goal.innerText.replace(/ /g, ' ').trim()); // B열(2)=목표
+      const ok = await postResult({ action: 'updateRich', row: r.row, col: 2, runs: serializeRuns(goal) }); // B열(2)=목표(글자색 포함)
       if (ok) r.goal = goal.innerText.trim();
     }, 800);
     goal.addEventListener('input', goalSave);
@@ -2681,6 +2744,7 @@
     });
     head.appendChild(delBtn);
     card.appendChild(head);
+    card.appendChild(makeColorBar(goal, goalSave));   // 목표 글자색 팔레트
     const mlabel = (m) => (r.merged && allMonths.length)
       ? (allMonths[0].label + '~' + allMonths[allMonths.length - 1].label + ' 통합') : m.label;
     const months = document.createElement('div'); months.className = 'rs-months';
@@ -2830,19 +2894,17 @@
     root.appendChild(bar);
     if (!resultRows.length) {
       const e = document.createElement('div'); e.className = 'rs-empty';
-      e.innerHTML = '이 분기 계획표가 아직 비어 있어요. 아래 버튼으로 목표를 바로 추가하세요.';
-      root.appendChild(e);
-      const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
-      root.appendChild(makeFirstAddBtn(mode.goalCol));
+      e.innerHTML = '이 분기 계획표가 아직 비어 있어요. 아래에서 구분을 골라 목표를 바로 추가하세요.';
+      const mode0 = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
+      root.appendChild(e); appendCategoryAdder(root, mode0.goalCol);
       return;
     }
-    // 구분별 그룹화
+    // 구분별 그룹화 (구분 없으면 제목 없이)
     const groups = {}; const order = [];
-    resultRows.forEach(r => { const g = r.gubun || '기타'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(r); });
+    resultRows.forEach(r => { const g = r.gubun || ''; if (!(g in groups)) { groups[g] = []; order.push(g); } groups[g].push(r); });
     order.forEach(g => {
       const wrap = document.createElement('div'); wrap.className = 'rs-group';
-      const gt = document.createElement('div'); gt.className = 'rs-group-title'; gt.textContent = g;
-      wrap.appendChild(gt);
+      if (g) { const gt = document.createElement('div'); gt.className = 'rs-group-title'; gt.textContent = g; wrap.appendChild(gt); }
       groups[g].forEach(r => {
         const card = document.createElement('div'); card.className = 'rs-card';
         const head = document.createElement('div'); head.className = 'rs-card-head';
@@ -2852,7 +2914,7 @@
         const dot = document.createElement('span'); dot.className = 'rs-dot'; dot.style.marginLeft = '8px';
         const save = debounce(async () => {
           dot.className = 'rs-dot saving';
-          const ok = await postResultUpdate(r.row, r.goalCol || 2, goal.innerText.replace(/ /g, ' ').trim());
+          const ok = await postResult({ action: 'updateRich', row: r.row, col: r.goalCol || 2, runs: serializeRuns(goal) });
           dot.className = 'rs-dot ' + (ok ? 'ok' : 'err');
           if (ok) r.goal = goal.innerText.trim();
           setTimeout(() => { dot.className = 'rs-dot'; }, 1500);
@@ -2868,19 +2930,24 @@
         });
         head.appendChild(delBtn);
         card.appendChild(head);
+        card.appendChild(makeColorBar(goal, save));
         wrap.appendChild(card);
       });
-      const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 목표 추가`;
-      addBtn.addEventListener('click', async () => {
-        const afterRow = groups[g][groups[g].length - 1].row;
-        const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
-        addBtn.disabled = true; addBtn.textContent = '추가 중…';
-        const ok = await postResult({ action: 'addRow', afterRow, gubun: g, goalCol: mode.goalCol });
-        if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 목표 추가`; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
-      });
-      wrap.appendChild(addBtn);
+      if (g) {
+        const addBtn = document.createElement('button'); addBtn.className = 'rs-add-btn'; addBtn.textContent = `+ ${g} 목표 추가`;
+        addBtn.addEventListener('click', async () => {
+          const afterRow = groups[g][groups[g].length - 1].row;
+          const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
+          addBtn.disabled = true; addBtn.textContent = '추가 중…';
+          const ok = await postResult({ action: 'addRow', afterRow, gubun: g, goalCol: mode.goalCol });
+          if (ok) { await loadResultGoals(); } else { addBtn.disabled = false; addBtn.textContent = `+ ${g} 목표 추가`; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
+        });
+        wrap.appendChild(addBtn);
+      }
       root.appendChild(wrap);
     });
+    const modeB = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
+    appendCategoryAdder(root, modeB.goalCol);   // 다른 구분 목표 추가
   }
 
   async function postResult(payload) {

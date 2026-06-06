@@ -2690,6 +2690,7 @@
       root.appendChild(e); appendCategoryAdder(root, 2); return;
     }
     prependColorToolbar(root);
+    appendCategoryAdder(root, 2);   // 구분별 목표 추가 (상단에 항상 표시)
     // 구분(A)별로 그룹화 (구분 없으면 제목 없이 표시)
     const groups = {};
     const order = [];
@@ -2711,7 +2712,6 @@
       }
       root.appendChild(wrap);
     });
-    appendCategoryAdder(root, 2);   // 다른 구분 목표 추가
     requestAnimationFrame(() => root.querySelectorAll('.rs-month textarea').forEach(autoGrowTextarea));
   }
   function buildResultCard(r) {
@@ -2907,6 +2907,7 @@
       return;
     }
     prependColorToolbar(root);
+    appendCategoryAdder(root, (PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0]).goalCol);   // 구분별 목표 추가 (상단)
     // 구분별 그룹화 (구분 없으면 제목 없이)
     const groups = {}; const order = [];
     resultRows.forEach(r => { const g = r.gubun || ''; if (!(g in groups)) { groups[g] = []; order.push(g); } groups[g].push(r); });
@@ -2953,8 +2954,6 @@
       }
       root.appendChild(wrap);
     });
-    const modeB = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
-    appendCategoryAdder(root, modeB.goalCol);   // 다른 구분 목표 추가
   }
 
   async function postResult(payload) {

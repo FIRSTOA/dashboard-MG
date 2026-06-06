@@ -215,9 +215,12 @@ function doPost(e) {
       var after = Number(b.afterRow);
       if (!after) return json_({ ok: false, error: 'bad params' });
       sh.insertRowAfter(after);
-      sh.getRange(after + 1, COL.gubun).setValue(b.gubun || '');
-      sh.getRange(after + 1, Number(b.goalCol) || COL.goal).setValue(b.goal || '새 목표');
-      return json_({ ok: true, row: after + 1 });
+      var nr = after + 1;
+      // 머리글·소제목 서식이 복사되며 생기는 배경색/굵은 글씨 제거(깨끗한 목표 행으로)
+      try { sh.getRange(nr, 1, 1, Math.max(13, sh.getLastColumn())).setBackground(null).setFontWeight('normal').setFontColor('#000000'); } catch (e) {}
+      sh.getRange(nr, COL.gubun).setValue(b.gubun || '');
+      sh.getRange(nr, Number(b.goalCol) || COL.goal).setValue(b.goal || '새 목표');
+      return json_({ ok: true, row: nr });
     }
     if (b.action === 'deleteRow') {
       var dr = Number(b.row);

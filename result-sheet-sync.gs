@@ -77,8 +77,11 @@ function findQuarterWindow_(values, n, quarter) {
   }
   if (heads.length < 2) return null;          // 구역이 1개뿐 → 전체 읽기(폴백)
   if (q > heads.length) return { start: n, end: n }; // 해당 분기 구역 없음 → 빈 결과
+  // 각 구역은 [제목·작성자… → 구분 머리글 → 목표들] 구조. 다음 구역의 윗부분(제목/작성자)이
+  // 현재 분기에 섞이지 않도록, 끝을 '다음 머리글 - 머리글위 행수(preHeader)'로 맞춤.
+  var preHeader = heads[0];                    // 첫 머리글까지의 행 수 = 구역마다 머리글 위 행 수
   var start = heads[q - 1];
-  var end = (q < heads.length) ? heads[q] : n;
+  var end = (q < heads.length) ? Math.max(start + 1, heads[q] - preHeader) : n;
   return { start: start, end: end };
 }
 

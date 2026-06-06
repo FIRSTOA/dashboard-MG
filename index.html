@@ -268,6 +268,11 @@
   }
   .quarter-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .quarter-tag { color: white; background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+  /* 분기 선택 탭 (1·2·3·4분기) */
+  .qtab-row { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .qtab { padding: 7px 18px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); border: 1.5px solid transparent; transition: all 0.12s; }
+  .qtab:hover { background: rgba(255,255,255,0.22); color: #fff; }
+  .qtab.active { background: #fff; color: #1a1a2e; }
 
   .sync-status {
     display: flex; align-items: center; gap: 8px;
@@ -1265,6 +1270,7 @@
         <button class="btn-white-small" id="addGoalBtn">+ 목표 추가</button>
       </div>
     </div>
+    <div class="qtab-row" id="goalQuarterTabs"></div>
     <div class="sync-status" id="syncStatus" style="display:none">
       <span class="dot"></span>
       <span id="syncStatusText">—</span>
@@ -2140,13 +2146,15 @@
 
   const TODAY = todayKey();
   const WEEK = getISOWeek(new Date());
-  const QUARTER = getQuarter(new Date());
+  const QUARTER_YEAR = new Date().getFullYear();
+  let QUARTER = getQuarter(new Date());   // 분기 탭으로 전환 가능 (예: 2026-Q2)
 
   document.getElementById('topbarDate').textContent = koreanDate(new Date());
   document.getElementById('topbarWeek').textContent = `${WEEK} · ${getWeekRange(new Date())}`;
   document.getElementById('greeting').textContent = greetingByHour();
   document.getElementById('weeklyPeriod').textContent = WEEK;
   document.getElementById('quarterPeriod').textContent = QUARTER;
+  buildGoalQuarterTabs();
 
   function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
   const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12l5 5L20 7"/></svg>';
@@ -2399,9 +2407,9 @@
   let missions = [];
   let currentFilter = 'all';
 
-  async function loadGoals() {
+  async function loadGoals(allowFallback = true) {
     let raw = await storeGet(`quarter-goals:${QUARTER}`);
-    if (!raw && SUPA_MODE) {
+    if (!raw && SUPA_MODE && allowFallback) {
       const shareCache = cacheFor('share') || {};
       const fallbackKey = Object.keys(shareCache)
         .filter(k => k.indexOf('quarter-goals:') === 0)
@@ -2419,6 +2427,31 @@
     if (currentFilter !== 'all' && !goals.some(g => g.category === currentFilter)) currentFilter = 'all';
   }
   async function saveGoals() { await storeSet(`quarter-goals:${QUARTER}`, JSON.stringify(goals)); }
+
+  // ---------- 분기 전환 (1·2·3·4분기 탭) ----------
+  function buildGoalQuarterTabs() {
+    const root = document.getElementById('goalQuarterTabs');
+    if (!root) return;
+    root.innerHTML = '';
+    for (let n = 1; n <= 4; n++) {
+      const id = `${QUARTER_YEAR}-Q${n}`;
+      const tab = document.createElement('div');
+      tab.className = 'qtab' + (QUARTER === id ? ' active' : '');
+      tab.textContent = `${n}분기`;
+      tab.addEventListener('click', () => switchQuarter(n));
+      root.appendChild(tab);
+    }
+  }
+  async function switchQuarter(n) {
+    const id = `${QUARTER_YEAR}-Q${n}`;
+    if (QUARTER === id) return;
+    QUARTER = id;
+    document.getElementById('quarterPeriod').textContent = QUARTER;
+    buildGoalQuarterTabs();
+    currentFilter = 'all';
+    await loadGoals(false); await loadMissions();
+    renderFilters(); renderGoals(); renderMissions();
+  }
 
   // 분기목표 → 내 구글시트 자동 푸시 (개인 설정)
   async function getGoalSheetUrl() { return (await storeGet('settings:goalSheetUrl')) || ''; }

@@ -238,6 +238,8 @@
   .rs-cat-chip:disabled { opacity: 0.5; cursor: default; }
   /* 글자색 팔레트 */
   .rs-colorbar { display: flex; gap: 6px; align-items: center; margin: 2px 0 8px; }
+  .rs-colorbar-top { position: sticky; top: 0; z-index: 5; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; }
+  .rs-cb-label { font-size: 12.5px; font-weight: 800; color: var(--text-grey); margin-right: 4px; }
   .rs-color-sw { width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 1px var(--border); cursor: pointer; padding: 0; }
   .rs-color-sw:hover { transform: scale(1.15); }
   .rs-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -2657,23 +2659,27 @@
     })(el, '');
     return runs;
   }
-  // 글자색 팔레트 바 (선택 영역에 색 적용 → onApply로 저장)
-  function makeColorBar(box, onApply) {
-    const bar = document.createElement('div'); bar.className = 'rs-colorbar';
+  // 글자색 툴바 1개로 모든 칸(제목·내용) 제어:
+  //  - 칸에 커서만 두고 색 클릭 → 그 색으로 타이핑됨(색 누르고 작성)
+  //  - 글자 드래그 후 색 클릭 → 선택한 부분만 색 변경
+  function prependColorToolbar(root) {
+    const bar = document.createElement('div'); bar.className = 'rs-colorbar rs-colorbar-top';
+    const lbl = document.createElement('span'); lbl.className = 'rs-cb-label'; lbl.textContent = '🎨 글자색:';
+    bar.appendChild(lbl);
     RS_COLORS.forEach(([name, hex]) => {
-      const sw = document.createElement('button'); sw.type = 'button'; sw.className = 'rs-color-sw'; sw.title = name + ' 글자색'; sw.style.background = hex;
-      sw.addEventListener('mousedown', e => e.preventDefault());   // 선택영역 유지
+      const sw = document.createElement('button'); sw.type = 'button'; sw.className = 'rs-color-sw'; sw.title = name; sw.style.background = hex;
+      sw.addEventListener('mousedown', e => e.preventDefault());   // 포커스·선택영역 유지
       sw.addEventListener('click', e => {
-        e.preventDefault(); box.focus();
-        const sel = window.getSelection();
-        if (!sel.rangeCount || sel.isCollapsed) { const r = document.createRange(); r.selectNodeContents(box); sel.removeAllRanges(); sel.addRange(r); }
+        e.preventDefault();
+        const el = document.activeElement;
+        if (!el || !el.isContentEditable) { alert('먼저 입력 칸을 클릭(커서)한 뒤 색을 선택하세요.'); return; }
         try { document.execCommand('styleWithCSS', false, true); } catch (_) {}
-        document.execCommand('foreColor', false, hex);
-        onApply();
+        document.execCommand('foreColor', false, hex);   // 선택영역 있으면 그 부분, 없으면 이후 타이핑 색
+        el.dispatchEvent(new Event('input', { bubbles: true }));  // 저장 트리거
       });
       bar.appendChild(sw);
     });
-    return bar;
+    root.appendChild(bar);
   }
   function renderResultTable() {
     const root = document.getElementById('resultSection');
@@ -2683,6 +2689,7 @@
       e.innerHTML = '이 분기 결과표가 아직 비어 있어요. 아래에서 구분을 골라 목표를 바로 추가하세요.';
       root.appendChild(e); appendCategoryAdder(root, 2); return;
     }
+    prependColorToolbar(root);
     // 구분(A)별로 그룹화 (구분 없으면 제목 없이 표시)
     const groups = {};
     const order = [];
@@ -2744,7 +2751,6 @@
     });
     head.appendChild(delBtn);
     card.appendChild(head);
-    card.appendChild(makeColorBar(goal, goalSave));   // 목표 글자색 팔레트
     const mlabel = (m) => (r.merged && allMonths.length)
       ? (allMonths[0].label + '~' + allMonths[allMonths.length - 1].label + ' 통합') : m.label;
     const months = document.createElement('div'); months.className = 'rs-months';
@@ -2758,13 +2764,13 @@
       const box = document.createElement('div');
       box.className = 'rs-month-edit'; box.setAttribute('contenteditable', 'true');
       box.dataset.placeholder = mlabel(m) + ' 내용 입력';
-      if (m.text) box.textContent = m.text;            // 월칸은 검정 텍스트로
+      if (m.html) box.innerHTML = m.html; else if (m.text) box.textContent = m.text;   // 월칸 색상 유지
       const save = debounce(async () => {
         dot.className = 'rs-dot saving';
         const text = box.innerText.replace(/ /g, ' ');
-        const ok = await postResultUpdate(r.row, m.col, text);
+        const ok = await postResult({ action: 'updateRich', row: r.row, col: m.col, runs: serializeRuns(box) });
         dot.className = 'rs-dot ' + (ok ? 'ok' : 'err');
-        if (ok) m.text = text;
+        if (ok) m.text = box.innerText;
         setTimeout(() => { dot.className = 'rs-dot'; }, 1500);
       }, 800);
       box.addEventListener('input', save);
@@ -2798,6 +2804,7 @@
     root.appendChild(aiStatus);
     const qs = data.questions || [];
     if (!qs.length) { const e = document.createElement('div'); e.className = 'rs-empty'; e.innerHTML = `${cardQuarter}분기 골든미팅카드 데이터를 찾지 못했어요.<br><small>시트에 해당 분기 칸이 있는지 확인하세요.</small>`; root.appendChild(e); return; }
+    prependColorToolbar(root);
     qs.forEach((q, qi) => {
       const card = document.createElement('div'); card.className = 'rs-card';
       const head = document.createElement('div'); head.className = 'gm-q-title';
@@ -2811,11 +2818,11 @@
         lab.appendChild(dot); lab.appendChild(document.createTextNode(cell.cat));
         const box = document.createElement('div'); box.className = 'rs-month-edit'; box.setAttribute('contenteditable', 'true');
         box.dataset.placeholder = cell.cat + ' 입력';
-        if (cell.text) box.textContent = cell.text;
+        if (cell.html) box.innerHTML = cell.html; else if (cell.text) box.textContent = cell.text;
         const save = debounce(async () => {
           if (!cell.col) return;
           dot.className = 'rs-dot saving';
-          const ok = await postResultUpdate(q.row, cell.col, box.innerText.replace(/ /g, ' '));
+          const ok = await postResult({ action: 'updateRich', row: q.row, col: cell.col, runs: serializeRuns(box) });
           dot.className = 'rs-dot ' + (ok ? 'ok' : 'err');
           if (ok) cell.text = box.innerText;
           setTimeout(() => { dot.className = 'rs-dot'; }, 1500);
@@ -2899,6 +2906,7 @@
       root.appendChild(e); appendCategoryAdder(root, mode0.goalCol);
       return;
     }
+    prependColorToolbar(root);
     // 구분별 그룹화 (구분 없으면 제목 없이)
     const groups = {}; const order = [];
     resultRows.forEach(r => { const g = r.gubun || ''; if (!(g in groups)) { groups[g] = []; order.push(g); } groups[g].push(r); });
@@ -2930,7 +2938,6 @@
         });
         head.appendChild(delBtn);
         card.appendChild(head);
-        card.appendChild(makeColorBar(goal, save));
         wrap.appendChild(card);
       });
       if (g) {

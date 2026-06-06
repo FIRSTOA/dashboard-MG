@@ -101,8 +101,8 @@ function readGoals_(gid, goalColParam, noMonths, quarter) {
   var lo = 0, hi = n;
   var win = findQuarterWindow_(values, n, quarter);
   if (win) { lo = win.start; hi = win.end; }
-  // 빈 구역에서 첫 목표를 넣을 기준 행(머리글·소제목 다음의 첫 목표 행). 구역 없으면 시트 끝.
-  var anchor = win ? Math.min(START_ROW + win.start + 2, START_ROW + win.end - 1) : last;
+  // 빈 구역에서 첫 목표를 넣을 기준 행(소제목 행). 이 행 다음(=첫 목표 칸)에 삽입됨. 구역 없으면 시트 끝.
+  var anchor = win ? (START_ROW + win.start + 1) : last;
 
   // 1) 월 머리글 행 자동 탐지 ('4월','5월'… 또는 '7월','8월'… 분기 바뀌어도 자동 인식)
   var monthCols = [];
@@ -145,7 +145,7 @@ function readGoals_(gid, goalColParam, noMonths, quarter) {
     if (gubun) lastGubun = gubun;
     if (goal === '') continue;
     var months = monthCols.map(function (mc) {
-      return { col: mc.col, label: mc.label, text: String(values[i][mc.col - 1] || '') }; // 월칸은 그냥 텍스트(검정)
+      return { col: mc.col, label: mc.label, text: String(values[i][mc.col - 1] || ''), html: cellHtml_(rich[i][mc.col - 1]) }; // 월칸도 색상 유지
     });
     rows.push({
       row: START_ROW + i,

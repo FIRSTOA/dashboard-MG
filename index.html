@@ -4455,9 +4455,8 @@
       if (!m || !company) return;
       const origYear = 2000 + (+m[1]);
       const mo = +m[2], dd = +m[3];
-      let year = origYear;
-      while (year < curYear) year++;               // 과거 종료일 = 1년 자동연장
-      cand.push({ origYear, year, mo, dd, company, grade });
+      // 계약은 1·2·3년 단위라 월·일은 그대로 → 연도는 올해로 통일해서 표시
+      cand.push({ origYear, mo, dd, company, grade });
     });
     // 분기 자동 감지: 가장 많은 건이 속한 분기를 이번 워킹맵 분기로 판단
     const tally = { 1: 0, 2: 0, 3: 0, 4: 0 };
@@ -4465,19 +4464,24 @@
     let targetQ = 1, best = -1;
     [1, 2, 3, 4].forEach(q => { if (tally[q] > best) { best = tally[q]; targetQ = q; } });
     const months = WORKMAP_QUARTERS.find(x => x.q === targetQ).months;
-    // 2차: 감지된 분기의 달에 해당하는 건만 등록
+    // 2차: 등록. 분기 외(다른 분기) 건은 버리지 않고 그 분기 '첫 달'에 '타분기' 표시로 모아둠
     const out = [], seen = new Set();
-    const stats = { quarter: targetQ, months, active: 0, renewed: 0, done: 0, skippedMonth: 0 };
+    const firstMo = months[0];
+    const stats = { quarter: targetQ, months, active: 0, renewed: 0, done: 0, offQuarter: 0 };
     cand.forEach(c => {
-      if (!months.includes(c.mo)) { stats.skippedMonth++; return; }
-      const date = `${c.year}-${pad(c.mo)}-${pad(c.dd)}`;
-      const title = c.company + (c.grade ? ` (${c.grade})` : '');
+      const inQuarter = months.includes(c.mo);
+      if (!inQuarter) stats.offQuarter++;
+      const mo = inQuarter ? c.mo : firstMo;            // 타분기 건은 분기 첫 달로 모음
+      const dd = inQuarter ? c.dd : 1;
+      const date = `${curYear}-${pad(mo)}-${pad(dd)}`;
+      const note = inQuarter ? '' : ` · ${c.mo}월(타분기)`;  // 원래 몇 월인지 제목에 표시
+      const title = c.company + (c.grade ? ` (${c.grade})` : '') + note;
       const gN = c.grade.toUpperCase().replace(/[^A-Z]/g, '');
       // SS·SSS·V급(VIP/VVIP 포함)은 'SS↑', 그 외(S·A·B…)는 'S↓'
       const cat = (gN === 'SS' || gN === 'SSS' || gN.charAt(0) === 'V') ? 'recontract_ss' : 'recontract_s';
-      const key = c.company + '|' + date;
+      const key = c.company + '|' + c.mo + '|' + c.dd;  // 원래 월·일 기준 중복제거
       if (seen.has(key)) return; seen.add(key);
-      const ev = { cat, date, time: '', title, repeat: 'none', src: RECONTRACT_SRC };
+      const ev = { cat, date, time: '', title, repeat: 'none', src: RECONTRACT_SRC, offQuarter: !inQuarter };
       if (c.origYear > curYear) { ev.doneDates = [date]; stats.done++; } // 올해 넘김 = 이미 재계약 완료
       else if (c.origYear < curYear) stats.renewed++;                   // 자동연장
       else stats.active++;                                              // 올해 종료(신규 대상)
@@ -4496,7 +4500,7 @@
     const prevCnt = CAL[calScope].filter(e => e.src === RECONTRACT_SRC).length;
     const qLabel = `${stats.quarter}분기(${stats.months.join('·')}월)`;
     const summary = `${qLabel} · 올해 종료 ${stats.active}건 · 자동연장 ${stats.renewed}건 · 이미완료 ${stats.done}건`
-      + (stats.skippedMonth ? ` · 분기 외 제외 ${stats.skippedMonth}건` : '');
+      + (stats.offQuarter ? ` · 타분기 ${stats.offQuarter}건(${stats.months[0]}월에 모음)` : '');
     const sample = parsed.slice(0, 5).map(e => `· ${e.date} — ${e.title}${e.doneDates ? ' ✓완료' : ''}`).join('<br>');
     const ok = confirm(`재계약 ${parsed.length}건을 캘린더에 등록할까요?\n(${summary})` + (prevCnt ? `\n\n기존 재계약 자동등록 ${prevCnt}건은 교체됩니다.` : ''));
     if (!ok) { result.innerHTML = ''; return; }

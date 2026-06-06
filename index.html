@@ -2496,6 +2496,7 @@
 
   // ===================== 결과표 시트 양방향 연동 =====================
   let resultRows = [];
+  let resultAnchor = 0;   // 빈 분기 구역에서 새 목표를 삽입할 기준 행
   // type: 'goals'=결과표형(구분/목표/월별), 'card'=골든미팅카드(분기×질문×카테고리)
   // gid 비우고 nameKw 주면 시트 탭 이름으로 자동 인식
   const RESULT_TABS = [
@@ -2581,6 +2582,7 @@
         if (seq !== resultLoadSeq) return;
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
+        resultAnchor = json.anchor || 0;
         renderPlanTable();
       } else {
         const q = url + (url.includes('?') ? '&' : '?') + 'action=goals&quarter=' + curQuarterNum() + (activeGid ? '&gid=' + encodeURIComponent(activeGid) : '') + '&t=' + Date.now();
@@ -2589,6 +2591,7 @@
         if (seq !== resultLoadSeq) return;
         if (!json || !json.ok) throw new Error((json && json.error) || '응답 오류');
         resultRows = json.rows || [];
+        resultAnchor = json.anchor || 0;
         renderResultTable();
       }
     } catch (e) {
@@ -2597,10 +2600,28 @@
     }
   }
   function autoGrowTextarea(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(60, ta.scrollHeight + 2) + 'px'; }
+  // 빈 분기 구역에서 첫 목표를 바로 추가하는 버튼 (구분 입력 → 해당 분기 구역에 새 행 삽입)
+  function makeFirstAddBtn(goalCol) {
+    const b = document.createElement('button');
+    b.className = 'rs-add-btn'; b.textContent = '+ 목표 추가';
+    b.addEventListener('click', async () => {
+      if (!resultAnchor) { alert('추가 위치를 찾지 못했어요. 새로고침 후 다시 시도하세요.'); return; }
+      const gubun = (prompt('구분(분류)을 입력하세요.\n예: AI, 자기개발, 매출증대\n(비우면 미분류)', '') || '').trim();
+      b.disabled = true; b.textContent = '추가 중…';
+      const ok = await postResult({ action: 'addRow', afterRow: resultAnchor, gubun: gubun, goalCol: goalCol });
+      if (ok) { await loadResultGoals(); }
+      else { b.disabled = false; b.textContent = '+ 목표 추가'; alert('추가 실패: 시트 권한·GAS 재배포를 확인하세요.'); }
+    });
+    return b;
+  }
   function renderResultTable() {
     const root = document.getElementById('resultSection');
     root.innerHTML = '';
-    if (!resultRows.length) { root.innerHTML = '<div class="rs-empty">결과표에 데이터가 없습니다.</div>'; return; }
+    if (!resultRows.length) {
+      const e = document.createElement('div'); e.className = 'rs-empty';
+      e.innerHTML = '이 분기 결과표가 아직 비어 있어요. 아래 버튼으로 목표를 바로 추가하세요.';
+      root.appendChild(e); root.appendChild(makeFirstAddBtn(2)); return;
+    }
     // 구분(A)별로 그룹화
     const groups = {};
     const order = [];
@@ -2807,7 +2828,14 @@
       bar.appendChild(b);
     });
     root.appendChild(bar);
-    if (!resultRows.length) { const e = document.createElement('div'); e.className = 'rs-empty'; e.innerHTML = '이 항목의 목표를 찾지 못했어요.<br><small>계획표 탭 구조를 확인하세요.</small>'; root.appendChild(e); return; }
+    if (!resultRows.length) {
+      const e = document.createElement('div'); e.className = 'rs-empty';
+      e.innerHTML = '이 분기 계획표가 아직 비어 있어요. 아래 버튼으로 목표를 바로 추가하세요.';
+      root.appendChild(e);
+      const mode = PLAN_MODES.find(m => m.key === planMode) || PLAN_MODES[0];
+      root.appendChild(makeFirstAddBtn(mode.goalCol));
+      return;
+    }
     // 구분별 그룹화
     const groups = {}; const order = [];
     resultRows.forEach(r => { const g = r.gubun || '기타'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(r); });

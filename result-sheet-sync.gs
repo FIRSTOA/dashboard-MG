@@ -308,17 +308,17 @@ function goalsToText_(data, title) {
   return lines.join('\n');
 }
 
-// 골든카드에서 quarter 외 다른 분기의 작성된 내용을 예시로 추출
+// 골든카드에서 기준 예시 추출: 1분기를 최우선으로(없으면 다른 작성된 분기). 대상 분기는 제외.
 function cardExampleText_(gid, quarter) {
-  var ex = '';
-  for (var q = 1; q <= 4; q++) {
-    var qs = String(q);
+  var order = ['1', '2', '3', '4'];   // 1분기를 가장 먼저 기준으로 삼음
+  for (var i = 0; i < order.length; i++) {
+    var qs = order[i];
     if (qs === quarter) continue;
     var c = readCard_(gid, qs);
     if (!c.ok || !c.questions) continue;
     var has = c.questions.some(function (qq) { return (qq.cells || []).some(function (cl) { return cl.text && cl.text.trim(); }); });
     if (!has) continue;
-    var lines = ['[참고: ' + qs + '분기 작성 예시]'];
+    var lines = ['[기준 예시: ' + qs + '분기 — 이 문체·길이·구성을 그대로 따라 쓸 것]'];
     c.questions.forEach(function (qq) {
       lines.push('● ' + qq.label);
       (qq.cells || []).forEach(function (cl) { if (cl.text && cl.text.trim()) lines.push('   [' + cl.cat + '] ' + cl.text); });
@@ -332,7 +332,8 @@ function buildCardPrompt_(quarter, resultText, missionText, exampleText) {
   var cats = '매출증대·안정, 효율성, 비용절감, 자기개발, 소통, AI';
   return [
     '너는 퍼스트전산 분기 골든미팅카드 작성 담당자야.',
-    '아래 결과표/미션표를 분석해서, 기존 골든미팅카드와 같은 형식·문체로 ' + quarter + '분기 골든미팅카드를 작성해줘.',
+    '아래 [기준 예시](주로 1분기)를 **모범 답안**으로 삼아, 그것과 같은 문체·문장 길이·구성·디테일 수준으로 ' + quarter + '분기 골든미팅카드를 작성해줘.',
+    '기준 예시가 최우선이야. 아래 작성 원칙은 보조 가이드일 뿐, 예시와 충돌하면 예시를 따라. 예시와 동떨어진 형식/길이로 쓰지 마.',
     '',
     '[출력 구조 — 매우 중요]',
     '질문 4개 × 카테고리 6개 = 총 24칸을 JSON으로만 출력해줘. 설명·코드블록 없이 순수 JSON만.',
@@ -357,10 +358,10 @@ function buildCardPrompt_(quarter, resultText, missionText, exampleText) {
     '[미션/상세 실행 결과표 입력]',
     missionText,
     '',
-    '[참고용 기존 골든미팅카드 결과 예시]',
+    '[기준 예시 — 이 스타일을 그대로 본떠라 (최우선)]',
     exampleText,
     '',
-    '다시 강조: 순수 JSON 객체 하나만 출력해. 다른 텍스트 절대 금지.'
+    '다시 강조: 위 기준 예시의 문체·길이·구성을 그대로 따르고, 순수 JSON 객체 하나만 출력해. 다른 텍스트 절대 금지.'
   ].join('\n');
 }
 

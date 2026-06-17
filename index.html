@@ -627,6 +627,22 @@
   .help-note li { margin-bottom: 2px; }
   .help-note strong { color: #92400E; }
 
+  /* 결과표 연동 모달 */
+  .rl-lead { font-size: 14px; color: var(--text); line-height: 1.55; margin-bottom: 16px; }
+  .rl-lead b { color: var(--bg); }
+  .rl-steps { display: flex; flex-direction: column; gap: 11px; margin-bottom: 20px; }
+  .rl-step { display: flex; gap: 11px; align-items: flex-start; font-size: 13.5px; color: var(--text); line-height: 1.5; }
+  .rl-step b { font-weight: 700; }
+  .rl-num { flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg); color: #fff; font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .rl-mini { color: var(--text-light); font-size: 12px; }
+  .rl-preview { font-size: 12.5px; border-radius: 9px; padding: 0; line-height: 1.5; transition: all 0.12s; max-height: 0; overflow: hidden; }
+  .rl-preview.ok, .rl-preview.warn { padding: 11px 13px; margin-bottom: 14px; max-height: 200px; }
+  .rl-preview.ok { background: #DCFCE7; color: #166534; }
+  .rl-preview.warn { background: #FEF3C7; color: #92400E; }
+  .rl-preview .rl-url { display: inline-block; margin-top: 4px; font-family: monospace; font-size: 11px; word-break: break-all; color: #15803D; }
+  .rl-tip { font-size: 12.5px; color: #78350F; background: #FEF3C7; border-left: 3px solid #F59E0B; border-radius: 8px; padding: 11px 13px; line-height: 1.55; }
+  .rl-tip b { color: #92400E; }
+
   /* Notes (진행 기록) */
   .notes-section {
     margin-top: 18px;
@@ -1275,8 +1291,6 @@
       </div>
       <div class="quarter-actions">
         <span class="quarter-tag" id="quarterPeriod">—</span>
-        <button class="btn-ghost-white" id="syncBtn">📋 시트 가져오기</button>
-        <button class="btn-ghost-white" id="goalSheetBtn" title="새 분기목표를 내 구글시트에도 자동 기록">🔗 시트연동</button>
         <button class="btn-ghost-white" id="resultRefreshBtn" title="결과표 새로고침" style="display:none">↻ 새로고침</button>
         <button class="btn-ghost-white" id="resultLinkBtn" title="결과표 시트와 양방향 연동">🔗 결과표 연동</button>
         <button class="btn-white-small" id="addGoalBtn">+ 목표 추가</button>
@@ -1471,33 +1485,34 @@
   </div>
 </div>
 
-<!-- Sheet Sync Modal (붙여넣기 전용) -->
-<div class="modal-backdrop" id="syncModalBackdrop">
-  <div class="modal">
+
+<!-- 결과표 연동 Modal -->
+<div class="modal-backdrop" id="resultLinkBackdrop">
+  <div class="modal" style="max-width:600px">
     <div class="modal-head">
-      <h3>📋 시트에서 분기 목표 가져오기</h3>
-      <button class="modal-close" id="syncModalCloseBtn">✕</button>
+      <h3>🔗 결과표 시트 연동</h3>
+      <button class="modal-close" id="resultLinkCloseBtn">✕</button>
     </div>
     <div class="modal-body">
-      <div class="help-note">
-        구글 시트에서 데이터 영역을 복사해 아래에 붙여넣으면 자동으로 파싱됩니다.
-        <ol>
-          <li>구글 시트에서 전체 데이터 영역 선택 → <strong>Ctrl+C</strong></li>
-          <li>아래 박스에 <strong>Ctrl+V</strong>로 붙여넣기</li>
-          <li><strong>파싱하기</strong> → 미리보기 확인 → <strong>가져오기</strong></li>
-        </ol>
-        ※ 가로/세로 레이아웃 모두 자동 인식합니다.
+      <p class="rl-lead">연동할 <b>구글시트 주소만</b> 붙여넣으면 끝입니다. 복잡한 주소는 몰라도 돼요.</p>
+      <div class="rl-steps">
+        <div class="rl-step"><span class="rl-num">1</span><div>연동할 <b>구글시트를 열고</b>, 위쪽 <b>주소창의 주소를 통째로 복사</b>합니다. <span class="rl-mini">(Ctrl+L → Ctrl+C)</span></div></div>
+        <div class="rl-step"><span class="rl-num">2</span><div>아래 칸에 <b>붙여넣기</b>(Ctrl+V) 합니다.</div></div>
+        <div class="rl-step"><span class="rl-num">3</span><div><b>연동하기</b> 버튼을 누르면 끝!</div></div>
       </div>
-      <div class="field">
-        <label class="field-label">시트 내용 붙여넣기</label>
-        <textarea class="textarea" id="pasteInput" style="min-height: 200px; font-family: monospace; font-size: 12px;" placeholder="여기에 시트 셀을 복사해서 붙여넣으세요"></textarea>
+      <div class="field" style="margin-bottom:10px">
+        <label class="field-label">구글시트 주소 붙여넣기</label>
+        <input type="text" class="input" id="rl-input" placeholder="https://docs.google.com/spreadsheets/d/.../edit  (또는 시트 ID만)">
       </div>
-      <button class="btn btn-primary" id="parsePasteBtn">파싱하기</button>
-      <div id="pastePreview"></div>
+      <div class="rl-preview" id="rl-preview"></div>
+      <div class="rl-tip">💡 <b>저장(수정)까지</b> 되게 하려면, 이 시트가 <b>admin@firstoa-ai.com</b> 에 <b>편집자</b>로 공유돼 있어야 합니다. (보기 권한만 있으면 읽기만 됩니다.)</div>
     </div>
     <div class="modal-foot">
-      <button class="btn" id="syncCancelBtn">취소</button>
-      <button class="btn btn-primary" id="applySyncBtn" disabled>가져오기 (덮어쓰기)</button>
+      <button class="btn btn-danger" id="rl-disconnect">연동 해제</button>
+      <div class="modal-foot-right">
+        <button class="btn" id="rl-cancel">취소</button>
+        <button class="btn btn-primary" id="rl-connect">연동하기</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2477,38 +2492,6 @@
     if (rs && rs.style.display !== 'none') loadResultGoals();
   }
 
-  // 분기목표 → 내 구글시트 자동 푸시 (개인 설정)
-  async function getGoalSheetUrl() { return (await storeGet('settings:goalSheetUrl')) || ''; }
-  async function pushGoalToSheet(goal) {
-    const url = await getGoalSheetUrl();
-    if (!url) return;
-    try {
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS preflight 회피
-        body: JSON.stringify({
-          quarter: QUARTER, title: goal.title, category: goal.category,
-          grade: goal.grade, purpose: goal.purpose, method: goal.method, done: !!goal.done
-        })
-      });
-    } catch (e) { console.error('시트 푸시 실패', e); }
-  }
-  const goalSheetBtn = document.getElementById('goalSheetBtn');
-  if (goalSheetBtn) goalSheetBtn.addEventListener('click', async () => {
-    const cur = await getGoalSheetUrl();
-    const v = prompt('분기목표를 자동 기록할 구글시트 웹앱(GAS) URL을 입력하세요.\n(goal-sheet-sync.gs 배포 후 받은 …/exec 주소)\n\n비우고 확인하면 연동 해제됩니다.', cur);
-    if (v === null) return;
-    const url = v.trim();
-    await storeSet('settings:goalSheetUrl', url);
-    if (url && !/\/exec$/.test(url)) alert('저장은 했지만, URL이 보통 …/exec 로 끝납니다. 다시 확인해 주세요.');
-    else alert(url ? '시트연동이 설정됐습니다. 이제 새 분기목표가 시트에도 기록됩니다.' : '시트연동이 해제됐습니다.');
-    updateGoalSheetBtn(url);
-  });
-  function updateGoalSheetBtn(url) {
-    if (!goalSheetBtn) return;
-    goalSheetBtn.textContent = url ? '🔗 시트연동됨' : '🔗 시트연동';
-    goalSheetBtn.style.opacity = url ? '1' : '';
-  }
 
   // ===================== 결과표 시트 양방향 연동 =====================
   let resultRows = [];
@@ -2573,7 +2556,7 @@
   async function getResultUrl() { return (await storeGet('settings:resultSheetUrl')) || ''; }
   function resultModeOn(active) {
     // 시트 표 모드 ↔ 기존 카드 모드 전환
-    ['filterRow', 'goalGrid', 'syncBtn', 'goalSheetBtn', 'addGoalBtn', 'goalsMemberBar', 'goalsRoBanner'].forEach(id => {
+    ['filterRow', 'goalGrid', 'addGoalBtn', 'goalsMemberBar', 'goalsRoBanner'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = active ? 'none' : '';
     });
     const rt = document.getElementById('resultTabs'); if (rt) rt.style.display = active ? '' : 'none';
@@ -2988,31 +2971,58 @@
   }
   async function postResultUpdate(row, col, value) { return postResult({ action: 'update', row, col, value }); }
   const resultLinkBtn = document.getElementById('resultLinkBtn');
-  if (resultLinkBtn) resultLinkBtn.addEventListener('click', async () => {
+  if (resultLinkBtn) resultLinkBtn.addEventListener('click', openResultLinkModal);
+
+  // ── 결과표 연동 모달 ────────────────────────────────────────
+  const rlBackdrop = document.getElementById('resultLinkBackdrop');
+  const rlInput = document.getElementById('rl-input');
+  const rlPreview = document.getElementById('rl-preview');
+  // 입력(구글시트 전체 주소 / 시트 ID / GAS exec 주소)에서 최종 연동 URL 생성
+  function rlBuildUrl(raw) {
+    const s = (raw || '').trim();
+    if (!s) return '';
+    if (/script\.google\.com\/.*\/exec/.test(s)) return s;             // GAS exec 주소를 직접 넣은 경우
+    const m = s.match(/\/d\/([a-zA-Z0-9_-]+)/);                        // 구글시트 전체 주소에서 ID 추출
+    const id = m ? m[1] : (/^[a-zA-Z0-9_-]{20,}$/.test(s) ? s : '');   // 또는 시트 ID만 붙여넣은 경우
+    return id ? (RESULT_WEBAPP_BASE + '?sheetId=' + id) : '';
+  }
+  function rlRefreshPreview() {
+    if (!rlPreview) return;
+    const url = rlBuildUrl(rlInput.value);
+    if (url) { rlPreview.className = 'rl-preview ok'; rlPreview.innerHTML = '✅ 시트 인식 완료 — 이 주소로 연동됩니다:<br><span class="rl-url">' + escapeHTML(url) + '</span>'; }
+    else if (rlInput.value.trim()) { rlPreview.className = 'rl-preview warn'; rlPreview.textContent = '⚠️ 시트 주소/ID를 인식하지 못했어요. 구글시트를 열고 주소창의 주소를 통째로 붙여넣어 보세요.'; }
+    else { rlPreview.className = 'rl-preview'; rlPreview.textContent = ''; }
+  }
+  async function openResultLinkModal() {
+    if (!rlBackdrop) return;
     const cur = await getResultUrl();
-    const guide =
-      '📋 결과표 시트 연동 방법\n' +
-      '─────────────────────────\n' +
-      '아래 주소 맨 끝 "sheetId=" 뒤에 본인 시트 ID만 바꿔 넣으세요.\n\n' +
-      '① 연동할 구글시트를 엽니다.\n' +
-      '② 주소창에서 docs.google.com/spreadsheets/d/【이부분】/edit\n' +
-      '   → 가운데 【이부분】(긴 문자열)을 복사합니다. 이게 시트 ID예요.\n' +
-      '③ 아래 칸 "sheetId=" 뒤 부분을 그 ID로 바꿔 넣고 확인.\n\n' +
-      '예) ' + RESULT_WEBAPP_BASE + '?sheetId=【시트ID】\n\n' +
-      '※ 시트는 admin@firstoa-ai.com 에 "편집자"로 공유돼 있어야 저장까지 됩니다.\n' +
-      '※ 비우고 확인하면 연동이 해제됩니다.';
-    // 처음 연동(저장된 주소 없음)이면 기본 주소를 미리 채워서, 시트 ID만 바꾸면 되게 함.
-    const v = prompt(guide, cur || (RESULT_WEBAPP_BASE + '?sheetId='));
-    if (v === null) return;
-    const url = v.trim();
-    // 시트 ID를 안 바꾸고 그냥 확인한 경우 방지 (sheetId= 뒤가 비어 있음)
-    if (/[?&]sheetId=\s*$/.test(url)) {
-      alert('시트 ID를 넣지 않으셨어요.\n"sheetId=" 뒤에 본인 구글시트 ID를 붙여넣고 다시 시도해 주세요.');
-      return;
-    }
+    const m = cur && cur.match(/[?&]sheetId=([^&]+)/);
+    rlInput.value = m ? m[1] : (cur || '');      // 기존 연동이 있으면 시트 ID를 미리 채워줌
+    rlRefreshPreview();
+    rlBackdrop.classList.add('open');
+    setTimeout(() => rlInput.focus(), 100);
+  }
+  function closeResultLinkModal() { if (rlBackdrop) rlBackdrop.classList.remove('open'); }
+  if (rlInput) rlInput.addEventListener('input', rlRefreshPreview);
+  const rlConnectBtn = document.getElementById('rl-connect');
+  if (rlConnectBtn) rlConnectBtn.addEventListener('click', async () => {
+    const url = rlBuildUrl(rlInput.value);
+    if (!url) { alert('구글시트 주소나 시트 ID를 넣어주세요.\n\n연동할 구글시트를 열고, 주소창의 주소를 통째로 복사해 붙여넣으면 됩니다.'); return; }
     await storeSet('settings:resultSheetUrl', url);
-    if (url) await loadResultGoals(); else resultModeOn(false);
+    closeResultLinkModal();
+    await loadResultGoals();
   });
+  const rlDisconnectBtn = document.getElementById('rl-disconnect');
+  if (rlDisconnectBtn) rlDisconnectBtn.addEventListener('click', async () => {
+    await storeSet('settings:resultSheetUrl', '');
+    closeResultLinkModal();
+    resultModeOn(false);
+  });
+  const rlCancelBtn = document.getElementById('rl-cancel');
+  if (rlCancelBtn) rlCancelBtn.addEventListener('click', closeResultLinkModal);
+  const rlCloseBtn = document.getElementById('resultLinkCloseBtn');
+  if (rlCloseBtn) rlCloseBtn.addEventListener('click', closeResultLinkModal);
+  if (rlBackdrop) rlBackdrop.addEventListener('click', (e) => { if (e.target === rlBackdrop) closeResultLinkModal(); });
   const resultRefreshBtn = document.getElementById('resultRefreshBtn');
   if (resultRefreshBtn) resultRefreshBtn.addEventListener('click', loadResultGoals);
 
@@ -3235,7 +3245,6 @@
     await saveGoals();
     closeGoalModal();
     renderFilters(); renderGoals();
-    if (createdGoal) pushGoalToSheet(createdGoal); // 새 목표만 시트에 기록
   });
   document.getElementById('goalDeleteBtn').addEventListener('click', async () => {
     if (!editingGoalId) return;
@@ -3398,234 +3407,6 @@
     document.getElementById('syncStatusText').textContent = text;
   }
 
-  // Sync modal events (붙여넣기 전용)
-  const syncModal = document.getElementById('syncModalBackdrop');
-  function openSyncModal() {
-    syncModal.classList.add('open');
-    pendingSyncData = null;
-    document.getElementById('applySyncBtn').disabled = true;
-    document.getElementById('pastePreview').innerHTML = '';
-    document.getElementById('pasteInput').value = '';
-    setTimeout(() => document.getElementById('pasteInput').focus(), 100);
-  }
-  function closeSyncModal() { syncModal.classList.remove('open'); }
-  document.getElementById('syncBtn').addEventListener('click', openSyncModal);
-  document.getElementById('syncModalCloseBtn').addEventListener('click', closeSyncModal);
-  document.getElementById('syncCancelBtn').addEventListener('click', closeSyncModal);
-  syncModal.addEventListener('click', (e) => { if (e.target === syncModal) closeSyncModal(); });
-
-  document.getElementById('parsePasteBtn').addEventListener('click', () => {
-    const text = document.getElementById('pasteInput').value.trim();
-    if (!text) { alert('붙여넣을 내용이 없습니다.'); return; }
-    try {
-      const parsed = parseSheetData(text);
-      pendingSyncData = parsed;
-      renderPreview('pastePreview', parsed);
-      document.getElementById('applySyncBtn').disabled = parsed.goals.length === 0 && parsed.missions.length === 0;
-    } catch (e) {
-      alert('파싱 실패: ' + e.message);
-    }
-  });
-
-  // CSV/TSV → goals + missions
-  function parseSheetData(text) {
-    const isTsv = text.includes('\t');
-    const result = Papa.parse(text, {
-      delimiter: isTsv ? '\t' : ',',
-      skipEmptyLines: false
-    });
-    const rows = result.data;
-    console.log('[parseSheetData] parsed rows:', rows.length, rows);
-    if (!rows || rows.length === 0) return { goals: [], missions: [] };
-
-    const newGoals = [];
-    const newMissions = [];
-    let goalCounter = 0;
-    let missionCounter = 0;
-
-    // Step 1: 가로/세로 레이아웃 자동 감지
-    // 가로: 같은 행에 "기본업무"와 "미션업무"가 모두 있음
-    let missionColumnIndex = -1;
-    let isHorizontal = false;
-    for (let i = 0; i < Math.min(3, rows.length); i++) {
-      const row = rows[i] || [];
-      const joined = row.join(' ');
-      if (joined.includes('미션업무') && (joined.includes('기본업무') || joined.includes('구  분') || joined.includes('구분'))) {
-        isHorizontal = true;
-        for (let j = 0; j < row.length; j++) {
-          if (String(row[j] || '').trim().includes('미션업무')) {
-            missionColumnIndex = j;
-            break;
-          }
-        }
-        break;
-      }
-    }
-    console.log('[parseSheetData] layout:', isHorizontal ? 'HORIZONTAL' : 'VERTICAL', 'missionCol:', missionColumnIndex);
-
-    // 헤더성 텍스트 체크 (미션으로 잘못 들어가는 것 방지)
-    const HEADER_WORDS = ['미션업무', '기본업무', '구  분', '구분', '목  표', '목표', '업무 등급', '업무등급', '현재 레벨', '목표 레벨', '요청예산', '예산반영', '진도율', '우선순위'];
-    function isHeaderText(s) {
-      const t = String(s || '').trim();
-      if (!t || t.length < 2) return true;
-      if (HEADER_WORDS.some(h => t === h || t.replace(/\s+/g,'') === h.replace(/\s+/g,''))) return true;
-      if (VALID_CATS.has(t)) return true;
-      if (/^[A-D]$/.test(t)) return true;
-      if (/^\d+%?$/.test(t)) return true;
-      if (/^\d+\.?\d*$/.test(t)) return true;
-      return false;
-    }
-
-    function extractGoal(row) {
-      let category = '', grade = '', body = '';
-      for (const cell of row) {
-        const v = String(cell || '').trim();
-        if (VALID_CATS.has(v)) { category = v; break; }
-      }
-      for (const cell of row) {
-        const v = String(cell || '').trim();
-        if (/^[A-D]$/.test(v)) { grade = v; break; }
-      }
-      let maxLen = 0;
-      for (const cell of row) {
-        const v = String(cell || '').trim();
-        if (v && v !== category && v !== grade && !VALID_CATS.has(v) && !/^[A-D]$/.test(v) && v.length > maxLen) {
-          maxLen = v.length;
-          body = v;
-        }
-      }
-      if (!category && !grade) return null;
-      if (!body || body.length < 8) return null;
-      if (!category) category = '기타';
-      if (!grade) grade = 'C';
-
-      const lines = body.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length === 0) return null;
-      let title = lines[0].replace(/^\d+\.\s*/, '').trim();
-      let purpose = '', method = '';
-      if (lines.length >= 3) {
-        purpose = lines.slice(1, -1).join(' ');
-        method = lines[lines.length - 1];
-      } else if (lines.length === 2) {
-        purpose = lines[1];
-      }
-      return { title, category, grade, purpose, method };
-    }
-
-    if (isHorizontal) {
-      // 가로 레이아웃: 각 행에서 분기 목표와 미션을 동시에 추출
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length === 0) continue;
-        const joined = row.join(' ').trim();
-        if (!joined) continue;
-        // 헤더 행 스킵
-        if (joined.includes('미션업무') || joined.includes('기본업무')) continue;
-        if (/^[\s]*(구\s*분|목\s*표|업무\s*등급|현재\s*레벨|목표\s*레벨)/.test(joined)) continue;
-
-        // 분기 목표 추출
-        const goalData = extractGoal(row);
-        if (goalData) {
-          goalCounter++;
-          newGoals.push({ id: `g${Date.now()}-${goalCounter}`, ...goalData, done: false });
-        }
-
-        // 미션 추출 (미션 컬럼에서)
-        if (missionColumnIndex >= 0 && missionColumnIndex < row.length) {
-          const missionCell = String(row[missionColumnIndex] || '').trim();
-          if (missionCell && missionCell.length > 1 && !isHeaderText(missionCell)) {
-            missionCounter++;
-            newMissions.push({ id: `m${Date.now()}-${missionCounter}`, title: missionCell, done: false });
-          }
-        }
-      }
-    } else {
-      // 세로 레이아웃
-      let inMissionMode = false;
-      const MISSION_TRIGGERS = ['미션업무', '추가미션', '추가 미션', 'missions'];
-      const HEADER_TRIGGERS = ['기본업무', '기본 업무', '분기목표', '분기 목표', '1분기 목표', '2분기 목표', '3분기 목표', '4분기 목표'];
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length === 0) continue;
-        const joined = row.join(' ').trim();
-        if (!joined) continue;
-
-        // 정확히 일치하거나 단어 단위로 시작하는 경우만 트리거 매치
-        const isMissionHeader = MISSION_TRIGGERS.some(t => joined === t || joined.startsWith(t + ' ') || joined.startsWith(t + '\t'));
-        if (isMissionHeader) { inMissionMode = true; continue; }
-        const isQuarterHeader = HEADER_TRIGGERS.some(t => joined === t || joined.startsWith(t + ' ') || joined.startsWith(t + '\t'));
-        if (isQuarterHeader) { inMissionMode = false; continue; }
-
-        if (inMissionMode) {
-          const t = row.find(c => c && String(c).trim().length > 1);
-          if (t) {
-            const cleaned = String(t).trim();
-            if (!isHeaderText(cleaned)) {
-              missionCounter++;
-              newMissions.push({ id: `m${Date.now()}-${missionCounter}`, title: cleaned, done: false });
-            }
-          }
-          continue;
-        }
-
-        const goalData = extractGoal(row);
-        if (goalData) {
-          goalCounter++;
-          newGoals.push({ id: `g${Date.now()}-${goalCounter}`, ...goalData, done: false });
-        }
-      }
-    }
-
-    console.log('[parseSheetData] result:', { goals: newGoals.length, missions: newMissions.length });
-    return { goals: newGoals, missions: newMissions };
-  }
-
-  function renderPreview(containerId, parsed) {
-    const c = document.getElementById(containerId);
-    if (!parsed || (parsed.goals.length === 0 && parsed.missions.length === 0)) {
-      c.innerHTML = `<div class="preview-table"><div class="empty">파싱된 데이터가 없습니다.</div></div>`;
-      return;
-    }
-    let html = '<div class="preview-table">';
-    if (parsed.goals.length) {
-      html += `<div class="row" style="background:#E0E7FF; font-weight:700; color:#4338CA;">분기 목표 ${parsed.goals.length}개</div>`;
-      parsed.goals.forEach((g, i) => {
-        html += `<div class="row">
-          <div class="row-title">${i+1}. [${escapeHTML(g.category)}/${escapeHTML(g.grade)}] ${escapeHTML(g.title)}</div>
-          <div class="row-meta">${escapeHTML((g.purpose || '').slice(0, 60))}${(g.purpose||'').length>60?'…':''}</div>
-        </div>`;
-      });
-    }
-    if (parsed.missions.length) {
-      html += `<div class="row" style="background:#FEF3C7; font-weight:700; color:#92400E;">추가 미션 ${parsed.missions.length}개</div>`;
-      parsed.missions.forEach((m, i) => {
-        html += `<div class="row"><div class="row-title">${i+1}. ${escapeHTML(m.title)}</div></div>`;
-      });
-    }
-    html += '</div>';
-    c.innerHTML = html;
-  }
-
-  document.getElementById('applySyncBtn').addEventListener('click', async () => {
-    if (!pendingSyncData) return;
-    // sandboxed iframe에서는 confirm()이 차단되므로 바로 적용
-
-    // done 상태 보존
-    const oldDone = {}; goals.forEach(g => oldDone[g.title] = g.done);
-    const oldMDone = {}; missions.forEach(m => oldMDone[m.title] = m.done);
-
-    goals = pendingSyncData.goals.map(g => ({ ...g, done: !!oldDone[g.title] }));
-    missions = pendingSyncData.missions.map(m => ({ ...m, done: !!oldMDone[m.title] }));
-
-    await saveGoals();
-    await saveMissions();
-    renderFilters(); renderGoals(); renderMissions();
-    closeSyncModal();
-
-    const t = new Date().toTimeString().slice(0, 5);
-    showSyncStatus(`✓ 가져오기 완료 · 목표 ${goals.length}개, 미션 ${missions.length}개 · ${t}`, '');
-  });
 
   // ---------- Tabs (Quick Links) ----------
   document.querySelectorAll('.tab').forEach(tab => {
@@ -5234,7 +5015,6 @@
     renderMemo();
     await loadApps();
     renderApps();
-    if (typeof updateGoalSheetBtn === 'function') updateGoalSheetBtn(await getGoalSheetUrl());
     if (typeof loadResultGoals === 'function') await loadResultGoals();
   }
 

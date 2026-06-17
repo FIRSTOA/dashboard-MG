@@ -1866,6 +1866,10 @@
   //  3) "내 이름"을 정하면 사람마다 각자의 보드가 저장됩니다 (하나의 백엔드 공유)
   const DEFAULT_SYNC_URL = ''; // 예: 'https://script.google.com/macros/s/XXXX/exec'
 
+  // 결과표 연동용 GAS 웹앱 기본 주소 (sheetId= 뒤에 각자 시트 ID만 바꿔 붙이면 됨).
+  // ※ sheetId 를 지원하는 최신 배포(@6)라야 직원별 시트가 열림. 옛 AKfycbz… 주소는 sheetId 무시되니 쓰지 말 것.
+  const RESULT_WEBAPP_BASE = 'https://script.google.com/macros/s/AKfycbwpUKFSwHHEBQCIN7AtF-8kGi8eIRVg2v0KzCjGg7_6io08YDTN_iqapWuLoRdf4oGbfw/exec';
+
   const LS_SYNC_URL = 'dashboard:syncUrl';
   const LS_USER_ID  = 'dashboard:userId';
 
@@ -2986,9 +2990,26 @@
   const resultLinkBtn = document.getElementById('resultLinkBtn');
   if (resultLinkBtn) resultLinkBtn.addEventListener('click', async () => {
     const cur = await getResultUrl();
-    const v = prompt('결과표 시트와 연동할 GAS 웹앱 URL(…/exec)을 입력하세요.\n(result-sheet-sync.gs 배포 후 받은 주소)\n\n비우고 확인하면 연동 해제됩니다.', cur);
+    const guide =
+      '📋 결과표 시트 연동 방법\n' +
+      '─────────────────────────\n' +
+      '아래 주소 맨 끝 "sheetId=" 뒤에 본인 시트 ID만 바꿔 넣으세요.\n\n' +
+      '① 연동할 구글시트를 엽니다.\n' +
+      '② 주소창에서 docs.google.com/spreadsheets/d/【이부분】/edit\n' +
+      '   → 가운데 【이부분】(긴 문자열)을 복사합니다. 이게 시트 ID예요.\n' +
+      '③ 아래 칸 "sheetId=" 뒤 부분을 그 ID로 바꿔 넣고 확인.\n\n' +
+      '예) ' + RESULT_WEBAPP_BASE + '?sheetId=【시트ID】\n\n' +
+      '※ 시트는 admin@firstoa-ai.com 에 "편집자"로 공유돼 있어야 저장까지 됩니다.\n' +
+      '※ 비우고 확인하면 연동이 해제됩니다.';
+    // 처음 연동(저장된 주소 없음)이면 기본 주소를 미리 채워서, 시트 ID만 바꾸면 되게 함.
+    const v = prompt(guide, cur || (RESULT_WEBAPP_BASE + '?sheetId='));
     if (v === null) return;
     const url = v.trim();
+    // 시트 ID를 안 바꾸고 그냥 확인한 경우 방지 (sheetId= 뒤가 비어 있음)
+    if (/[?&]sheetId=\s*$/.test(url)) {
+      alert('시트 ID를 넣지 않으셨어요.\n"sheetId=" 뒤에 본인 구글시트 ID를 붙여넣고 다시 시도해 주세요.');
+      return;
+    }
     await storeSet('settings:resultSheetUrl', url);
     if (url) await loadResultGoals(); else resultModeOn(false);
   });
